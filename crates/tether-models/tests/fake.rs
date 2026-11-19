@@ -48,6 +48,8 @@ async fn fake_errors_when_the_script_runs_out() {
 fn fake_is_free() {
     let fake = FakeAdapter::default();
     assert_eq!(fake.price(&Usage::default()), Some(Money(0.0)));
+    let priced = FakeAdapter::default().priced(0.25);
+    assert_eq!(priced.price(&Usage::default()), Some(Money(0.25)));
 }
 
 #[test]

@@ -79,7 +79,7 @@ history is never copied.
 | `policy.answer` | `subject`, `answered_by`, `allow` |
 | `sandbox.exec` | command, cwd, env hash |
 | `sandbox.exit` | exit code, stdout and stderr refs |
-| `budget.tick` | tokens, usd, wall seconds, tool calls: used and limit |
+| `budget.tick` | tokens, usd, wall seconds, tool calls: used and limit (null limit means unlimited) |
 | `checkpoint` | `step`, optional sandbox `snapshot` id |
 | `nondeterminism` | clock reads, random seeds, env lookups |
 | `ext.*` | anything; ignored by replay and diff |
@@ -96,6 +96,14 @@ way, with an empty `server` and a `deny` decision.
 For every model call: `model.request`, `policy.decision`, `model.response`.
 A denied model call, or one the provider fails, has no `model.response`; the
 next event is the `run.state` that halts the run.
+
+Every `model.response` and every `tool.result` is followed by a `budget.tick`
+with the same `parent`, holding the budget after that call.
+
+Budgets are checked before a call's first event. A run that is out of budget
+has no `model.request` or `tool.call` for the refused call: the next event is
+a `run.state` of `halted` whose reason is `budget exceeded: <key> (<used> of
+<limit>)`, where `<key>` is the `[budget]` key that was spent.
 
 `step` is 0 for the events before the first model request. Each
 `model.request` opens the next step.

@@ -15,7 +15,8 @@ use serde::Deserialize;
 
 use crate::PolicyError;
 
-/// The `[budget]` table. Parsed here; enforced by the run loop.
+/// The `[budget]` table. Parsed here; enforced by the run loop through
+/// [`crate::budget`].
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BudgetConfig {
@@ -135,6 +136,16 @@ fn globs(rule: &str, key: &str, value: Option<OneOrMany>) -> Result<Vec<String>,
 impl PolicyConfig {
     pub fn from_toml(text: &str) -> Result<Self, PolicyError> {
         let raw: RawConfig = toml::from_str(text)?;
+        if raw
+            .budget
+            .max_usd
+            .is_some_and(|usd| !usd.is_finite() || usd < 0.0)
+        {
+            return Err(PolicyError::InvalidBudget {
+                key: "max_usd",
+                reason: "must be a number that is zero or more".into(),
+            });
+        }
         let mut rules: Vec<Rule> = Vec::with_capacity(raw.rules.len());
         for (index, rule) in raw.rules.into_iter().enumerate() {
             let name = rule.name.unwrap_or_else(|| format!("rule-{}", index + 1));

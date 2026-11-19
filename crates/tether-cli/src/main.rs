@@ -171,8 +171,11 @@ fn describe(event: &Event) -> (&str, String) {
         EventType::BudgetTick(budget) => (
             "budget.tick",
             format!(
-                "{} tokens, ${:.4}, {} s, {} tool calls",
-                budget.tokens_used, budget.usd_used, budget.wall_secs_used, budget.tool_calls_used
+                "{} tokens, ${}, {} s, {} tool calls",
+                of(budget.tokens_used, budget.tokens_limit),
+                of(format!("{:.4}", budget.usd_used), budget.usd_limit),
+                of(budget.wall_secs_used, budget.wall_secs_limit),
+                of(budget.tool_calls_used, budget.tool_calls_limit),
             ),
         ),
         EventType::Checkpoint { step, snapshot } => (
@@ -184,6 +187,14 @@ fn describe(event: &Event) -> (&str, String) {
         ),
         EventType::Nondeterminism(data) => ("nondeterminism", clip(&data.to_string())),
         EventType::Ext { r#type, data } => (r#type.as_str(), clip(&data.to_string())),
+    }
+}
+
+/// `used`, or `used/limit` when there is a limit.
+fn of<U: std::fmt::Display, L: std::fmt::Display>(used: U, limit: Option<L>) -> String {
+    match limit {
+        Some(limit) => format!("{used}/{limit}"),
+        None => used.to_string(),
     }
 }
 

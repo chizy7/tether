@@ -11,7 +11,7 @@ use std::sync::Arc;
 use serde_json::json;
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::{Block, Completion, CompletionRequest, ModelAdapter, ModelError};
-use tether_policy::{Policy, RunCtx, Verdict};
+use tether_policy::{budget, Policy, RunCtx, Verdict};
 use tether_trace::{NewEvent, TraceError, TraceWriter};
 use tether_types::{
     BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, RunId,
@@ -69,6 +69,7 @@ impl Run {
     /// Create the trace, record `run.created` and move to `Running`.
     pub async fn start(config: RunConfig, deps: RunDeps) -> Result<Self, RunError> {
         let tools = deps.tools.list_tools().await?;
+        let limits = deps.policy.limits();
         let writer = TraceWriter::create(&config.trace, config.run)?;
         let mut run = Self {
             trace: TraceHandle::spawn(writer),
@@ -78,7 +79,7 @@ impl Run {
             tools,
             state: RunState::Created,
             step: 0,
-            budget: BudgetSnapshot::default(),
+            budget: limits.fresh(),
         };
         let created = json!({
             "agent": run.agent,
@@ -114,10 +115,12 @@ impl Run {
 
     /// Answer a model request. Starts a new step.
     ///
-    /// Trace: `model.request`, `policy.decision`, `model.response`. A denied
-    /// call or a provider error halts the run.
+    /// Trace: `model.request`, `policy.decision`, `model.response`,
+    /// `budget.tick`. A denied call or a provider error halts the run, and so
+    /// does a spent budget, before anything is asked of the model.
     pub async fn complete(&mut self, req: CompletionRequest) -> Result<Completion, RunError> {
         self.ensure_running()?;
+        self.check_budget().await?;
         self.step += 1;
 
         let mut messages = Vec::with_capacity(req.messages.len());
@@ -190,14 +193,16 @@ impl Run {
         };
         self.emit(Some(asked.seq), EventType::ModelResponse(response))
             .await?;
+        self.tick(asked.seq).await?;
         Ok(completion)
     }
 
     /// Answer a tool request within the current step.
     ///
-    /// Trace: `tool.call`, `policy.decision`, `tool.result`. A denied call, an
-    /// unknown tool and a failed dispatch all come back as an ordinary result
-    /// with `is_error` set, so the agent sees a normal failed call.
+    /// Trace: `tool.call`, `policy.decision`, `tool.result`, `budget.tick`. A
+    /// denied call, an unknown tool and a failed dispatch all come back as an
+    /// ordinary result with `is_error` set, so the agent sees a normal failed
+    /// call. A spent budget halts the run before the call is recorded.
     pub async fn call_tool(
         &mut self,
         id: &str,
@@ -205,6 +210,7 @@ impl Run {
         arguments: serde_json::Value,
     ) -> Result<ToolResult, RunError> {
         self.ensure_running()?;
+        self.check_budget().await?;
         let (call, known) = self.resolve(id, name, arguments);
         let asked = self.emit(None, EventType::ToolCall(call.clone())).await?;
 
@@ -241,6 +247,7 @@ impl Run {
         // The trace may hold a blob reference; the agent gets the content.
         self.emit(Some(asked.seq), EventType::ToolResult(result.clone()))
             .await?;
+        self.tick(asked.seq).await?;
         Ok(result)
     }
 
@@ -291,6 +298,25 @@ impl Run {
     fn tick_wall(&mut self) {
         let elapsed_ms = self.deps.clock.now_ms().saturating_sub(self.started_ms);
         self.budget.wall_secs_used = elapsed_ms / 1000;
+    }
+
+    /// Halt if a budget is spent. Runs before every model and tool call,
+    /// ahead of its first event, so a halted run ends on an event boundary
+    /// and the refused call is not half recorded.
+    async fn check_budget(&mut self) -> Result<(), RunError> {
+        self.tick_wall();
+        match budget::tripped(&self.budget) {
+            Some(tripped) => Err(self.halt(format!("budget exceeded: {tripped}")).await),
+            None => Ok(()),
+        }
+    }
+
+    /// Record the budget after the call that `parent` asked for.
+    async fn tick(&mut self, parent: u64) -> Result<(), RunError> {
+        self.tick_wall();
+        self.emit(Some(parent), EventType::BudgetTick(self.budget))
+            .await?;
+        Ok(())
     }
 
     async fn put_json<T: serde::Serialize>(&self, value: &T) -> Result<String, RunError> {

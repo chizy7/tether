@@ -86,8 +86,18 @@ Rules match what a call says, not what it will do: `argv0 = "rm"` does not see
 `Ask` suspends the run and emits `policy.ask`. The answer comes from the CLI
 prompt, the SDK `Answer` RPC, or, unattended, a timeout (default 600 s) that
 moves the run to Halted, resumable once someone answers. A rule may set
-`on_timeout = "deny"` for fire-and-forget jobs. Budgets are checked before
-every model and tool call; exceeding one halts with the budget that tripped.
+`on_timeout = "deny"` for fire-and-forget jobs.
+
+Budgets come from the `[budget]` table: `max_tokens`, `max_usd`,
+`max_wall_secs` and `max_tool_calls`, each optional. All four are checked
+before every model and tool call, ahead of the call's first event, and a
+spent one halts the run with a `run.state` reason naming its key. A budget is
+spent when what has been used reaches the limit, so `max_tool_calls = 400`
+allows exactly 400 calls. Tokens, dollars and wall time are only known once a
+call returns, so the call that crosses one of those completes and the next is
+refused; a long-running tool is not interrupted. Only dispatched tool calls
+count, not denied ones. A `budget.tick` follows every call.
+
 The kill switch is a file watch plus a Unix signal; either halts at the next
 event boundary, never mid-write.
 

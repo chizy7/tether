@@ -6,10 +6,12 @@
 
 use tether_types::{Decision, ModelRequest, ToolCall};
 
+pub mod budget;
 pub mod config;
 pub mod glob;
 pub mod rules;
 
+pub use budget::Limits;
 pub use config::PolicyConfig;
 pub use rules::RulePolicy;
 
@@ -19,6 +21,8 @@ pub enum PolicyError {
     Parse(#[from] toml::de::Error),
     #[error("rule {rule:?}: {reason}")]
     InvalidRule { rule: String, reason: String },
+    #[error("[budget] {key}: {reason}")]
+    InvalidBudget { key: &'static str, reason: String },
 }
 
 /// Per-run context a rule may consult: budget so far, step, agent id.
@@ -56,6 +60,11 @@ pub trait Policy: Send + Sync {
         Decision::Allow.into()
     }
 
+    /// The run's budget limits. The default is no limits.
+    fn limits(&self) -> Limits {
+        Limits::default()
+    }
+
     /// The policy as the full text of its TOML file, recorded in
     /// `run.created` so a trace says what rules the run was held to. `None`
     /// for a policy that did not come from a file.
@@ -77,10 +86,6 @@ impl Policy for AllowAll {
 
 /// Default when nobody answers a `policy.ask`, in seconds.
 pub const DEFAULT_ASK_TIMEOUT_SECS: u64 = 600;
-
-pub mod budget {
-    //! Token, dollar, wall-clock and tool-call budgets.
-}
 
 pub mod kill {
     //! File-watch and Unix-signal kill switch; halts at the next event boundary.

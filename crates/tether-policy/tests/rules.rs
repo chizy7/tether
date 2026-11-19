@@ -1,6 +1,8 @@
 use serde_json::{json, Value};
 use tether_policy::config::{Action, OnTimeout};
-use tether_policy::{AllowAll, Policy, PolicyConfig, PolicyError, RulePolicy, RunCtx, Verdict};
+use tether_policy::{
+    AllowAll, Limits, Policy, PolicyConfig, PolicyError, RulePolicy, RunCtx, Verdict,
+};
 use tether_types::{Decision, ToolCall};
 
 const EXAMPLE: &str = include_str!("../../../tether.example.toml");
@@ -379,4 +381,30 @@ fn snapshot_is_the_file_byte_for_byte() {
 
     assert_eq!(RulePolicy::default().snapshot().as_deref(), Some(""));
     assert_eq!(AllowAll.snapshot(), None);
+}
+
+#[test]
+fn budget_table_becomes_the_run_limits() {
+    let policy = RulePolicy::from_toml(EXAMPLE).expect("example policy");
+    assert_eq!(
+        policy.limits(),
+        Limits {
+            max_tokens: Some(2_000_000),
+            max_usd: Some(5.0),
+            max_wall_secs: Some(2400),
+            max_tool_calls: Some(400),
+        }
+    );
+
+    // No table, or a policy with no file, means no limits.
+    assert_eq!(RulePolicy::default().limits(), Limits::default());
+    assert_eq!(AllowAll.limits(), Limits::default());
+
+    // A whole number is fine for dollars; a negative one is not.
+    let whole = RulePolicy::from_toml("[budget]\nmax_usd = 5").expect("policy");
+    assert_eq!(whole.limits().max_usd, Some(5.0));
+    assert!(matches!(
+        PolicyConfig::from_toml("[budget]\nmax_usd = -1.0"),
+        Err(PolicyError::InvalidBudget { key: "max_usd", .. })
+    ));
 }

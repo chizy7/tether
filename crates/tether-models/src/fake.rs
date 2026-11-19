@@ -15,6 +15,7 @@ use crate::{Completion, CompletionRequest, ModelAdapter, ModelError, Money};
 pub struct FakeAdapter {
     script: Mutex<VecDeque<Completion>>,
     requests: Mutex<Vec<CompletionRequest>>,
+    usd_per_call: f64,
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -26,7 +27,14 @@ impl FakeAdapter {
         Self {
             script: Mutex::new(script.into_iter().collect()),
             requests: Mutex::default(),
+            usd_per_call: 0.0,
         }
+    }
+
+    /// Charge a flat price for every completion, to exercise dollar budgets.
+    pub fn priced(mut self, usd_per_call: f64) -> Self {
+        self.usd_per_call = usd_per_call;
+        self
     }
 
     /// Every request received so far, oldest first.
@@ -53,8 +61,8 @@ impl ModelAdapter for FakeAdapter {
             .ok_or_else(|| ModelError::Provider("fake adapter: script exhausted".into()))
     }
 
-    /// The fake is free.
+    /// Free unless [`FakeAdapter::priced`] set a flat price per call.
     fn price(&self, _usage: &Usage) -> Option<Money> {
-        Some(Money(0.0))
+        Some(Money(self.usd_per_call))
     }
 }

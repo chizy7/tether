@@ -11,7 +11,7 @@ use tether_types::{Decision, ToolCall};
 
 use crate::config::{Action, Match, PolicyConfig, Rule};
 use crate::glob::glob_match;
-use crate::{Policy, PolicyError, RunCtx, Verdict};
+use crate::{Limits, Policy, PolicyError, RunCtx, Verdict};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RulePolicy {
@@ -69,6 +69,10 @@ impl Policy for RulePolicy {
             decision,
             rule: Some(rule.name.clone()),
         }
+    }
+
+    fn limits(&self) -> Limits {
+        Limits::from(&self.config.budget)
     }
 
     /// The file as it was read, comments included. An empty policy, where
