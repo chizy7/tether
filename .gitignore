@@ -3,6 +3,7 @@
 *.jsonl
 *.blobs/
 *.halt
+.tether/
 .env
 .DS_Store
 node_modules/

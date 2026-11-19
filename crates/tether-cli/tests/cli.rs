@@ -347,3 +347,56 @@ fn halt_file_at_the_prompt_halts_the_run() {
     let verified = tether(&["verify", trace.to_str().expect("utf-8 path")]);
     assert!(verified.status.success(), "{verified:?}");
 }
+
+#[cfg(unix)]
+#[test]
+fn refuses_example_blocks_rm_and_the_trace_names_the_rule() {
+    let example = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../examples/refuses");
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("cli_refuses_example");
+    let _ = fs::remove_dir_all(&dir);
+
+    let out = Command::new(env!("CARGO_BIN_EXE_tether"))
+        .arg("run")
+        .arg("--script")
+        .arg(example.join("script.json"))
+        .arg("--policy")
+        .arg(example.join("tether.toml"))
+        .arg("--dir")
+        .arg(dir.join("out"))
+        .stdin(Stdio::null())
+        .output()
+        .expect("run tether");
+    // Nothing asks, so the run needs nobody and finishes.
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("finished: I was not allowed"),
+        "{out:?}"
+    );
+
+    // The note the agent saved survived its own `rm -rf .`.
+    assert_eq!(
+        fs::read_to_string(dir.join("out/workspace/notes.txt")).expect("notes.txt"),
+        "work in progress, do not lose\n"
+    );
+
+    let trace = inspect_run(&dir);
+    let lines: Vec<&str> = trace.lines().collect();
+    let denied = lines
+        .iter()
+        .position(|line| line.contains("rule no-rm"))
+        .expect("a decision by rule no-rm");
+    assert!(
+        lines[denied - 1].contains(r#"tool.call        exec {"argv":["rm","-rf","."]}"#),
+        "{trace}"
+    );
+    assert!(
+        lines[denied].contains("policy.decision  deny: deleting files is off limits in this run"),
+        "{trace}"
+    );
+    assert!(
+        lines[denied + 1].contains("tool.result      error"),
+        "{trace}"
+    );
+    // The later `ls` shows the file is still there.
+    assert!(trace.contains(r#""stdout":"notes.txt\n""#), "{trace}");
+}

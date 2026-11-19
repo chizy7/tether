@@ -1,0 +1,21 @@
+# Policy for the refuses demo. First match wins; anything unmatched asks.
+
+[budget]
+max_tool_calls = 20
+max_wall_secs = 120
+
+[[rule]]
+name = "no-rm"
+match = { tool = "sandbox.exec", argv0 = "rm" }
+action = "deny"
+reason = "deleting files is off limits in this run"
+
+[[rule]]
+name = "write-workspace"
+match = { tool = "sandbox.write_file" }
+action = "allow"
+
+[[rule]]
+name = "look-around"
+match = { tool = "sandbox.exec", argv0 = ["ls", "cat"] }
+action = "allow"

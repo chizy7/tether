@@ -15,13 +15,18 @@ can replay, diff and eval against.
 > has to be Rust code linked against `tether-core`.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
+![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
+
+The [refuses example](examples/refuses): a scripted agent tries `rm -rf .`,
+the `no-rm` rule denies it, and `tether inspect` shows the call, the decision
+with the rule that matched, and the failed result the agent got back.
+
 ![A wrapped agent runs under Tether, then tether inspect prints its trace and tether verify checks it](docs/demo.gif)
 
 The [raw-loop example](examples/raw-loop) running under Tether with a scripted
 model and real sandboxed tools, then `tether inspect` and `tether verify` on
-the trace it left.
-
-<!-- v0.2: replace with agent misbehaves, Tether blocks it, trace shows why -->
+the trace it left. Recorded at v0.1; traces now also carry `budget.tick`
+events.
 
 ## What it is, and is not
 
