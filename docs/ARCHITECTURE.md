@@ -149,15 +149,31 @@ pub trait Sandbox: Send + Sync {
 
 | Backend | Phase | Isolates | Does not isolate |
 | --- | --- | --- | --- |
-| `process` | v0.1 | cwd jail, rlimits, seccomp on Linux, env scrub | Kernel, filesystem outside the jail, network unless host-firewalled. **Not a security boundary.** |
+| `process` | v0.1 | cwd jail, env scrub, time limit, rlimits; on Linux also a memory cap, a seccomp deny list and no internet sockets under `Network::None` | Kernel, filesystem outside the jail by absolute path, network on macOS. **Not a security boundary.** |
 | `docker` | v0.2 | Filesystem, network namespace, resource limits; snapshot via `commit` | Kernel (shared) |
 | `firecracker` | v1.0 | Kernel, memory, devices; VM snapshot | Side channels, hypervisor bugs |
 
-Status of `process` today: commands start in the workspace with a cleared
-environment (only `PATH` passes through), `read` and `write` refuse paths that
-leave the workspace, and a command past the time limit is killed. rlimits and
-the seccomp filter are not implemented yet, and the network, CPU and memory
-settings are ignored.
+What `process` does, by platform:
+
+| Setting | Linux | macOS |
+| --- | --- | --- |
+| Workspace cwd, env scrub, `read`/`write` path check | yes | yes |
+| `time_limit_secs`: kills the command and its process group | yes | yes |
+| `cpu_time_secs` (`RLIMIT_CPU`), `max_open_files` (`RLIMIT_NOFILE`) | yes | yes |
+| `memory_bytes` (`RLIMIT_AS`) | yes | refused at `start` |
+| seccomp deny list, `no_new_privs` | yes | no |
+| `Network::None` | internet sockets refused | not enforced |
+| `Network::Allowlist` | refused at `start` | refused at `start` |
+
+The seccomp filter is a deny list returning `EPERM`: tracing and reading
+other processes, mounts and `chroot`, namespaces, kernel modules, `reboot`,
+`bpf`, `perf_event_open`, keyrings, setting the clock, and `io_uring`.
+Everything else is allowed, so ordinary build and test commands run
+unchanged. `memory_bytes` caps address space, not resident memory, so
+runtimes that reserve large virtual ranges (Go, the JVM, Node) need a
+generous value. `cpu_millis` is a CPU share for the container backends and
+`process` ignores it. A limit the platform cannot enforce is refused at
+`start` rather than ignored, with the one exception in the table.
 
 Backends that cannot snapshot return `Unsupported`; resume then replays writes
 from the trace into a fresh sandbox.

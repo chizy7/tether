@@ -69,11 +69,26 @@ cargo test --workspace
 
 ## Honest note on sandboxing
 
-The default `process` backend today is a cwd jail, an env scrub and a time
-limit: commands run as plain child processes and can reach anything the user
-running Tether can. rlimits and a seccomp filter land in v0.2. None of that is
-a security boundary and we will never describe it as one. Use `docker` (v0.2)
-for namespaces and `firecracker` (v1.0) for a separate kernel.
+The default `process` backend runs commands as plain child processes, as the
+user running Tether. It is not a security boundary and we will never describe
+it as one. What it does is limit the damage of an ordinary mistake:
+
+- Every command starts in the workspace with a cleared environment, and file
+  reads and writes are refused outside the workspace.
+- A command past its time limit is killed, along with anything it started.
+- CPU time and open files are capped with rlimits (Linux and macOS).
+- On Linux only: a memory cap, a seccomp filter that refuses a list of system
+  calls (tracing other processes, mounting, kernel modules, namespaces,
+  setting the clock), no privilege gain through setuid programs, and no
+  internet sockets when the run has no network.
+
+On either platform a command can still read and write files outside the
+workspace by absolute path. On macOS there is also no memory cap and no
+network block. A limit
+the platform cannot enforce is refused when the sandbox starts, not ignored;
+the exception is the network block on macOS, which is silently absent. Use
+`docker` (v0.2) for namespaces and `firecracker` (v1.0) for a separate
+kernel.
 
 ## License
 

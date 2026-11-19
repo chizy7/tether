@@ -5,16 +5,30 @@ use std::path::{Path, PathBuf};
 use tether_sandbox::process::ProcessSandbox;
 use tether_sandbox::{Exec, Handle, Network, Sandbox, SandboxError, SandboxSpec};
 
+/// A fresh, empty workspace directory for one test.
+fn workspace(test: &str) -> PathBuf {
+    let workspace = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(test);
+    let _ = std::fs::remove_dir_all(&workspace);
+    workspace
+}
+
+/// Start a sandbox on `spec` and run one shell script in it.
+async fn run_in(
+    spec: SandboxSpec,
+    script: &str,
+) -> tether_sandbox::Result<tether_sandbox::ExecResult> {
+    let sandbox = ProcessSandbox::new();
+    let handle = sandbox.start(&spec).await?;
+    sandbox.exec(&handle, sh(script)).await
+}
+
 async fn start(test: &str, time_limit_secs: Option<u64>) -> (ProcessSandbox, Handle, PathBuf) {
     let workspace = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(test);
     let _ = std::fs::remove_dir_all(&workspace);
     let sandbox = ProcessSandbox::new();
     let spec = SandboxSpec {
-        workspace: workspace.clone(),
-        network: Network::None,
-        cpu_millis: None,
-        memory_bytes: None,
         time_limit_secs,
+        ..SandboxSpec::new(workspace.clone())
     };
     let handle = sandbox.start(&spec).await.expect("start");
     (sandbox, handle, workspace)
@@ -113,4 +127,175 @@ async fn snapshot_is_unsupported_and_stop_forgets_the_session() {
     ));
     sandbox.stop(h.clone()).await.expect("stop");
     assert!(sandbox.exec(&h, sh("true")).await.is_err());
+}
+
+#[tokio::test]
+async fn cpu_time_limit_ends_a_command_that_spins() {
+    let spec = SandboxSpec {
+        cpu_time_secs: Some(1),
+        time_limit_secs: Some(30),
+        ..SandboxSpec::new(workspace("process_cpu"))
+    };
+    let out = run_in(spec, "while :; do :; done").await.expect("exec");
+    // Killed by the kernel for its CPU use, long before the 30 s wall limit.
+    assert_eq!(out.exit_code, -1);
+    assert!(out.duration_ms < 15_000, "{} ms", out.duration_ms);
+}
+
+#[tokio::test]
+async fn open_file_limit_is_enforced() {
+    let script =
+        "exec 3</dev/null 4</dev/null 5</dev/null && echo three; exec 6</dev/null && echo four";
+    let spec = SandboxSpec {
+        max_open_files: Some(6),
+        ..SandboxSpec::new(workspace("process_nofile"))
+    };
+    // Descriptors 0 to 5 fit under a limit of 6; the next one does not.
+    let out = run_in(spec, script).await.expect("exec");
+    assert_eq!(out.stdout, b"three\n");
+    assert_ne!(out.exit_code, 0);
+
+    let unlimited = SandboxSpec::new(workspace("process_nofile_unlimited"));
+    let out = run_in(unlimited, script).await.expect("exec");
+    assert_eq!(out.stdout, b"three\nfour\n");
+}
+
+#[tokio::test]
+async fn a_timeout_kills_what_the_command_started_too() {
+    let dir = workspace("process_group");
+    let spec = SandboxSpec {
+        time_limit_secs: Some(1),
+        ..SandboxSpec::new(&dir)
+    };
+    // The shell starts a long sleep in the background and records its pid.
+    let err = run_in(spec, "sleep 300 & echo $! > pid; wait")
+        .await
+        .expect_err("must time out");
+    assert!(err.to_string().contains("timed out"), "{err}");
+
+    let pid = std::fs::read_to_string(dir.join("pid")).expect("pid file");
+    let mut alive = true;
+    for _ in 0..50 {
+        // `kill -0` succeeds only while the process exists.
+        alive = std::process::Command::new("kill")
+            .args(["-0", pid.trim()])
+            .stderr(std::process::Stdio::null())
+            .status()
+            .expect("run kill")
+            .success();
+        if !alive {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    assert!(
+        !alive,
+        "background process {} outlived the timeout",
+        pid.trim()
+    );
+}
+
+#[tokio::test]
+async fn limits_the_backend_cannot_enforce_are_refused_at_start() {
+    let sandbox = ProcessSandbox::new();
+    let allowlist = SandboxSpec {
+        network: Network::Allowlist(vec!["example.com".into()]),
+        ..SandboxSpec::new(workspace("process_allowlist"))
+    };
+    assert!(matches!(
+        sandbox.start(&allowlist).await,
+        Err(SandboxError::Unsupported(_))
+    ));
+
+    let memory = SandboxSpec {
+        memory_bytes: Some(256 * 1024 * 1024),
+        ..SandboxSpec::new(workspace("process_memory_spec"))
+    };
+    let started = sandbox.start(&memory).await;
+    if cfg!(target_os = "linux") {
+        started.expect("Linux enforces a memory limit");
+    } else {
+        assert!(matches!(started, Err(SandboxError::Unsupported(_))));
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod linux {
+    use super::*;
+
+    /// Builds a 200 MB string in the shell, which needs that much memory.
+    const HUNGRY: &str = r#"x=$(head -c 200000000 /dev/zero | tr '\0' a); echo ${#x}"#;
+
+    #[tokio::test]
+    async fn memory_limit_stops_a_command_that_wants_too_much() {
+        let limited = SandboxSpec {
+            memory_bytes: Some(64 * 1024 * 1024),
+            time_limit_secs: Some(60),
+            ..SandboxSpec::new(workspace("process_memory"))
+        };
+        let out = run_in(limited, HUNGRY).await.expect("exec");
+        assert_ne!(out.exit_code, 0, "{}", String::from_utf8_lossy(&out.stdout));
+
+        let unlimited = SandboxSpec {
+            time_limit_secs: Some(60),
+            ..SandboxSpec::new(workspace("process_memory_unlimited"))
+        };
+        let out = run_in(unlimited, HUNGRY).await.expect("exec");
+        assert_eq!(out.stdout, b"200000000\n");
+    }
+
+    /// Opens a TCP connection to a local port nothing listens on.
+    const CONNECT: &str = "exec 3<>/dev/tcp/127.0.0.1/9";
+
+    fn bash(script: &str) -> Exec {
+        Exec {
+            argv: vec!["bash".into(), "-c".into(), script.into()],
+            cwd: None,
+            env: vec![],
+            stdin: None,
+        }
+    }
+
+    async fn connect(test: &str, network: Network) -> String {
+        let sandbox = ProcessSandbox::new();
+        let spec = SandboxSpec {
+            network,
+            ..SandboxSpec::new(workspace(test))
+        };
+        let handle = sandbox.start(&spec).await.expect("start");
+        let out = sandbox.exec(&handle, bash(CONNECT)).await.expect("exec");
+        assert_ne!(out.exit_code, 0);
+        String::from_utf8_lossy(&out.stderr).into_owned()
+    }
+
+    #[tokio::test]
+    async fn network_none_refuses_internet_sockets() {
+        // With the network on, the connection gets as far as being refused
+        // by the port. With it off, the socket is never created.
+        let open = connect("process_net_all", Network::All).await;
+        assert!(open.contains("refused"), "{open}");
+
+        let closed = connect("process_net_none", Network::None).await;
+        assert!(!closed.contains("refused"), "{closed}");
+        assert!(closed.contains("not permitted"), "{closed}");
+    }
+
+    #[tokio::test]
+    async fn filtered_system_calls_fail_and_ordinary_commands_still_work() {
+        let spec = SandboxSpec::new(workspace("process_seccomp"));
+        // `unshare` needs the unshare system call, which the filter refuses.
+        let out = run_in(
+            spec,
+            "echo before; ls / > /dev/null && echo listed; unshare --user true",
+        )
+        .await
+        .expect("exec");
+        assert_eq!(out.stdout, b"before\nlisted\n");
+        assert_ne!(out.exit_code, 0);
+        assert!(
+            String::from_utf8_lossy(&out.stderr).contains("not permitted"),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
 }

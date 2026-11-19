@@ -1,21 +1,45 @@
 //! Sandbox: one trait, three backends.
 //!
-//! `process` (default) is rlimits, a seccomp filter on Linux, a cwd jail and
-//! an env scrub. It is **not** a security boundary and is never described as
-//! one. `docker` adds filesystem and network namespaces. `firecracker` adds a
-//! separate kernel. The README states what each isolates and what it does not.
+//! `process` (default) is a cwd jail, an env scrub, rlimits and, on Linux, a
+//! seccomp filter. It is **not** a security boundary and is never described
+//! as one. `docker` adds filesystem and network namespaces. `firecracker`
+//! adds a separate kernel. The README states what each isolates and what it
+//! does not.
 
 use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 
+/// What a sandbox is asked to hold its commands to. `None` means no limit.
+/// A backend refuses at `start` what it cannot enforce.
 #[derive(Debug, Clone)]
 pub struct SandboxSpec {
     pub workspace: PathBuf,
     pub network: Network,
+    /// CPU share in thousandths of a core, for the container backends.
     pub cpu_millis: Option<u32>,
+    /// Total CPU time one command may use, in seconds.
+    pub cpu_time_secs: Option<u64>,
     pub memory_bytes: Option<u64>,
+    /// File descriptors one command may have open at once.
+    pub max_open_files: Option<u64>,
+    /// Wall-clock time one command may run, in seconds.
     pub time_limit_secs: Option<u64>,
+}
+
+impl SandboxSpec {
+    /// A spec for `workspace` with no network and no limits.
+    pub fn new(workspace: impl Into<PathBuf>) -> Self {
+        Self {
+            workspace: workspace.into(),
+            network: Network::None,
+            cpu_millis: None,
+            cpu_time_secs: None,
+            memory_bytes: None,
+            max_open_files: None,
+            time_limit_secs: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -73,6 +97,8 @@ pub trait Sandbox: Send + Sync {
 
 #[cfg(feature = "process")]
 pub mod process;
+#[cfg(all(feature = "process", target_os = "linux"))]
+mod seccomp;
 
 #[cfg(feature = "docker")]
 pub mod docker {

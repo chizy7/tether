@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use tether_mcp::sandbox_server::SandboxServer;
 use tether_mcp::McpClient;
 use tether_sandbox::process::ProcessSandbox;
-use tether_sandbox::{Network, Sandbox, SandboxSpec};
+use tether_sandbox::{Sandbox, SandboxSpec};
 use tether_types::tool::Payload;
 use tether_types::ToolCall;
 
@@ -16,11 +16,8 @@ async fn server(test: &str) -> SandboxServer {
     let _ = std::fs::remove_dir_all(&workspace);
     let sandbox = Arc::new(ProcessSandbox::new());
     let spec = SandboxSpec {
-        workspace,
-        network: Network::None,
-        cpu_millis: None,
-        memory_bytes: None,
         time_limit_secs: Some(10),
+        ..SandboxSpec::new(workspace)
     };
     let handle = sandbox.start(&spec).await.expect("start");
     SandboxServer::new(sandbox, handle)

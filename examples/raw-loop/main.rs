@@ -22,7 +22,7 @@ use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, Role, ToolDef};
 use tether_policy::{AllowAll, KillSwitch};
 use tether_sandbox::process::ProcessSandbox;
-use tether_sandbox::{Network, Sandbox, SandboxSpec};
+use tether_sandbox::{Sandbox, SandboxSpec};
 use tether_types::RunId;
 
 /// The agent. Everything Tether-specific is the two `run.` calls.
@@ -94,11 +94,8 @@ fn script() -> FakeAdapter {
 pub async fn demo(dir: &Path, clock: Arc<dyn Clock>) -> Result<PathBuf, Box<dyn Error>> {
     let sandbox = Arc::new(ProcessSandbox::new());
     let spec = SandboxSpec {
-        workspace: dir.join("workspace"),
-        network: Network::None,
-        cpu_millis: None,
-        memory_bytes: None,
         time_limit_secs: Some(30),
+        ..SandboxSpec::new(dir.join("workspace"))
     };
     let handle = sandbox.start(&spec).await?;
 

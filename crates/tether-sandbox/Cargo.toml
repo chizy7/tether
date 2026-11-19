@@ -14,6 +14,12 @@ tokio = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+seccompiler = "0.5"
+
 [features]
 default = ["process"]
 process = []

@@ -23,7 +23,7 @@ use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, Role, ToolDef};
 use tether_policy::{KillSwitch, RulePolicy};
 use tether_sandbox::process::ProcessSandbox;
-use tether_sandbox::{Network, Sandbox, SandboxSpec};
+use tether_sandbox::{Sandbox, SandboxSpec};
 use tether_types::RunId;
 use tokio::sync::{mpsc, Mutex};
 
@@ -189,11 +189,8 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
 
     let sandbox = Arc::new(ProcessSandbox::new());
     let spec = SandboxSpec {
-        workspace: dir.join("workspace"),
-        network: Network::None,
-        cpu_millis: None,
-        memory_bytes: None,
         time_limit_secs: Some(60),
+        ..SandboxSpec::new(dir.join("workspace"))
     };
     let handle = sandbox.start(&spec).await?;
 
