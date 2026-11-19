@@ -114,6 +114,10 @@ has no `model.request` or `tool.call` for the refused call: the next event is
 a `run.state` of `halted` whose reason is `budget exceeded: <key> (<used> of
 <limit>)`, where `<key>` is the `[budget]` key that was spent.
 
+The kill switch is checked at the same point, and while a run is suspended
+on an ask. Its halt reason is `kill switch: SIGINT` or `kill switch: halt
+file <path>`.
+
 `step` is 0 for the events before the first model request. Each
 `model.request` opens the next step.
 

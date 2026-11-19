@@ -7,11 +7,12 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use serde_json::json;
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::{Block, Completion, CompletionRequest, ModelAdapter, ModelError};
-use tether_policy::{budget, OnTimeout, Policy, RunCtx, Verdict};
+use tether_policy::{budget, KillSwitch, OnTimeout, Policy, RunCtx, Verdict};
 use tether_trace::{NewEvent, TraceError, TraceWriter};
 use tether_types::{
     BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, RunId,
@@ -54,8 +55,14 @@ pub struct RunDeps {
     pub policy: Arc<dyn Policy>,
     /// Who answers a `policy.ask`. [`crate::Unattended`] if nobody can.
     pub answerer: Arc<dyn Answerer>,
+    /// Stops the run from outside. `Run::start` also makes it watch the
+    /// halt file, `<run>.halt` beside the trace.
+    pub kill: KillSwitch,
     pub clock: Arc<dyn Clock>,
 }
+
+/// How often a run waiting on an ask looks at the kill switch.
+const KILL_POLL: Duration = Duration::from_millis(100);
 
 /// How an ask came out, when the run goes on.
 enum Answer {
@@ -79,6 +86,7 @@ impl Run {
     pub async fn start(config: RunConfig, deps: RunDeps) -> Result<Self, RunError> {
         let tools = deps.tools.list_tools().await?;
         let limits = deps.policy.limits();
+        deps.kill.watch_file(config.trace.with_extension("halt"));
         let writer = TraceWriter::create(&config.trace, config.run)?;
         let mut run = Self {
             trace: TraceHandle::spawn(writer),
@@ -129,6 +137,7 @@ impl Run {
     /// does a spent budget, before anything is asked of the model.
     pub async fn complete(&mut self, req: CompletionRequest) -> Result<Completion, RunError> {
         self.ensure_running()?;
+        self.check_kill().await?;
         self.check_budget().await?;
         self.step += 1;
 
@@ -225,6 +234,7 @@ impl Run {
         arguments: serde_json::Value,
     ) -> Result<ToolResult, RunError> {
         self.ensure_running()?;
+        self.check_kill().await?;
         self.check_budget().await?;
         let (call, known) = self.resolve(id, name, arguments);
         let asked = self.emit(None, EventType::ToolCall(call.clone())).await?;
@@ -322,6 +332,16 @@ impl Run {
         self.budget.wall_secs_used = elapsed_ms / 1000;
     }
 
+    /// Halt if the kill switch is tripped. Like the budget check this runs
+    /// ahead of a call's first event: a call already in flight finishes and
+    /// is recorded, and the run stops at the boundary after it.
+    async fn check_kill(&mut self) -> Result<(), RunError> {
+        match self.deps.kill.tripped() {
+            Some(why) => Err(self.halt(format!("kill switch: {why}")).await),
+            None => Ok(()),
+        }
+    }
+
     /// Halt if a budget is spent. Runs before every model and tool call,
     /// ahead of its first event, so a halted run ends on an event boundary
     /// and the refused call is not half recorded.
@@ -393,7 +413,8 @@ impl Run {
     /// Record a `policy.ask`, suspend, and wait for the answerer.
     ///
     /// An answer is recorded as `policy.answer` and the run goes back to
-    /// `Running`. With no answer the run halts, unless the rule that asked
+    /// `Running`. The kill switch halts the run while it waits. With no
+    /// answer the run halts too, unless the rule that asked
     /// set `on_timeout = "deny"`: then the timeout is recorded as a denial
     /// answered by `"timeout"` and the run goes on.
     async fn ask(
@@ -412,7 +433,30 @@ impl Run {
             .await?;
         self.transition(RunState::Suspended, "policy.ask").await?;
 
-        let (allow, answered_by) = match self.deps.answerer.answer(&request).await {
+        // A suspended run is between events, so the kill switch can stop it
+        // here without waiting for the answer.
+        let answerer = self.deps.answerer.clone();
+        let kill = self.deps.kill.clone();
+        let outcome = {
+            let answer = answerer.answer(&request);
+            tokio::pin!(answer);
+            loop {
+                tokio::select! {
+                    outcome = &mut answer => break Ok(outcome),
+                    () = tokio::time::sleep(KILL_POLL) => {
+                        if let Some(why) = kill.tripped() {
+                            break Err(why);
+                        }
+                    }
+                }
+            }
+        };
+        let outcome = match outcome {
+            Ok(outcome) => outcome,
+            Err(why) => return Err(self.halt(format!("kill switch: {why}")).await),
+        };
+
+        let (allow, answered_by) = match outcome {
             AskOutcome::Answered { allow, answered_by } => (allow, answered_by),
             AskOutcome::Unanswered { .. } if verdict.on_timeout == OnTimeout::Deny => {
                 (false, "timeout".to_owned())

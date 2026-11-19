@@ -20,7 +20,7 @@ use tether_core::{Clock, Run, RunConfig, RunDeps, RunError, SystemClock, Unatten
 use tether_mcp::sandbox_server::SandboxServer;
 use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, Role, ToolDef};
-use tether_policy::AllowAll;
+use tether_policy::{AllowAll, KillSwitch};
 use tether_sandbox::process::ProcessSandbox;
 use tether_sandbox::{Network, Sandbox, SandboxSpec};
 use tether_types::RunId;
@@ -114,6 +114,7 @@ pub async fn demo(dir: &Path, clock: Arc<dyn Clock>) -> Result<PathBuf, Box<dyn 
         tools: Arc::new(SandboxServer::new(sandbox, handle)),
         policy: Arc::new(AllowAll),
         answerer: Arc::new(Unattended),
+        kill: KillSwitch::new(),
         clock,
     };
 

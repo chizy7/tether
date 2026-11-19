@@ -11,7 +11,7 @@ use tether_core::{
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::fake::FakeAdapter;
 use tether_models::{Completion, CompletionRequest, Message, Role};
-use tether_policy::{AllowAll, Policy, RulePolicy, RunCtx, Verdict};
+use tether_policy::{AllowAll, KillSwitch, Policy, RulePolicy, RunCtx, Verdict};
 use tether_trace::{verify, TraceReader};
 use tether_types::{
     Decision, Event, EventType, Payload, RunId, RunState, ToolCall, ToolResult, Usage,
@@ -146,6 +146,7 @@ async fn start_with(
         tools,
         policy,
         answerer: Arc::new(Unattended),
+        kill: KillSwitch::new(),
         clock,
     };
     Run::start(config, deps).await
@@ -214,6 +215,7 @@ async fn ask_run(
         tools: tools.clone(),
         policy: Arc::new(RulePolicy::from_toml(policy).expect("policy")),
         answerer,
+        kill: KillSwitch::new(),
         clock: StepClock::new(),
     };
     let mut run = Run::start(config, deps).await.expect("start");
@@ -818,4 +820,209 @@ async fn default_ask_timeout_is_600_seconds() {
     let (_, _, _run, result) = ask_run("ask_default_timeout", policy, answerer.clone()).await;
     result.expect("tool call");
     assert_eq!(answerer.asked()[0].timeout_secs, 600);
+}
+
+/// A run with the echo tool, allow-all policy and the given kill switch and
+/// answerer, one completion in.
+async fn kill_run(
+    test: &str,
+    policy: Arc<dyn Policy>,
+    answerer: Arc<dyn Answerer>,
+    kill: KillSwitch,
+) -> (PathBuf, Arc<EchoTools>, Run) {
+    let path = trace_path(test);
+    let tools = Arc::new(EchoTools::default());
+    let config = RunConfig {
+        run: RunId("run_test".into()),
+        agent: "main".into(),
+        trace: path.clone(),
+    };
+    let deps = RunDeps {
+        model: Arc::new(script()),
+        tools: tools.clone(),
+        policy,
+        answerer,
+        kill,
+        clock: StepClock::new(),
+    };
+    let mut run = Run::start(config, deps).await.expect("start");
+    run.complete(request("say hi")).await.expect("completion");
+    (path, tools, run)
+}
+
+#[tokio::test]
+async fn tripped_kill_switch_halts_before_the_next_call() {
+    let kill = KillSwitch::new();
+    let (path, tools, mut run) = kill_run(
+        "kill_trip",
+        Arc::new(AllowAll),
+        Arc::new(Unattended),
+        kill.clone(),
+    )
+    .await;
+    run.call_tool("call_1", "sandbox.echo", json!({}))
+        .await
+        .expect("before the kill");
+
+    kill.trip("SIGINT");
+    let err = run
+        .call_tool("call_2", "sandbox.echo", json!({}))
+        .await
+        .expect_err("killed");
+    assert!(
+        matches!(&err, RunError::Halted { reason } if reason == "kill switch: SIGINT"),
+        "{err}"
+    );
+    assert_eq!(run.state(), RunState::Halted);
+    assert_eq!(tools.calls.load(Ordering::SeqCst), 1);
+    assert!(matches!(
+        run.complete(request("again")).await,
+        Err(RunError::NotRunning(RunState::Halted))
+    ));
+    drop(run);
+
+    // The refused call left nothing behind and the trace is whole.
+    let (reason, before) = halt_of(&path);
+    assert_eq!(
+        (reason.as_str(), before.as_str()),
+        ("kill switch: SIGINT", "budget.tick")
+    );
+    verify(&path).expect("verify");
+}
+
+#[tokio::test]
+async fn halt_file_beside_the_trace_halts_the_run() {
+    let (path, _, mut run) = kill_run(
+        "kill_file",
+        Arc::new(AllowAll),
+        Arc::new(Unattended),
+        KillSwitch::new(),
+    )
+    .await;
+    let halt_file = path.with_extension("halt");
+    fs::write(&halt_file, "").expect("write halt file");
+
+    let err = run.complete(request("next")).await.expect_err("killed");
+    let expected = format!("kill switch: halt file {}", halt_file.display());
+    assert!(
+        matches!(&err, RunError::Halted { reason } if *reason == expected),
+        "{err}"
+    );
+    // The step did not advance: the model was never asked.
+    assert_eq!(run.step(), 1);
+    drop(run);
+    assert_eq!(halt_of(&path).0, expected);
+    verify(&path).expect("verify");
+}
+
+/// A tool that trips the kill switch while it runs.
+struct TripsWhileRunning {
+    kill: KillSwitch,
+}
+
+#[async_trait]
+impl McpClient for TripsWhileRunning {
+    async fn list_tools(&self) -> Result<Vec<ToolSpec>, McpError> {
+        EchoTools::default().list_tools().await
+    }
+
+    async fn call(&self, call: &ToolCall) -> Result<ToolResult, McpError> {
+        self.kill.trip("SIGINT");
+        EchoTools::default().call(call).await
+    }
+}
+
+#[tokio::test]
+async fn a_call_in_flight_when_the_switch_trips_is_finished_and_recorded() {
+    let path = trace_path("kill_in_flight");
+    let kill = KillSwitch::new();
+    let config = RunConfig {
+        run: RunId("run_test".into()),
+        agent: "main".into(),
+        trace: path.clone(),
+    };
+    let deps = RunDeps {
+        model: Arc::new(script()),
+        tools: Arc::new(TripsWhileRunning { kill: kill.clone() }),
+        policy: Arc::new(AllowAll),
+        answerer: Arc::new(Unattended),
+        kill,
+        clock: StepClock::new(),
+    };
+    let mut run = Run::start(config, deps).await.expect("start");
+    run.complete(request("say hi")).await.expect("completion");
+
+    // The call that was running comes back whole.
+    let result = run
+        .call_tool("call_1", "sandbox.echo", json!({"say": "hi"}))
+        .await
+        .expect("in-flight call completes");
+    assert!(!result.is_error);
+
+    let err = run.complete(request("next")).await.expect_err("killed");
+    assert!(matches!(err, RunError::Halted { .. }), "{err}");
+    drop(run);
+
+    let types: Vec<String> = read(&path).iter().skip(6).map(type_of).collect();
+    assert_eq!(
+        types,
+        [
+            "tool.call",
+            "policy.decision",
+            "tool.result",
+            "budget.tick",
+            "run.state"
+        ]
+    );
+    verify(&path).expect("verify");
+}
+
+/// Never answers, like a prompt nobody is typing at.
+struct Silent;
+
+#[async_trait]
+impl Answerer for Silent {
+    async fn answer(&self, _ask: &AskRequest) -> AskOutcome {
+        std::future::pending().await
+    }
+}
+
+#[tokio::test]
+async fn kill_switch_stops_a_run_waiting_on_an_ask() {
+    let kill = KillSwitch::new();
+    let policy = Arc::new(RulePolicy::from_toml(ASK_ECHO).expect("policy"));
+    let (path, tools, mut run) =
+        kill_run("kill_during_ask", policy, Arc::new(Silent), kill.clone()).await;
+
+    let tripper = tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        kill.trip("SIGINT");
+    });
+    let err = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        run.call_tool("call_1", "sandbox.echo", json!({})),
+    )
+    .await
+    .expect("the ask must not wait forever")
+    .expect_err("killed");
+    tripper.await.expect("tripper");
+
+    assert!(
+        matches!(&err, RunError::Halted { reason } if reason == "kill switch: SIGINT"),
+        "{err}"
+    );
+    assert_eq!(tools.calls.load(Ordering::SeqCst), 0);
+    drop(run);
+    // Suspended, then halted, with no answer.
+    assert_eq!(
+        tail(&path),
+        [
+            "tool.call",
+            "policy.decision",
+            "policy.ask",
+            "run.state",
+            "run.state"
+        ]
+    );
+    verify(&path).expect("verify");
 }

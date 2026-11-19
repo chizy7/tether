@@ -243,3 +243,107 @@ fn run_rejects_a_bad_policy_before_starting() {
     );
     assert!(!dir.join("out").exists());
 }
+
+/// Start the scripted run with stdin held open, wait until it is sitting at
+/// the `rm` prompt, do `stop` to it, and return how it ended.
+#[cfg(unix)]
+fn stop_at_the_prompt(test: &str, stop: impl FnOnce(u32, &std::path::Path)) -> (PathBuf, Output) {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(test);
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("create test dir");
+    fs::write(dir.join("script.json"), SCRIPT).expect("write script");
+    fs::write(dir.join("tether.toml"), POLICY).expect("write policy");
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tether"))
+        .arg("run")
+        .arg("--script")
+        .arg(dir.join("script.json"))
+        .arg("--policy")
+        .arg(dir.join("tether.toml"))
+        .arg("--dir")
+        .arg(dir.join("out"))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn tether");
+    // Held, not written to: the prompt gets no answer.
+    let stdin = child.stdin.take().expect("stdin");
+
+    let asked = |dir: &std::path::Path| {
+        let entries = fs::read_dir(dir.join("out")).ok()?;
+        let trace = entries
+            .filter_map(|entry| Some(entry.ok()?.path()))
+            .find(|path| path.extension().is_some_and(|ext| ext == "jsonl"))?;
+        fs::read_to_string(&trace)
+            .ok()?
+            .contains("\"policy.ask\"")
+            .then_some(trace)
+    };
+    let mut trace = None;
+    for _ in 0..200 {
+        trace = asked(&dir);
+        if trace.is_some() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    let trace = trace.expect("the run never reached the prompt");
+
+    stop(child.id(), &trace);
+    let out = child.wait_with_output().expect("wait");
+    drop(stdin);
+    (dir, out)
+}
+
+#[cfg(unix)]
+#[test]
+fn sigint_at_the_prompt_halts_the_run_and_the_trace_says_why() {
+    let (dir, out) = stop_at_the_prompt("cli_sigint", |pid, _| {
+        let status = Command::new("kill")
+            .args(["-INT", &pid.to_string()])
+            .status()
+            .expect("send SIGINT");
+        assert!(status.success());
+    });
+
+    assert!(!out.status.success());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("run halted: kill switch: SIGINT"),
+        "{stderr}"
+    );
+    // The file the agent wanted gone is still there.
+    assert!(dir.join("out/workspace/notes.txt").exists());
+
+    let trace = inspect_run(&dir);
+    assert!(
+        trace.trim_end().ends_with("halted: kill switch: sigint"),
+        "{trace}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn halt_file_at_the_prompt_halts_the_run() {
+    let (dir, out) = stop_at_the_prompt("cli_halt_file", |_, trace| {
+        fs::write(trace.with_extension("halt"), "").expect("write halt file");
+    });
+
+    assert!(!out.status.success());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("run halted: kill switch: halt file"),
+        "{stderr}"
+    );
+    assert!(dir.join("out/workspace/notes.txt").exists());
+
+    // Stopped between events: the chain is intact.
+    let trace = fs::read_dir(dir.join("out"))
+        .expect("read out dir")
+        .filter_map(|entry| Some(entry.ok()?.path()))
+        .find(|path| path.extension().is_some_and(|ext| ext == "jsonl"))
+        .expect("a trace");
+    let verified = tether(&["verify", trace.to_str().expect("utf-8 path")]);
+    assert!(verified.status.success(), "{verified:?}");
+}

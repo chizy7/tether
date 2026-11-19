@@ -9,10 +9,12 @@ use tether_types::{Decision, ModelRequest, ToolCall};
 pub mod budget;
 pub mod config;
 pub mod glob;
+pub mod kill;
 pub mod rules;
 
 pub use budget::Limits;
 pub use config::{OnTimeout, PolicyConfig};
+pub use kill::KillSwitch;
 pub use rules::RulePolicy;
 
 #[derive(Debug, thiserror::Error)]
@@ -94,7 +96,3 @@ impl Policy for AllowAll {
 
 /// Default when nobody answers a `policy.ask`, in seconds.
 pub const DEFAULT_ASK_TIMEOUT_SECS: u64 = 600;
-
-pub mod kill {
-    //! File-watch and Unix-signal kill switch; halts at the next event boundary.
-}

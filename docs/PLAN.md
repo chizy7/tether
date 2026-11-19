@@ -71,7 +71,7 @@ in this order; each item is one PR.
 - [x] Policy snapshot (full TOML) recorded in `run.created.policy`, replacing the `null`
 - [x] Budget enforcement: check tokens, usd, wall clock and tool calls before every model and tool call; emit `budget.tick` after each; a tripped budget halts with `run.state` reason naming the budget
 - [x] `ask` answered from the CLI prompt in `tether run`; `ask_timeout_secs` (default 600) moves the run to Halted; `on_timeout = "deny"` per rule
-- [ ] Kill switch: `<run>.halt` file watch plus SIGINT, both halt at the next event boundary, never mid-write
+- [x] Kill switch: `<run>.halt` file watch plus SIGINT, both halt at the next event boundary, never mid-write
 - [ ] `process` backend: rlimits (cpu, memory, open files) and the Linux seccomp filter; then make the README's sandbox paragraph true
 - [ ] `docker` backend behind the `docker` feature: workspace mount, network namespace per `SandboxSpec.network`, snapshot via `commit`
 - [ ] Demo: `examples/refuses` with a scripted `fake` run that attempts `rm -rf`; GIF of the blocked call in `inspect`

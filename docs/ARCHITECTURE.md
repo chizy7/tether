@@ -119,8 +119,16 @@ call returns, so the call that crosses one of those completes and the next is
 refused; a long-running tool is not interrupted. Only dispatched tool calls
 count, not denied ones. A `budget.tick` follows every call.
 
-The kill switch is a file watch plus a Unix signal; either halts at the next
-event boundary, never mid-write.
+The kill switch stops a run from outside. Two things trip it: SIGINT (Ctrl-C
+in `tether run`) and a halt file, `<run>.halt` beside the trace, which trips
+it by existing (`touch run_123.halt`). Tripping only sets a flag. The run
+loop looks at it ahead of every model and tool call and while it waits on an
+`ask`, and halts there with a `run.state` reason of `kill switch: SIGINT` or
+`kill switch: halt file <path>`. A run is therefore never stopped in the
+middle of writing an event. A call already in flight is not interrupted: it
+finishes, its result is recorded, and the run halts at the boundary after it.
+A second Ctrl-C exits at once, for a run stuck inside a long call. The halt
+file is left in place; remove it before resuming.
 
 The engine decides; it does not inspect model output for intent and it does
 not sandbox. The sandbox enforces.

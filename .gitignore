@@ -2,6 +2,7 @@
 **/*.rs.bk
 *.jsonl
 *.blobs/
+*.halt
 .env
 .DS_Store
 node_modules/

@@ -21,7 +21,7 @@ use tether_core::{
 use tether_mcp::sandbox_server::SandboxServer;
 use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, Role, ToolDef};
-use tether_policy::RulePolicy;
+use tether_policy::{KillSwitch, RulePolicy};
 use tether_sandbox::process::ProcessSandbox;
 use tether_sandbox::{Network, Sandbox, SandboxSpec};
 use tether_types::RunId;
@@ -98,6 +98,24 @@ impl Answerer for TerminalAnswerer {
             };
         }
     }
+}
+
+/// A kill switch tripped by Ctrl-C. The first one halts the run at its next
+/// event boundary, so the trace ends with the reason; a second one, for a run
+/// stuck inside a long call, exits at once.
+fn kill_on_sigint() -> KillSwitch {
+    let kill = KillSwitch::new();
+    let handle = kill.clone();
+    tokio::spawn(async move {
+        if tokio::signal::ctrl_c().await.is_ok() {
+            handle.trip("SIGINT");
+            eprintln!("\nhalting at the next event boundary; Ctrl-C again to exit now");
+        }
+        if tokio::signal::ctrl_c().await.is_ok() {
+            std::process::exit(130);
+        }
+    });
+    kill
 }
 
 /// The agent loop: ask the model, run the tools it asks for, feed the
@@ -194,6 +212,7 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
         tools: Arc::new(SandboxServer::new(sandbox, handle)),
         policy: Arc::new(policy),
         answerer: Arc::new(TerminalAnswerer::default()),
+        kill: kill_on_sigint(),
         clock,
     };
 
