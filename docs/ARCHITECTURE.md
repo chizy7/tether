@@ -43,12 +43,15 @@ blobs; `tether pack` bundles both into one tar.
 ## Policy engine
 
 Rules in `tether.toml`, evaluated top to bottom, first match wins, default
-`ask`. Loaded once per run and snapshotted into `run.created`.
+`ask`. Loaded once per run and snapshotted into `run.created.policy` as the
+full text of the file, comments included, so a trace says what rules the run
+was held to and the policy can be rebuilt from the trace alone.
 
 ```rust
 pub trait Policy: Send + Sync {
     fn decide(&self, call: &ToolCall, ctx: &RunCtx) -> Verdict;
     fn decide_model(&self, req: &ModelRequest, ctx: &RunCtx) -> Verdict; // default: allow
+    fn snapshot(&self) -> Option<String>; // full TOML; default: None
 }
 pub struct Verdict { decision: Decision, rule: Option<String> }
 pub enum Decision { Allow, Deny { reason: String }, Ask { prompt: String } }

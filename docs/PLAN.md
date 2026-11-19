@@ -68,7 +68,7 @@ Demo that closes the phase: the agent asks to run `rm -rf`, policy blocks it,
 in this order; each item is one PR.
 
 - [x] TOML rule engine in `tether-policy`: `[[rule]]` tables, `match` on tool name, `argv0` and `path` globs, first match wins, default `ask`; the matched rule's name goes into `policy.decision.rule`
-- [ ] Policy snapshot (full TOML) recorded in `run.created.policy`, replacing the `null`
+- [x] Policy snapshot (full TOML) recorded in `run.created.policy`, replacing the `null`
 - [ ] Budget enforcement: check tokens, usd, wall clock and tool calls before every model and tool call; emit `budget.tick` after each; a tripped budget halts with `run.state` reason naming the budget
 - [ ] `ask` answered from the CLI prompt in `tether run`; `ask_timeout_secs` (default 600) moves the run to Halted; `on_timeout = "deny"` per rule
 - [ ] Kill switch: `<run>.halt` file watch plus SIGINT, both halt at the next event boundary, never mid-write

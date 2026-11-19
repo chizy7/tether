@@ -83,7 +83,7 @@ impl Run {
         let created = json!({
             "agent": run.agent,
             "model": { "provider": run.deps.model.id() },
-            "policy": null,
+            "policy": run.deps.policy.snapshot(),
             "sandbox": null,
             "tools": run.tools.iter().map(|t| json!({
                 "name": t.name,

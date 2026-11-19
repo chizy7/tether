@@ -1,6 +1,6 @@
 use serde_json::{json, Value};
 use tether_policy::config::{Action, OnTimeout};
-use tether_policy::{Policy, PolicyConfig, PolicyError, RulePolicy, RunCtx, Verdict};
+use tether_policy::{AllowAll, Policy, PolicyConfig, PolicyError, RulePolicy, RunCtx, Verdict};
 use tether_types::{Decision, ToolCall};
 
 const EXAMPLE: &str = include_str!("../../../tether.example.toml");
@@ -366,4 +366,17 @@ fn mistakes_in_the_file_are_errors() {
             other => panic!("expected InvalidRule for {text}, got {other}"),
         }
     }
+}
+
+#[test]
+fn snapshot_is_the_file_byte_for_byte() {
+    let policy = RulePolicy::from_toml(EXAMPLE).expect("example policy");
+    assert_eq!(policy.snapshot().as_deref(), Some(EXAMPLE));
+
+    // Loading the snapshot gives the same policy back.
+    let reloaded = RulePolicy::from_toml(&policy.snapshot().expect("snapshot")).expect("reload");
+    assert_eq!(reloaded, policy);
+
+    assert_eq!(RulePolicy::default().snapshot().as_deref(), Some(""));
+    assert_eq!(AllowAll.snapshot(), None);
 }

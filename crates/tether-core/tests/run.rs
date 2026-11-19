@@ -319,20 +319,20 @@ async fn model_error_halts_the_run() {
     assert_eq!(run.state(), RunState::Halted);
 }
 
+const NO_ECHO: &str = r#"
+# Comments are part of the snapshot too.
+[[rule]]
+name = "no-echo"
+match = { tool = "sandbox.echo" }
+action = "deny"
+reason = "echo is off limits"
+"#;
+
 #[tokio::test]
 async fn matched_rule_name_is_recorded_in_the_decision() {
     let path = trace_path("rule_name");
     let tools = Arc::new(EchoTools::default());
-    let policy = RulePolicy::from_toml(
-        r#"
-        [[rule]]
-        name = "no-echo"
-        match = { tool = "sandbox.echo" }
-        action = "deny"
-        reason = "echo is off limits"
-        "#,
-    )
-    .expect("policy");
+    let policy = RulePolicy::from_toml(NO_ECHO).expect("policy");
     let result = one_tool_run(&path, tools.clone(), Arc::new(policy)).await;
 
     assert!(result.is_error);
@@ -352,4 +352,32 @@ async fn matched_rule_name_is_recorded_in_the_decision() {
         .collect();
     // Model calls match no rule; the tool call names the rule that denied it.
     assert_eq!(rules, [None, Some("no-echo".to_owned()), None]);
+}
+
+#[tokio::test]
+async fn run_created_holds_the_policy_the_run_was_held_to() {
+    let path = trace_path("policy_snapshot");
+    let policy = RulePolicy::from_toml(NO_ECHO).expect("policy");
+    one_tool_run(&path, Arc::new(EchoTools::default()), Arc::new(policy)).await;
+
+    let EventType::RunCreated(created) = &read(&path)[0].body else {
+        panic!("not run.created")
+    };
+    assert_eq!(created["policy"], json!(NO_ECHO));
+
+    // The recorded text is enough to rebuild the policy and get the same rules.
+    let recorded = created["policy"].as_str().expect("policy text");
+    let rebuilt = RulePolicy::from_toml(recorded).expect("rebuild");
+    assert_eq!(rebuilt.config().rules[0].name, "no-echo");
+}
+
+#[tokio::test]
+async fn a_policy_with_no_file_snapshots_as_null() {
+    let path = trace_path("policy_snapshot_null");
+    one_tool_run(&path, Arc::new(EchoTools::default()), Arc::new(AllowAll)).await;
+
+    let EventType::RunCreated(created) = &read(&path)[0].body else {
+        panic!("not run.created")
+    };
+    assert!(created["policy"].is_null());
 }

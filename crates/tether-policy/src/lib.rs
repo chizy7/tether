@@ -55,6 +55,13 @@ pub trait Policy: Send + Sync {
     fn decide_model(&self, _req: &ModelRequest, _ctx: &RunCtx) -> Verdict {
         Decision::Allow.into()
     }
+
+    /// The policy as the full text of its TOML file, recorded in
+    /// `run.created` so a trace says what rules the run was held to. `None`
+    /// for a policy that did not come from a file.
+    fn snapshot(&self) -> Option<String> {
+        None
+    }
 }
 
 /// Allows everything, for tests and examples. Decisions are still recorded

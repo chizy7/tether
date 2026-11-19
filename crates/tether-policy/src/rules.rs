@@ -16,15 +16,16 @@ use crate::{Policy, PolicyError, RunCtx, Verdict};
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RulePolicy {
     config: PolicyConfig,
+    /// The file the config was parsed from, byte for byte.
+    source: String,
 }
 
 impl RulePolicy {
-    pub fn new(config: PolicyConfig) -> Self {
-        Self { config }
-    }
-
     pub fn from_toml(text: &str) -> Result<Self, PolicyError> {
-        Ok(Self::new(PolicyConfig::from_toml(text)?))
+        Ok(Self {
+            config: PolicyConfig::from_toml(text)?,
+            source: text.to_owned(),
+        })
     }
 
     pub fn config(&self) -> &PolicyConfig {
@@ -68,6 +69,12 @@ impl Policy for RulePolicy {
             decision,
             rule: Some(rule.name.clone()),
         }
+    }
+
+    /// The file as it was read, comments included. An empty policy, where
+    /// every call asks, snapshots as the empty string.
+    fn snapshot(&self) -> Option<String> {
+        Some(self.source.clone())
     }
 }
 
