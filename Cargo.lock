@@ -566,9 +566,15 @@ name = "tether-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "clap",
+ "serde",
  "serde_json",
  "tether-core",
+ "tether-mcp",
+ "tether-models",
+ "tether-policy",
+ "tether-sandbox",
  "tether-trace",
  "tether-types",
  "time",

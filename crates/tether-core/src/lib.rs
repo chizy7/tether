@@ -32,9 +32,11 @@ impl Clock for SystemClock {
     }
 }
 
+pub mod ask;
 pub mod run;
 mod trace_task;
 
+pub use ask::{Answerer, AskOutcome, AskRequest, Unattended};
 pub use run::{Run, RunConfig, RunDeps, RunError};
 
 pub mod checkpoint {

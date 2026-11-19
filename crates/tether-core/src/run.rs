@@ -11,7 +11,7 @@ use std::sync::Arc;
 use serde_json::json;
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::{Block, Completion, CompletionRequest, ModelAdapter, ModelError};
-use tether_policy::{budget, Policy, RunCtx, Verdict};
+use tether_policy::{budget, OnTimeout, Policy, RunCtx, Verdict};
 use tether_trace::{NewEvent, TraceError, TraceWriter};
 use tether_types::{
     BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, RunId,
@@ -19,6 +19,7 @@ use tether_types::{
 };
 use time::OffsetDateTime;
 
+use crate::ask::{Answerer, AskOutcome, AskRequest};
 use crate::trace_task::TraceHandle;
 use crate::Clock;
 
@@ -51,7 +52,15 @@ pub struct RunDeps {
     pub model: Arc<dyn ModelAdapter>,
     pub tools: Arc<dyn McpClient>,
     pub policy: Arc<dyn Policy>,
+    /// Who answers a `policy.ask`. [`crate::Unattended`] if nobody can.
+    pub answerer: Arc<dyn Answerer>,
     pub clock: Arc<dyn Clock>,
+}
+
+/// How an ask came out, when the run goes on.
+enum Answer {
+    Allow,
+    Deny { by: String },
 }
 
 pub struct Run {
@@ -140,12 +149,16 @@ impl Run {
 
         let verdict = self.deps.policy.decide_model(&request, &self.ctx());
         self.record_decision(asked.seq, verdict.clone()).await?;
-        match verdict.decision {
+        match verdict.decision.clone() {
             Decision::Allow => {}
             Decision::Deny { reason } => {
                 return Err(self.halt(format!("model call denied: {reason}")).await);
             }
-            Decision::Ask { prompt } => return Err(self.ask(asked.seq, prompt).await),
+            Decision::Ask { prompt } => {
+                if let Answer::Deny { by } = self.ask(asked.seq, prompt, &verdict).await? {
+                    return Err(self.halt(format!("model call denied by {by}")).await);
+                }
+            }
         }
 
         let sent_ms = self.deps.clock.now_ms();
@@ -202,7 +215,9 @@ impl Run {
     /// Trace: `tool.call`, `policy.decision`, `tool.result`, `budget.tick`. A
     /// denied call, an unknown tool and a failed dispatch all come back as an
     /// ordinary result with `is_error` set, so the agent sees a normal failed
-    /// call. A spent budget halts the run before the call is recorded.
+    /// call, and so does an `ask` that is answered no. A spent budget halts
+    /// the run before the call is recorded; an `ask` nobody answers halts it
+    /// after.
     pub async fn call_tool(
         &mut self,
         id: &str,
@@ -230,8 +245,17 @@ impl Run {
             is_error: true,
             duration_ms: 0,
         };
-        let result = match verdict.decision {
-            Decision::Allow => {
+        let denied = match verdict.decision.clone() {
+            Decision::Allow => None,
+            Decision::Deny { reason } => Some(format!("denied by policy: {reason}")),
+            Decision::Ask { prompt } => match self.ask(asked.seq, prompt, &verdict).await? {
+                Answer::Allow => None,
+                Answer::Deny { by } => Some(format!("denied by {by}")),
+            },
+        };
+        let result = match denied {
+            Some(why) => failed(why),
+            None => {
                 self.budget.tool_calls_used += 1;
                 let sent_ms = self.deps.clock.now_ms();
                 let outcome = self.deps.tools.call(&call).await;
@@ -240,8 +264,6 @@ impl Run {
                 result.duration_ms = duration_ms;
                 result
             }
-            Decision::Deny { reason } => failed(format!("denied by policy: {reason}")),
-            Decision::Ask { prompt } => return Err(self.ask(asked.seq, prompt).await),
         };
 
         // The trace may hold a blob reference; the agent gets the content.
@@ -368,17 +390,50 @@ impl Run {
         }
     }
 
-    /// Record a `policy.ask` and suspend. Nothing can answer an ask until the
-    /// CLI prompt lands in v0.2, so the run then halts, as an unattended ask
-    /// does on timeout.
-    async fn ask(&mut self, subject: u64, prompt: String) -> RunError {
-        let body = EventType::PolicyAsk { subject, prompt };
-        if let Err(e) = self.emit(Some(subject), body).await {
-            return e;
-        }
-        if let Err(e) = self.transition(RunState::Suspended, "policy.ask").await {
-            return e;
-        }
-        self.halt("ask cannot be answered before v0.2".into()).await
+    /// Record a `policy.ask`, suspend, and wait for the answerer.
+    ///
+    /// An answer is recorded as `policy.answer` and the run goes back to
+    /// `Running`. With no answer the run halts, unless the rule that asked
+    /// set `on_timeout = "deny"`: then the timeout is recorded as a denial
+    /// answered by `"timeout"` and the run goes on.
+    async fn ask(
+        &mut self,
+        subject: u64,
+        prompt: String,
+        verdict: &Verdict,
+    ) -> Result<Answer, RunError> {
+        let request = AskRequest {
+            subject,
+            prompt: prompt.clone(),
+            rule: verdict.rule.clone(),
+            timeout_secs: self.deps.policy.ask_timeout_secs(),
+        };
+        self.emit(Some(subject), EventType::PolicyAsk { subject, prompt })
+            .await?;
+        self.transition(RunState::Suspended, "policy.ask").await?;
+
+        let (allow, answered_by) = match self.deps.answerer.answer(&request).await {
+            AskOutcome::Answered { allow, answered_by } => (allow, answered_by),
+            AskOutcome::Unanswered { .. } if verdict.on_timeout == OnTimeout::Deny => {
+                (false, "timeout".to_owned())
+            }
+            AskOutcome::Unanswered { waited_secs } => {
+                let reason = format!("ask unanswered after {waited_secs} s");
+                return Err(self.halt(reason).await);
+            }
+        };
+        let body = EventType::PolicyAnswer {
+            subject,
+            answered_by: answered_by.clone(),
+            allow,
+        };
+        self.emit(Some(subject), body).await?;
+        let reason = if allow { "ask allowed" } else { "ask denied" };
+        self.transition(RunState::Running, reason).await?;
+        Ok(if allow {
+            Answer::Allow
+        } else {
+            Answer::Deny { by: answered_by }
+        })
     }
 }

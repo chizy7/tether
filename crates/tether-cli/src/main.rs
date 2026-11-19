@@ -1,8 +1,11 @@
 use std::io::{self, Write};
+use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use tether_trace::{verify, TraceReader};
 use tether_types::{Decision, Event, EventType, Payload};
+
+mod run;
 
 #[derive(Parser)]
 #[command(
@@ -17,8 +20,20 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Start a run under a policy.
-    Run,
+    /// Run a scripted agent under a policy, asking at the terminal when
+    /// policy says `ask`.
+    Run {
+        /// JSON script: `{"task": "...", "replies": [[<content block>, ...], ...]}`,
+        /// one list of blocks per model turn.
+        #[arg(long)]
+        script: PathBuf,
+        /// Policy file. Without one there are no rules, so every call asks.
+        #[arg(long)]
+        policy: Option<PathBuf>,
+        /// Where the trace and the sandbox workspace go.
+        #[arg(long, default_value = ".tether")]
+        dir: PathBuf,
+    },
     /// Re-run a recorded trace with no network and no cost.
     Replay { run: String },
     /// Align two traces by step and report where they diverge.
@@ -35,11 +50,16 @@ enum Cmd {
     Pack { run: String },
 }
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt().with_env_filter("info").init();
     let cli = Cli::parse();
     let result = match cli.cmd {
-        Cmd::Run => todo!("v0.1"),
+        Cmd::Run {
+            script,
+            policy,
+            dir,
+        } => run::run(&script, policy.as_deref(), &dir).await,
         Cmd::Inspect { run } => inspect(&run),
         Cmd::Verify { run } => verify_trace(&run),
         Cmd::Replay { .. } | Cmd::Diff { .. } | Cmd::Resume { .. } | Cmd::Pack { .. } => {

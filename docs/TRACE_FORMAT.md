@@ -97,6 +97,15 @@ For every model call: `model.request`, `policy.decision`, `model.response`.
 A denied model call, or one the provider fails, has no `model.response`; the
 next event is the `run.state` that halts the run.
 
+When the decision is `ask`, four events sit between the `policy.decision` and
+the result: `policy.ask`, a `run.state` of `suspended`, `policy.answer`, and a
+`run.state` of `running`. An answer of no gives a `tool.result` with
+`is_error: true`; for a model call it halts the run instead. `answered_by` is
+`"cli"` for the terminal prompt and `"timeout"` when a rule's
+`on_timeout = "deny"` turned an unanswered ask into a denial. An ask that
+goes unanswered without that setting has no `policy.answer`: the `suspended`
+state is followed by `halted` with the reason `ask unanswered after <n> s`.
+
 Every `model.response` and every `tool.result` is followed by a `budget.tick`
 with the same `parent`, holding the budget after that call.
 

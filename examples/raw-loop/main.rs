@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use serde_json::json;
-use tether_core::{Clock, Run, RunConfig, RunDeps, RunError, SystemClock};
+use tether_core::{Clock, Run, RunConfig, RunDeps, RunError, SystemClock, Unattended};
 use tether_mcp::sandbox_server::SandboxServer;
 use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, Role, ToolDef};
@@ -113,6 +113,7 @@ pub async fn demo(dir: &Path, clock: Arc<dyn Clock>) -> Result<PathBuf, Box<dyn 
         model: Arc::new(script()),
         tools: Arc::new(SandboxServer::new(sandbox, handle)),
         policy: Arc::new(AllowAll),
+        answerer: Arc::new(Unattended),
         clock,
     };
 

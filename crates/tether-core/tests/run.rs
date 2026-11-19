@@ -1,11 +1,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use serde_json::json;
-use tether_core::{Clock, Run, RunConfig, RunDeps, RunError};
+use tether_core::{
+    Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, Unattended,
+};
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::fake::FakeAdapter;
 use tether_models::{Completion, CompletionRequest, Message, Role};
@@ -143,9 +145,88 @@ async fn start_with(
         model,
         tools,
         policy,
+        answerer: Arc::new(Unattended),
         clock,
     };
     Run::start(config, deps).await
+}
+
+/// Gives the same outcome to every ask and remembers what it was asked.
+struct Scripted {
+    outcome: AskOutcome,
+    asked: Mutex<Vec<AskRequest>>,
+}
+
+impl Scripted {
+    fn new(outcome: AskOutcome) -> Arc<Self> {
+        Arc::new(Self {
+            outcome,
+            asked: Mutex::default(),
+        })
+    }
+
+    fn says(allow: bool) -> Arc<Self> {
+        Self::new(AskOutcome::Answered {
+            allow,
+            answered_by: "tester".into(),
+        })
+    }
+
+    fn asked(&self) -> Vec<AskRequest> {
+        self.asked.lock().expect("lock").clone()
+    }
+}
+
+#[async_trait]
+impl Answerer for Scripted {
+    async fn answer(&self, ask: &AskRequest) -> AskOutcome {
+        self.asked.lock().expect("lock").push(ask.clone());
+        self.outcome.clone()
+    }
+}
+
+const ASK_ECHO: &str = r#"
+[budget]
+ask_timeout_secs = 45
+
+[[rule]]
+name = "check-echo"
+match = { tool = "sandbox.echo" }
+action = "ask"
+"#;
+
+/// Start a run under `policy` with `answerer`, get one completion, then call
+/// the echo tool, which the policy asks about.
+async fn ask_run(
+    test: &str,
+    policy: &str,
+    answerer: Arc<Scripted>,
+) -> (PathBuf, Arc<EchoTools>, Run, Result<ToolResult, RunError>) {
+    let path = trace_path(test);
+    let tools = Arc::new(EchoTools::default());
+    let config = RunConfig {
+        run: RunId("run_test".into()),
+        agent: "main".into(),
+        trace: path.clone(),
+    };
+    let deps = RunDeps {
+        model: Arc::new(script()),
+        tools: tools.clone(),
+        policy: Arc::new(RulePolicy::from_toml(policy).expect("policy")),
+        answerer,
+        clock: StepClock::new(),
+    };
+    let mut run = Run::start(config, deps).await.expect("start");
+    run.complete(request("say hi")).await.expect("completion");
+    let result = run
+        .call_tool("call_1", "sandbox.echo", json!({"say": "hi"}))
+        .await;
+    (path, tools, run, result)
+}
+
+/// Event types from the `tool.call` on.
+fn tail(path: &Path) -> Vec<String> {
+    read(path).iter().skip(6).map(type_of).collect()
 }
 
 /// Model asks for a tool, the agent calls it, the model wraps up.
@@ -595,4 +676,146 @@ async fn ticks_and_decisions_carry_the_limits() {
         panic!("not a policy.decision")
     };
     assert_eq!(budget.tool_calls_limit, Some(10));
+}
+
+#[tokio::test]
+async fn an_ask_answered_yes_runs_the_call() {
+    let answerer = Scripted::says(true);
+    let (path, tools, run, result) = ask_run("ask_yes", ASK_ECHO, answerer.clone()).await;
+
+    let result = result.expect("tool call");
+    assert!(!result.is_error);
+    assert_eq!(tools.calls.load(Ordering::SeqCst), 1);
+    assert_eq!(run.state(), RunState::Running);
+
+    // The answerer got the question, the rule and the timeout from the file.
+    let asked = answerer.asked();
+    assert_eq!(asked.len(), 1);
+    assert_eq!(asked[0].subject, 6);
+    assert_eq!(asked[0].rule.as_deref(), Some("check-echo"));
+    assert_eq!(asked[0].timeout_secs, 45);
+    assert_eq!(asked[0].prompt, r#"Allow sandbox.echo {"say":"hi"}?"#);
+    drop(run);
+
+    assert_eq!(
+        tail(&path),
+        [
+            "tool.call",
+            "policy.decision",
+            "policy.ask",
+            "run.state",
+            "policy.answer",
+            "run.state",
+            "tool.result",
+            "budget.tick",
+        ]
+    );
+    let events = read(&path);
+    assert!(matches!(
+        &events[9].body,
+        EventType::RunStateChanged {
+            state: RunState::Suspended,
+            ..
+        }
+    ));
+    let EventType::PolicyAnswer {
+        subject,
+        answered_by,
+        allow,
+    } = &events[10].body
+    else {
+        panic!("not a policy.answer")
+    };
+    assert_eq!(
+        (*subject, answered_by.as_str(), *allow),
+        (6, "tester", true)
+    );
+    assert!(matches!(
+        &events[11].body,
+        EventType::RunStateChanged {
+            state: RunState::Running,
+            ..
+        }
+    ));
+    verify(&path).expect("verify");
+}
+
+#[tokio::test]
+async fn an_ask_answered_no_fails_the_call_and_the_run_goes_on() {
+    let (path, tools, mut run, result) = ask_run("ask_no", ASK_ECHO, Scripted::says(false)).await;
+
+    let result = result.expect("tool call");
+    assert!(result.is_error);
+    assert_eq!(result.content, Payload::Inline(json!("denied by tester")));
+    assert_eq!(tools.calls.load(Ordering::SeqCst), 0);
+
+    // The agent sees a failed call and carries on.
+    assert_eq!(run.state(), RunState::Running);
+    run.complete(request("never mind"))
+        .await
+        .expect("next completion");
+    drop(run);
+    assert!(matches!(
+        &read(&path)[10].body,
+        EventType::PolicyAnswer { allow: false, .. }
+    ));
+}
+
+#[tokio::test]
+async fn an_unanswered_ask_halts_the_run() {
+    let unanswered = Scripted::new(AskOutcome::Unanswered { waited_secs: 45 });
+    let (path, tools, run, result) = ask_run("ask_timeout", ASK_ECHO, unanswered).await;
+
+    let err = result.expect_err("must halt");
+    assert!(
+        matches!(&err, RunError::Halted { reason } if reason == "ask unanswered after 45 s"),
+        "{err}"
+    );
+    assert_eq!(run.state(), RunState::Halted);
+    assert_eq!(tools.calls.load(Ordering::SeqCst), 0);
+    drop(run);
+
+    // Suspended, then halted, with no answer recorded.
+    assert_eq!(
+        tail(&path),
+        [
+            "tool.call",
+            "policy.decision",
+            "policy.ask",
+            "run.state",
+            "run.state"
+        ]
+    );
+    assert_eq!(halt_of(&path).0, "ask unanswered after 45 s");
+}
+
+#[tokio::test]
+async fn on_timeout_deny_turns_an_unanswered_ask_into_a_denial() {
+    let policy = format!("{ASK_ECHO}on_timeout = \"deny\"\n");
+    let unanswered = Scripted::new(AskOutcome::Unanswered { waited_secs: 45 });
+    let (path, tools, run, result) = ask_run("ask_timeout_deny", &policy, unanswered).await;
+
+    let result = result.expect("the run goes on");
+    assert!(result.is_error);
+    assert_eq!(result.content, Payload::Inline(json!("denied by timeout")));
+    assert_eq!(tools.calls.load(Ordering::SeqCst), 0);
+    assert_eq!(run.state(), RunState::Running);
+    drop(run);
+
+    let EventType::PolicyAnswer {
+        answered_by, allow, ..
+    } = &read(&path)[10].body
+    else {
+        panic!("not a policy.answer")
+    };
+    assert_eq!((answered_by.as_str(), *allow), ("timeout", false));
+}
+
+#[tokio::test]
+async fn default_ask_timeout_is_600_seconds() {
+    let policy = "[[rule]]\nmatch = { tool = \"sandbox.echo\" }\naction = \"ask\"\n";
+    let answerer = Scripted::says(true);
+    let (_, _, _run, result) = ask_run("ask_default_timeout", policy, answerer.clone()).await;
+    result.expect("tool call");
+    assert_eq!(answerer.asked()[0].timeout_secs, 600);
 }

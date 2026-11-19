@@ -11,7 +11,7 @@ use tether_types::{Decision, ToolCall};
 
 use crate::config::{Action, Match, PolicyConfig, Rule};
 use crate::glob::glob_match;
-use crate::{Limits, Policy, PolicyError, RunCtx, Verdict};
+use crate::{Limits, Policy, PolicyError, RunCtx, Verdict, DEFAULT_ASK_TIMEOUT_SECS};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RulePolicy {
@@ -68,11 +68,19 @@ impl Policy for RulePolicy {
         Verdict {
             decision,
             rule: Some(rule.name.clone()),
+            on_timeout: rule.on_timeout,
         }
     }
 
     fn limits(&self) -> Limits {
         Limits::from(&self.config.budget)
+    }
+
+    fn ask_timeout_secs(&self) -> u64 {
+        self.config
+            .budget
+            .ask_timeout_secs
+            .unwrap_or(DEFAULT_ASK_TIMEOUT_SECS)
     }
 
     /// The file as it was read, comments included. An empty policy, where

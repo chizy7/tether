@@ -53,7 +53,7 @@ pub trait Policy: Send + Sync {
     fn decide_model(&self, req: &ModelRequest, ctx: &RunCtx) -> Verdict; // default: allow
     fn snapshot(&self) -> Option<String>; // full TOML; default: None
 }
-pub struct Verdict { decision: Decision, rule: Option<String> }
+pub struct Verdict { decision: Decision, rule: Option<String>, on_timeout: OnTimeout }
 pub enum Decision { Allow, Deny { reason: String }, Ask { prompt: String } }
 ```
 
@@ -87,6 +87,27 @@ Rules match what a call says, not what it will do: `argv0 = "rm"` does not see
 prompt, the SDK `Answer` RPC, or, unattended, a timeout (default 600 s) that
 moves the run to Halted, resumable once someone answers. A rule may set
 `on_timeout = "deny"` for fire-and-forget jobs.
+
+```rust
+#[async_trait]
+pub trait Answerer: Send + Sync {
+    async fn answer(&self, ask: &AskRequest) -> AskOutcome; // Answered { allow, answered_by } | Unanswered { waited_secs }
+}
+```
+
+The run hands each ask to its `Answerer` and waits. The answerer owns the
+waiting, timeout included, so the core never touches a timer and replay can
+substitute the recorded `policy.answer`. A yes dispatches the call. A no gives
+the agent an ordinary failed tool call and the run goes on; for a model call
+there is nothing to hand back, so a no halts. `ask_timeout_secs` in `[budget]`
+sets the wait. `Unattended` is the answerer for a run nobody is watching:
+every ask goes unanswered at once.
+
+`tether run --script <file> --policy <tether.toml>` uses the terminal: the
+prompt goes to stderr and `y` or `n` is read from stdin. Closed stdin counts
+as nobody there. Until the SDK boundary exists, `tether run` plays a scripted
+agent: the script gives the task and the model's replies, and the tool calls,
+policy, sandbox and trace are real.
 
 Budgets come from the `[budget]` table: `max_tokens`, `max_usd`,
 `max_wall_secs` and `max_tool_calls`, each optional. All four are checked

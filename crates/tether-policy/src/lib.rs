@@ -12,7 +12,7 @@ pub mod glob;
 pub mod rules;
 
 pub use budget::Limits;
-pub use config::PolicyConfig;
+pub use config::{OnTimeout, PolicyConfig};
 pub use rules::RulePolicy;
 
 #[derive(Debug, thiserror::Error)]
@@ -39,6 +39,8 @@ pub struct Verdict {
     pub decision: Decision,
     /// Name of the matched rule; `None` when no rule matched.
     pub rule: Option<String>,
+    /// For an `ask`: what happens if nobody answers in time.
+    pub on_timeout: OnTimeout,
 }
 
 impl From<Decision> for Verdict {
@@ -46,6 +48,7 @@ impl From<Decision> for Verdict {
         Self {
             decision,
             rule: None,
+            on_timeout: OnTimeout::Halt,
         }
     }
 }
@@ -63,6 +66,11 @@ pub trait Policy: Send + Sync {
     /// The run's budget limits. The default is no limits.
     fn limits(&self) -> Limits {
         Limits::default()
+    }
+
+    /// Seconds to wait for a human to answer an `ask`.
+    fn ask_timeout_secs(&self) -> u64 {
+        DEFAULT_ASK_TIMEOUT_SECS
     }
 
     /// The policy as the full text of its TOML file, recorded in
