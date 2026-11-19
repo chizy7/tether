@@ -2,11 +2,12 @@
 //!
 //! `process` (default) is a cwd jail, an env scrub, rlimits and, on Linux, a
 //! seccomp filter. It is **not** a security boundary and is never described
-//! as one. `docker` adds filesystem and network namespaces. `firecracker`
+//! as one. `docker` (cargo feature `docker`) adds filesystem and network
+//! namespaces. `firecracker`
 //! adds a separate kernel. The README states what each isolates and what it
 //! does not.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use async_trait::async_trait;
 
@@ -83,6 +84,23 @@ pub enum SandboxError {
 
 pub type Result<T> = std::result::Result<T, SandboxError>;
 
+/// Accept only a relative path with no `..`, so it cannot name anything
+/// outside the workspace. What a symlink inside the workspace points at is the
+/// backend's concern.
+pub(crate) fn inside(path: &Path) -> Result<&Path> {
+    let stays_inside = path
+        .components()
+        .all(|c| matches!(c, Component::Normal(_) | Component::CurDir));
+    if stays_inside {
+        Ok(path)
+    } else {
+        Err(SandboxError::Other(format!(
+            "path leaves the workspace: {}",
+            path.display()
+        )))
+    }
+}
+
 #[async_trait]
 pub trait Sandbox: Send + Sync {
     async fn start(&self, spec: &SandboxSpec) -> Result<Handle>;
@@ -101,9 +119,7 @@ pub mod process;
 mod seccomp;
 
 #[cfg(feature = "docker")]
-pub mod docker {
-    //! Docker backend; snapshot via `commit`.
-}
+pub mod docker;
 
 #[cfg(feature = "firecracker")]
 pub mod firecracker {

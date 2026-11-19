@@ -20,7 +20,7 @@
 //! `cpu_millis` is a CPU share for the container backends and is ignored.
 
 use std::collections::HashMap;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -31,7 +31,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 use crate::{
-    Exec, ExecResult, Handle, Network, Result, Sandbox, SandboxError, SandboxSpec, SnapshotId,
+    inside, Exec, ExecResult, Handle, Network, Result, Sandbox, SandboxError, SandboxSpec,
+    SnapshotId,
 };
 
 /// What every command in one sandbox is held to.
@@ -77,22 +78,6 @@ impl ProcessSandbox {
 
     fn resolve(&self, h: &Handle, path: &Path) -> Result<PathBuf> {
         Ok(self.session(h)?.workspace.join(inside(path)?))
-    }
-}
-
-/// Accept only a relative path with no `..`, so it cannot name anything
-/// outside the workspace. Symlinks inside the workspace are not followed up.
-fn inside(path: &Path) -> Result<&Path> {
-    let stays_inside = path
-        .components()
-        .all(|c| matches!(c, Component::Normal(_) | Component::CurDir));
-    if stays_inside {
-        Ok(path)
-    } else {
-        Err(SandboxError::Other(format!(
-            "path leaves the workspace: {}",
-            path.display()
-        )))
     }
 }
 

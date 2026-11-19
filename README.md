@@ -87,8 +87,9 @@ workspace by absolute path. On macOS there is also no memory cap and no
 network block. A limit
 the platform cannot enforce is refused when the sandbox starts, not ignored;
 the exception is the network block on macOS, which is silently absent. Use
-`docker` (v0.2) for namespaces and `firecracker` (v1.0) for a separate
-kernel.
+the `docker` backend for filesystem and network namespaces (it mounts only
+the workspace, and is behind the `docker` cargo feature) and `firecracker`
+(v1.0) for a separate kernel.
 
 ## License
 

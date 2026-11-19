@@ -150,7 +150,7 @@ pub trait Sandbox: Send + Sync {
 | Backend | Phase | Isolates | Does not isolate |
 | --- | --- | --- | --- |
 | `process` | v0.1 | cwd jail, env scrub, time limit, rlimits; on Linux also a memory cap, a seccomp deny list and no internet sockets under `Network::None` | Kernel, filesystem outside the jail by absolute path, network on macOS. **Not a security boundary.** |
-| `docker` | v0.2 | Filesystem, network namespace, resource limits; snapshot via `commit` | Kernel (shared) |
+| `docker` | v0.2 | Filesystem (only the workspace is mounted), network namespace, resource limits; snapshot via `commit` | Kernel (shared) |
 | `firecracker` | v1.0 | Kernel, memory, devices; VM snapshot | Side channels, hypervisor bugs |
 
 What `process` does, by platform:
@@ -174,6 +174,29 @@ runtimes that reserve large virtual ranges (Go, the JVM, Node) need a
 generous value. `cpu_millis` is a CPU share for the container backends and
 `process` ignores it. A limit the platform cannot enforce is refused at
 `start` rather than ignored, with the one exception in the table.
+
+`docker` (cargo feature `docker`) keeps one long-lived container per sandbox
+and drives it through the `docker` command line, so it adds no dependency.
+
+| Setting | What the container gets |
+| --- | --- |
+| `workspace` | Bind-mounted at `/workspace`, the working directory and the only host path visible |
+| `Network::None` / `All` | `--network none` (loopback only) / the default bridge |
+| `Network::Allowlist` | Refused at `start` |
+| `cpu_millis`, `memory_bytes` | `--cpus`, `--memory` with no swap |
+| `cpu_time_secs`, `max_open_files` | `--ulimit cpu`, `--ulimit nofile` |
+| `time_limit_secs` | `timeout -s KILL` inside the container, so the kill reaches the command |
+
+Commands run as the host user, so files written to the workspace belong to
+whoever runs Tether, with every capability dropped and `no-new-privileges`
+set. `read` and `write` go through the container rather than the host's
+filesystem: a symlink an agent plants in the workspace resolves inside the
+container and cannot point the host at its own files. `snapshot` commits the
+container to an image and returns the image id; it holds the container's own
+filesystem, not the workspace, which is a mount and stays on the host.
+`DockerSandbox::with_image` starts from a tag or a snapshot id. The image
+needs `sh`, `sleep`, `timeout`, `cat`, `mkdir` and `dirname`; the default is
+`debian:stable-slim`.
 
 Backends that cannot snapshot return `Unsupported`; resume then replays writes
 from the trace into a fresh sandbox.
