@@ -257,6 +257,35 @@ the recorded result and are never re-invoked; clock, random and env go through
 `Clock` and `Rng` traits satisfied from `nondeterminism` events; agent-side
 nondeterminism is out of scope and shows up in diff as the agent's own change.
 
+### Timings under replay (to build in v0.3)
+
+Four things in a trace come from live clock reads, so a replay that measures
+them afresh gets different values every time:
+
+| Field | Where | Computed from |
+| --- | --- | --- |
+| `ts` | every event | one clock read when the event is emitted |
+| `latency_ms` | `model.response` | clock read before and after the model call |
+| `duration_ms` | `tool.result` | clock read before and after the tool call |
+| `wall_secs_used` | `policy.decision`, `budget.tick`, `run.finished` | clock read minus the run's start |
+
+None of these reads is recorded as a `nondeterminism` event today; only the
+values derived from them are in the trace. Left alone, a replayed model call
+takes about 0 ms where the original took 800, every `model.response` and
+`tool.result` differs from the original, and `tether diff` reports a
+divergence on every event. Wall time has a second consequence: a run that
+halted on `max_wall_secs` would not halt at the same point when replayed.
+
+Replay must therefore restore these values from the recorded events rather
+than measure them: `ts` from the event being replayed, `latency_ms` and
+`duration_ms` from the recorded response and result, and `wall_secs_used`
+from the recorded budget snapshot, which is also what the budget check must
+use. This is design rule 4 applied to time. Telling `diff` to skip the fields
+instead would hide the symptom and leave the wall-clock halt wrong, so it is
+not the fix. A replay `Clock` that hands back recorded reads in order would
+also work, but only while the loop makes exactly the reads it made when the
+trace was written, which a later change to the loop would break silently.
+
 ## SDK boundary
 
 One gRPC service (`proto/tether.proto`) on a Unix socket; Python and

@@ -75,7 +75,7 @@ in this order; each item is one PR.
 - [x] `process` backend: rlimits (cpu, memory, open files) and the Linux seccomp filter; then make the README's sandbox paragraph true
 - [x] `docker` backend behind the `docker` feature: workspace mount, network namespace per `SandboxSpec.network`, snapshot via `commit`
 - [x] Demo: `examples/refuses` with a scripted `fake` run that attempts `rm -rf`; GIF of the blocked call in `inspect`
-- [ ] Write down for v0.3: `latency_ms` and `duration_ms` come from live clock reads, so replay must restore them from the recorded events or `diff` flags every event
+- [x] Write down for v0.3: `latency_ms` and `duration_ms` come from live clock reads, so replay must restore them from the recorded events or `diff` flags every event. Written up in `ARCHITECTURE.md`, "Timings under replay", which also covers `ts` and `wall_secs_used`
 
 ## Stack decisions
 
