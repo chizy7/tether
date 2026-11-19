@@ -76,7 +76,9 @@ Dependencies point down only. Leaf crates never import each other or
 
 ## Current phase
 
-**v0.2 "it refuses"** (weeks 5 to 8). v0.1 shipped 2026-11-18. Goal: the agent
-asks to run `rm -rf`, policy blocks it, `tether inspect` shows the decision and
-the rule that matched. The ordered checklist is in `docs/PLAN.md`; work it top
-to bottom, one PR per item.
+**v0.3 "it replays"** (weeks 9 to 12). v0.1 and v0.2 shipped 2026-11-18.
+Goal: record 20 tasks against a real model, change the prompt, replay with
+`--live-after-divergence`, diff each pair. The Anthropic adapter is item one
+because no real model call has been recorded yet. The ordered checklist is in
+`docs/PLAN.md`; work it top to bottom, one PR per item. Replay's acceptance
+test is `tether diff` of a trace against its own replay coming back empty.

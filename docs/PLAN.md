@@ -77,6 +77,32 @@ in this order; each item is one PR.
 - [x] Demo: `examples/refuses` with a scripted `fake` run that attempts `rm -rf`; GIF of the blocked call in `inspect`
 - [x] Write down for v0.3: `latency_ms` and `duration_ms` come from live clock reads, so replay must restore them from the recorded events or `diff` flags every event. Written up in `ARCHITECTURE.md`, "Timings under replay", which also covers `ts` and `wall_secs_used`
 
+v0.2 shipped 2026-11-18: nine PRs, 86 tests, `refuses` demo GIF.
+
+## v0.3 checklist: it replays
+
+Demo that closes the phase: record 20 small tasks against a real model, change
+the system prompt, `tether replay --live-after-divergence` all 20, `tether diff`
+each pair, and read the outcomes off one table.
+
+A gap carried from v0.1: the Anthropic adapter never landed. Every trace so far
+came from the `fake` adapter, so Tether has not yet recorded a real model call.
+That is item one, because replay of fake traces proves nothing. Items are in
+dependency order; the last three can slip to v0.4 without hurting the demo.
+
+- [ ] `anthropic` adapter: Messages API, tool use, streaming collapsed into one `model.response` with `ttft_ms` and `stream: true`, raw body as a blob, `pricing.toml` with the price recorded in `budget.tick`. Key from `ANTHROPIC_API_KEY`. Tests stay on `fake`; one ignored integration test runs when the key is set. First real trace from `examples/raw-loop --model anthropic`
+- [ ] `tether-trace::diff` and `tether diff <a> <b>`: align by `step`, compare `model.request` message hashes, `tool.call` name and arguments, and `policy.decision` outcome; report the first divergence and a per-step summary. Ignore `ts`; the timing fields are restored on replay, not skipped here
+- [ ] `checkpoint` events every N steps (default 1) with the sandbox `snapshot` id when the backend supports it (`docker` yes, `process` returns `Unsupported` and the field is null)
+- [ ] Replay runtime: `replay` model adapter matching `model.request` by message hashes, replay sandbox returning recorded `tool.result`, and timings restored from the recorded events exactly as "Timings under replay" says. `tether replay <run>` writes a new trace; `tether diff` of the two is empty by construction, and that is the acceptance test. `--live-after-divergence` switches to the live adapter at the first mismatch
+- [ ] `tether resume <run>`: read to the last `checkpoint`, restore the snapshot or replay `write_file` and `exec` into a fresh sandbox, rebuild message history from blob hashes, `run.state = running` with reason `resumed`, continue appending to the same trace
+- [ ] `tether pack <run>` and `tether unpack`: one tar of JSONL plus blobs, verified on pack and on unpack; `inspect`, `verify`, `diff` and `replay` accept the tar directly
+- [ ] `tetherd`: tonic service from `proto/tether.proto` on a Unix socket, started on demand by the CLI and SDK, exits after its last run. Use a vendored `protoc` (`protoc-bin-vendored` or prost's) so `cargo build` never needs a system install
+- [ ] Python SDK in `sdks/python`: `Run`, `complete`, `call_tool`, `tools`, context manager; thin gRPC client, no logic. `examples/raw-loop-py` is the Python twin of `raw-loop`
+- [ ] Demo: `examples/replays` records 20 tasks, edits the prompt, replays with `--live-after-divergence`, diffs, prints the table; GIF
+- [ ] (may slip) `openai_compat` adapter behind its feature
+- [ ] (may slip) cargo-dist release workflow, `curl | sh` install, `pip install tether-sdk` on PyPI
+- [ ] (may slip) `rusqlite` index for `inspect` and `diff` on traces over 100k events; measure before building
+
 ## Stack decisions
 
 | Layer | Choice | Why |
