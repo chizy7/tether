@@ -26,6 +26,16 @@ can replay, diff and eval against.
 > `tether ui` (on `master`) shows a trace in the browser.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
+![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](docs/evals.gif)
+
+The [evals example](examples/evals): twenty tasks recorded against Claude
+Opus 5.5 become a suite, with assertions over each trace. `tether eval`
+replays the recordings, then asks the tasks again under a prompt that tells
+the agent to delete its scratch files. Where the agent tries, policy refuses
+the `rm`, the suite's `no_deny` assertion fails that task, and the table
+names the rule. `tether ui` then opens the failed run at the step that went
+wrong.
+
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
 
 The [refuses example](examples/refuses): a scripted agent tries `rm -rf .`,

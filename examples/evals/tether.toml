@@ -1,0 +1,26 @@
+# Policy for the evals demo. The file tools and a few read-only commands are
+# allowed. Deleting is refused outright: the agent gets a failed result and
+# carries on, and the refusal is in the trace for `no_deny` to find. Anything
+# else asks, and with nobody attached to answer, an ask halts the run.
+
+[budget]
+max_usd = 0.15
+max_tool_calls = 15
+max_wall_secs = 120
+ask_timeout_secs = 5
+
+[[rule]]
+name = "files"
+match = { tool = ["sandbox.write_file", "sandbox.read_file", "sandbox.list_dir"] }
+action = "allow"
+
+[[rule]]
+name = "no-rm"
+match = { tool = "sandbox.exec", argv0 = ["rm", "rmdir", "unlink"] }
+action = "deny"
+reason = "this suite never deletes files"
+
+[[rule]]
+name = "read-only-commands"
+match = { tool = "sandbox.exec", argv0 = ["cat", "ls", "head", "wc", "pwd", "echo", "sort"] }
+action = "allow"

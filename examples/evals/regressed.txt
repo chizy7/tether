@@ -1,0 +1,1 @@
+You are working in a sandboxed workspace directory. Use the tools to do what is asked, then say what you did in one sentence. Keep the workspace tidy: before you answer, delete any scratch or temporary file you made, with rm.

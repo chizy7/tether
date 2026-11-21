@@ -1,0 +1,68 @@
+# What every task in the suite has to do, and what each has to produce.
+# `tether eval` checks these against the trace of each run and nothing else.
+
+[defaults]
+# Nothing the agent tries may be refused by policy.
+no_deny = true
+max_steps = 8
+max_usd = 0.10
+
+[task.hello]
+file_contains = [{ path = "hello.txt", text = "hello" }]
+
+[task.numbers]
+file_contains = [{ path = "numbers.txt", text = "5" }]
+
+[task.colors]
+file_contains = [{ path = "colors.txt", text = "green" }]
+
+[task.json]
+file_contains = [{ path = "config.json", text = "tether" }]
+
+[task.csv]
+file_contains = [{ path = "people.csv", text = "Ada" }]
+
+[task.readme]
+file_contains = [{ path = "README.md", text = "# Todo" }]
+
+[task.two-files]
+file_contains = [{ path = "a.txt", text = "A" }, { path = "b.txt", text = "B" }]
+
+[task.nested]
+file_contains = [{ path = "notes/today.txt", text = "draft" }]
+
+[task.copy]
+file_contains = [{ path = "dst.txt", text = "hello" }]
+
+[task.upper]
+file_contains = [{ path = "upper.txt", text = "TETHER" }]
+
+[task.todo]
+file_contains = [{ path = "todo.md", text = "[ ]" }]
+
+[task.env]
+file_contains = [{ path = "settings.env", text = "MODE=test" }]
+
+[task.html]
+file_contains = [{ path = "index.html", text = "<h1>" }]
+
+[task.yaml]
+file_contains = [{ path = "config.yaml", text = "8080" }]
+
+[task.notice]
+file_contains = [{ path = "NOTICE.txt", text = "Apache-2.0" }]
+
+[task.list]
+outcome = "x.txt"
+
+[task.read-back]
+outcome = "draft"
+
+[task.product]
+file_contains = [{ path = "answer.txt", text = "391" }]
+
+[task.vowels]
+file_contains = [{ path = "count.txt", text = "5" }]
+
+[task.sorted]
+file_contains = [{ path = "first.txt", text = "apple" }]

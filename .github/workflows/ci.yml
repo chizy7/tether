@@ -49,6 +49,18 @@ jobs:
       # The v0.3 demo with the scripted model: record, replay, re-prompt, diff.
       - run: cargo build -p tether-cli
       - run: PATH="$PWD/target/debug:$PATH" python examples/replays/demo.py
+      # The v0.4 demo with the scripted model: record the suite, check that
+      # the recordings pass, and that the worse prompt fails exactly three.
+      - name: examples/evals
+        run: |
+          export PATH="$PWD/target/debug:$PATH"
+          python examples/evals/record.py
+          tether eval examples/evals/suite
+          if tether eval examples/evals/suite --system "$(cat examples/evals/regressed.txt)" --scripts examples/evals/scripts > eval.txt; then
+            echo "the regressed prompt should fail the suite" >&2; exit 1
+          fi
+          cat eval.txt
+          grep -q "17 passed, 3 failed" eval.txt
       # The committed gRPC stubs must match the proto.
       - run: sh sdks/python/scripts/gen_proto.sh && git diff --exit-code sdks/python/src/tether/_proto
 
