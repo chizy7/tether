@@ -39,6 +39,11 @@ protoc-bin-vendored = "3"
 [dev-dependencies]
 tempfile = "3"
 
+# Not shipped on its own: the `tether` binary carries the daemon as
+# `tether daemon`, and that is what a release installs.
+[package.metadata.dist]
+dist = false
+
 [features]
 default = ["openai_compat"]
 # The adapter for servers that speak the OpenAI Chat Completions shape.

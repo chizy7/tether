@@ -1,6 +1,6 @@
 # tether-sdk
 
-Python client for [Tether](../../README.md). Your agent keeps its own loop;
+Python client for [Tether](https://github.com/chizy7/tether/tree/master/README.md). Your agent keeps its own loop;
 it calls `run.complete` where it called its provider SDK and `run.call_tool`
 where it ran a tool, and Tether does the rest: policy, sandbox, budgets and
 the trace.
@@ -20,11 +20,19 @@ with tether.Run(policy="tether.toml") as run:
         messages.append(tether.tool_results(results))
 ```
 
-A complete example is in [examples/raw-loop-py](../../examples/raw-loop-py).
+A complete example is in [examples/raw-loop-py](https://github.com/chizy7/tether/tree/master/examples/raw-loop-py).
 
 ## Install
 
-Not on PyPI yet. From a checkout:
+```
+pip install tether-sdk
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/chizy7/tether/releases/latest/download/tether-cli-installer.sh | sh
+```
+
+The second line installs the `tether` binary, which carries the daemon the
+SDK talks to. The SDK and the binary should be the same version.
+
+To work on the SDK, from a checkout of the repository:
 
 ```
 pip install -e sdks/python

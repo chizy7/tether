@@ -1,0 +1,60 @@
+# Publishes the Python SDK (sdks/python, `tether-sdk` on PyPI) when a version
+# tag is pushed: the same tag that release.yml builds the `tether` binary for.
+#
+# Publishing uses PyPI trusted publishing, so there is no token to store. The
+# PyPI project must name this repository, this workflow file (pypi.yml) and
+# the `pypi` environment as its trusted publisher. See docs/RELEASING.md.
+name: PyPI
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+    paths:
+      - 'sdks/python/**'
+      - '.github/workflows/pypi.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: The tag must be the SDK's version
+        if: github.event_name == 'push'
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' sdks/python/pyproject.toml)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match sdks/python version $version" >&2
+            exit 1
+          fi
+      - run: pip install build twine
+      - run: python -m build sdks/python --outdir dist
+      - run: twine check --strict dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-dist
+          path: dist/
+
+  publish:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # For trusted publishing: PyPI checks this job's identity token.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: dist/
+      # Pinned to a commit, since this job can publish. Update the hash and
+      # the version in the comment together.
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

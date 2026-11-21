@@ -18,7 +18,7 @@ can replay, diff and eval against.
 > run on from its last checkpoint, and `tether pack` puts a trace and its
 > blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
 > for agents in other languages, and the Python SDK in `sdks/python` is the
-> first client. It is not on PyPI yet; install it from a checkout.
+> first client.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
@@ -41,6 +41,18 @@ The [raw-loop example](examples/raw-loop) running under Tether with a scripted
 model and real sandboxed tools, then `tether inspect` and `tether verify` on
 the trace it left. Recorded at v0.1; traces now also carry `budget.tick`
 events.
+
+## Install
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/chizy7/tether/releases/latest/download/tether-cli-installer.sh | sh
+pip install tether-sdk
+```
+
+The first line installs the `tether` binary for macOS or Linux, on arm64 or
+x86-64, into `~/.cargo/bin`. The second installs the Python SDK, which starts
+the daemon built into that binary when it needs one. There is no Windows
+build.
 
 ## What it is, and is not
 
@@ -78,7 +90,7 @@ with Run(agent="my-agent", policy="tether.toml") as run:
 ```
 crates/   nine Rust crates; see CLAUDE.md
 proto/    gRPC service for the SDKs
-docs/     PLAN, ARCHITECTURE, TRACE_FORMAT
+docs/     PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
 ```
 
 ```sh

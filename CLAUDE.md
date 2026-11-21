@@ -59,7 +59,7 @@ crates/tether-cli       `tether` binary
 crates/tetherd          gRPC daemon (v0.3)
 proto/tether.proto      SDK service definition
 sdks/, examples/, ui/   land in v0.3 and v0.4
-docs/                   PLAN, ARCHITECTURE, TRACE_FORMAT
+docs/                   PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
 ```
 
 Dependencies point down only. Leaf crates never import each other or
