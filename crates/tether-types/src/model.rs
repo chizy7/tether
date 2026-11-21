@@ -21,6 +21,10 @@ pub struct ModelResponse {
     pub message: String,
     pub tool_calls: Vec<crate::tool::ToolCall>,
     pub usage: Usage,
+    /// Why the model stopped, in the provider's words: `end_turn`,
+    /// `tool_use`, `max_tokens`, `refusal` and so on.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_reason: Option<String>,
     pub latency_ms: u64,
     /// Set when the response was streamed and collapsed into this one event.
     #[serde(default, skip_serializing_if = "Option::is_none")]

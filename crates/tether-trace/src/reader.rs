@@ -158,7 +158,7 @@ pub fn blob_refs(body: &EventType) -> Vec<String> {
         | EventType::PolicyDecision { .. }
         | EventType::PolicyAsk { .. }
         | EventType::PolicyAnswer { .. }
-        | EventType::BudgetTick(_)
+        | EventType::BudgetTick { .. }
         | EventType::Checkpoint { .. } => {}
     }
     refs

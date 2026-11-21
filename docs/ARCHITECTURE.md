@@ -221,13 +221,13 @@ hand-rolled client is the fallback if `rmcp` blocks stdio or streamable HTTP.
 pub trait ModelAdapter: Send + Sync {
     fn id(&self) -> &str;
     async fn complete(&self, req: CompletionRequest) -> Result<Completion>;
-    fn price(&self, usage: &Usage) -> Option<Money>;
+    fn price(&self, model: &str, usage: &Usage) -> Option<Price>; // usd plus pricing table version
 }
 ```
 
 | Adapter | Phase | Notes |
 | --- | --- | --- |
-| `anthropic` | v0.1 | Messages API, tool use; streaming collapsed to one event with `ttft_ms` |
+| `anthropic` | v0.3 | Messages API over HTTP, tool use; streaming collapsed to one event with `ttft_ms`; key from `ANTHROPIC_API_KEY` |
 | `openai_compat` | v0.3 | Chat Completions shape |
 | `ollama` | after v0.4 | Local; `price` returns `None` |
 | `replay` | v0.3 | Reads `model.response` events from a trace |
@@ -240,7 +240,55 @@ message as a blob. Latency is measured by the core through `Clock`.
 
 Tether never modifies prompts. `model.request` records Tether's form;
 `model.response` records Tether's form plus the raw provider body as a blob.
-Pricing tables are versioned TOML; the price used is recorded in `budget.tick`.
+
+A message is a role and a list of blocks: `text`, `tool_use`, `tool_result`,
+and `provider`. A `provider` block is one only its provider understands,
+kept as the provider's own JSON: reasoning blocks with their signatures,
+server tool results, fallback markers. An adapter sends such a block back
+unchanged to the provider that made it and leaves it out for any other. This
+matters because the Anthropic API rejects a conversation whose earlier
+reasoning blocks were altered or dropped from the middle, so an agent should
+append each reply to its history exactly as it received it.
+
+A `Completion` also carries `stop_reason` in the provider's words and the
+`model` that answered. An agent should read `stop_reason` before acting:
+`refusal` and `max_tokens` are successful responses that are not finished
+answers. `model` can differ from the one asked for after a provider-side
+fallback, and the call is priced as the model that answered.
+
+The `anthropic` adapter:
+
+- **Request.** `params` passes through as the body's other fields
+  (`max_tokens`, `thinking`, `output_config`, `fallbacks` and so on), so the
+  agent decides them. The adapter adds only `max_tokens` when none is given.
+  Leading system messages become the `system` prompt; a `tool` message
+  becomes a user turn of `tool_result` blocks. Beta headers are set on the
+  adapter with `.beta(...)`.
+- **Response.** Streamed by default. The event stream is collapsed into the
+  message a non-streaming call would have returned, `raw` is the whole stream,
+  and `ttft_ms` is the time to the first content. An event type the adapter
+  does not know is skipped; a content delta it does not know is an error,
+  because guessing would corrupt a block that must go back unchanged.
+- **Errors.** A rate limit, overload or server error is retried twice with
+  backoff, honouring `retry-after`; anything else is a `ModelError::Api` with
+  the status, error type, message and request id. Retries happen inside one
+  `model.request`, so the trace shows them only as latency. Nothing is
+  retried once a response has started.
+- **Version.** Each release pins one API version (`2026-10-21`), which no
+  longer accepts `temperature`, `top_p` or `top_k`.
+
+Prices live in `crates/tether-models/pricing.toml`, dollars per million
+tokens, with a `version`. The cost of each model call and that version are
+recorded in the `budget.tick` after it. A model missing from the table has no
+price: its calls do not count toward `max_usd` and its ticks carry no price.
+`Pricing::from_toml` loads a different table. Two things are under-counted:
+one-hour cache writes are priced as five-minute ones, and Claude Haiku 5.5's
+higher rate for prompts over 100K tokens is not modelled.
+
+Tool names go to the provider as they are. The API accepts only letters,
+digits, `_` and `-`, so a tool name that the registry prefixed with its
+server on a collision (`github.create_issue`) would be rejected; the built-in
+sandbox tools are unaffected.
 
 ## Checkpoint, resume, replay
 

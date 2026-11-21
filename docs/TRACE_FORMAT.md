@@ -71,7 +71,7 @@ history is never copied.
 | `run.child` | `{child}` run id of a spawned sub-agent process |
 | `run.finished` | outcome, totals, final budget |
 | `model.request` | provider, model, `messages` (blob hashes), `tools`, params |
-| `model.response` | `message` (blob hash), `tool_calls`, usage, `latency_ms`, `ttft_ms`, `stream`, `provider_request_id`, `raw` (blob hash) |
+| `model.response` | `message` (blob hash), `tool_calls`, usage, `stop_reason` (the provider's word for why it stopped, such as `end_turn`, `tool_use`, `max_tokens`, `refusal`; absent when the adapter gives none), `latency_ms`, `ttft_ms`, `stream`, `provider_request_id`, `raw` (blob hash; the whole event stream when `stream` is true) |
 | `tool.call` | id, name, server, arguments, `external` |
 | `tool.result` | id, content (inline or blob), `is_error`, `duration_ms` |
 | `policy.decision` | `subject` seq, `rule` (name of the rule that matched, null when none did), `decision` `{outcome: allow \| deny \| ask, ...}`, budget snapshot |
@@ -79,7 +79,7 @@ history is never copied.
 | `policy.answer` | `subject`, `answered_by`, `allow` |
 | `sandbox.exec` | command, cwd, env hash |
 | `sandbox.exit` | exit code, stdout and stderr refs |
-| `budget.tick` | tokens, usd, wall seconds, tool calls: used and limit (null limit means unlimited) |
+| `budget.tick` | tokens, usd, wall seconds, tool calls: used and limit (null limit means unlimited); after a priced model call also `price` `{usd, table}`, the cost of that call and the version of the pricing table it came from |
 | `checkpoint` | `step`, optional sandbox `snapshot` id |
 | `nondeterminism` | clock reads, random seeds, env lookups |
 | `ext.*` | anything; ignored by replay and diff |
@@ -120,6 +120,14 @@ file <path>`.
 
 `step` is 0 for the events before the first model request. Each
 `model.request` opens the next step.
+
+`tokens_used` counts input, output and cached tokens, read and written.
+`usd_used` is the sum of the `price.usd` of every tick so far.
+
+A message blob is `{"role", "content": [block, ...]}`. A block is `text`,
+`tool_use`, `tool_result`, or `{"type": "provider", "provider", "block"}`,
+where `block` is the provider's own JSON for a block Tether does not model,
+kept unchanged.
 
 ## Size limits
 

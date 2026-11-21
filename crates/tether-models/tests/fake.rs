@@ -1,7 +1,7 @@
 use serde_json::json;
 use tether_models::fake::FakeAdapter;
 use tether_models::{
-    Block, Completion, CompletionRequest, Message, ModelAdapter, ModelError, Money, Role,
+    Block, Completion, CompletionRequest, Message, ModelAdapter, ModelError, Role,
 };
 use tether_types::Usage;
 
@@ -45,11 +45,13 @@ async fn fake_errors_when_the_script_runs_out() {
 }
 
 #[test]
-fn fake_is_free() {
+fn fake_has_no_price_unless_given_one() {
     let fake = FakeAdapter::default();
-    assert_eq!(fake.price(&Usage::default()), Some(Money(0.0)));
+    assert_eq!(fake.price("fake-1", &Usage::default()), None);
+
     let priced = FakeAdapter::default().priced(0.25);
-    assert_eq!(priced.price(&Usage::default()), Some(Money(0.25)));
+    let price = priced.price("fake-1", &Usage::default()).expect("price");
+    assert_eq!((price.usd, price.table.as_str()), (0.25, "fake"));
 }
 
 #[test]
@@ -63,5 +65,22 @@ fn message_serializes_in_tether_form() {
     assert_eq!(
         serde_json::from_str::<Message>(&text).expect("deserialize"),
         message
+    );
+}
+
+#[test]
+fn provider_block_keeps_its_content_verbatim() {
+    let block = Block::Provider {
+        provider: "anthropic".into(),
+        block: json!({"type": "thinking", "thinking": "", "signature": "sig=="}),
+    };
+    let text = serde_json::to_string(&block).expect("serialize");
+    assert_eq!(
+        text,
+        r#"{"type":"provider","provider":"anthropic","block":{"signature":"sig==","thinking":"","type":"thinking"}}"#
+    );
+    assert_eq!(
+        serde_json::from_str::<Block>(&text).expect("deserialize"),
+        block
     );
 }

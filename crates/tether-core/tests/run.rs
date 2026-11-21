@@ -322,7 +322,7 @@ async fn one_step_leaves_the_events_the_spec_promises() {
     assert_eq!(budget.tokens_used, 15);
 
     // The tick after the tool call counts it and the tokens spent so far.
-    let EventType::BudgetTick(tick) = &events[9].body else {
+    let EventType::BudgetTick { budget: tick, .. } = &events[9].body else {
         panic!("not a budget.tick")
     };
     assert_eq!((tick.tokens_used, tick.tool_calls_used), (15, 1));
@@ -660,7 +660,7 @@ async fn ticks_and_decisions_carry_the_limits() {
     let ticks: Vec<_> = events
         .iter()
         .filter_map(|e| match &e.body {
-            EventType::BudgetTick(tick) => Some(*tick),
+            EventType::BudgetTick { budget, .. } => Some(*budget),
             _ => None,
         })
         .collect();
@@ -1025,4 +1025,51 @@ async fn kill_switch_stops_a_run_waiting_on_an_ask() {
         ]
     );
     verify(&path).expect("verify");
+}
+
+#[tokio::test]
+async fn a_priced_call_records_its_price_and_stop_reason() {
+    let path = trace_path("price_and_stop_reason");
+    let mut reply = Completion::text("done").with_usage(Usage {
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_read_tokens: 1000,
+        cache_write_tokens: 30,
+    });
+    reply.stop_reason = Some("end_turn".into());
+    let mut run = start_with(
+        &path,
+        Arc::new(FakeAdapter::new([reply]).priced(0.25)),
+        Arc::new(EchoTools::default()),
+        Arc::new(AllowAll),
+        StepClock::new(),
+    )
+    .await
+    .expect("start");
+    run.complete(request("go")).await.expect("completion");
+    run.call_tool("call_1", "sandbox.echo", json!({}))
+        .await
+        .expect("tool call");
+    drop(run);
+
+    let events = read(&path);
+    let EventType::ModelResponse(response) = &events[4].body else {
+        panic!("not a model.response")
+    };
+    assert_eq!(response.stop_reason.as_deref(), Some("end_turn"));
+
+    // The tick after the model call says what that call cost. Cached tokens
+    // count toward the token budget.
+    let EventType::BudgetTick { budget, price } = &events[5].body else {
+        panic!("not a budget.tick")
+    };
+    let price = price.as_ref().expect("price");
+    assert_eq!((price.usd, price.table.as_str()), (0.25, "fake"));
+    assert_eq!((budget.usd_used, budget.tokens_used), (0.25, 1150));
+
+    // A tool call costs nothing and its tick has no price.
+    let EventType::BudgetTick { budget, price } = &events[9].body else {
+        panic!("not a budget.tick")
+    };
+    assert_eq!((price.as_ref(), budget.usd_used), (None, 0.25));
 }

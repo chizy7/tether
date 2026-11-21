@@ -15,7 +15,7 @@ use tether_models::{Block, Completion, CompletionRequest, ModelAdapter, ModelErr
 use tether_policy::{budget, KillSwitch, OnTimeout, Policy, RunCtx, Verdict};
 use tether_trace::{NewEvent, TraceError, TraceWriter};
 use tether_types::{
-    BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, RunId,
+    BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, Price, RunId,
     RunState, ToolCall, ToolResult, SCHEMA_VERSION,
 };
 use time::OffsetDateTime;
@@ -170,6 +170,7 @@ impl Run {
             }
         }
 
+        let asked_model = req.model.clone();
         let sent_ms = self.deps.clock.now_ms();
         let completion = match self.deps.model.complete(req).await {
             Ok(completion) => completion,
@@ -180,9 +181,18 @@ impl Run {
         };
         let latency_ms = self.deps.clock.now_ms().saturating_sub(sent_ms);
 
-        self.budget.tokens_used += completion.usage.input_tokens + completion.usage.output_tokens;
-        if let Some(price) = self.deps.model.price(&completion.usage) {
-            self.budget.usd_used += price.0;
+        // Cached tokens are tokens the model read or wrote too.
+        let usage = completion.usage;
+        self.budget.tokens_used += usage.input_tokens
+            + usage.output_tokens
+            + usage.cache_read_tokens
+            + usage.cache_write_tokens;
+        // Priced as the model that answered, which a provider-side fallback
+        // can make different from the one asked for.
+        let answered_by = completion.model.as_deref().unwrap_or(&asked_model);
+        let price = self.deps.model.price(answered_by, &usage);
+        if let Some(price) = &price {
+            self.budget.usd_used += price.usd;
         }
 
         let message = self.put_json(&completion.message).await?;
@@ -207,6 +217,7 @@ impl Run {
             message,
             tool_calls,
             usage: completion.usage,
+            stop_reason: completion.stop_reason.clone(),
             latency_ms,
             ttft_ms: completion.ttft_ms,
             stream: completion.stream,
@@ -215,7 +226,7 @@ impl Run {
         };
         self.emit(Some(asked.seq), EventType::ModelResponse(response))
             .await?;
-        self.tick(asked.seq).await?;
+        self.tick(asked.seq, price).await?;
         Ok(completion)
     }
 
@@ -279,7 +290,7 @@ impl Run {
         // The trace may hold a blob reference; the agent gets the content.
         self.emit(Some(asked.seq), EventType::ToolResult(result.clone()))
             .await?;
-        self.tick(asked.seq).await?;
+        self.tick(asked.seq, None).await?;
         Ok(result)
     }
 
@@ -353,11 +364,15 @@ impl Run {
         }
     }
 
-    /// Record the budget after the call that `parent` asked for.
-    async fn tick(&mut self, parent: u64) -> Result<(), RunError> {
+    /// Record the budget after the call that `parent` asked for, with what
+    /// the call cost if it was a priced model call.
+    async fn tick(&mut self, parent: u64, price: Option<Price>) -> Result<(), RunError> {
         self.tick_wall();
-        self.emit(Some(parent), EventType::BudgetTick(self.budget))
-            .await?;
+        let body = EventType::BudgetTick {
+            budget: self.budget,
+            price,
+        };
+        self.emit(Some(parent), body).await?;
         Ok(())
     }
 

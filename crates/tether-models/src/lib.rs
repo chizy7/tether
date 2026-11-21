@@ -3,7 +3,7 @@
 //!
 //! Streamed responses are collapsed into one `model.response` event with
 //! `stream: true` and `ttft_ms`. Pricing tables live in `pricing.toml`, not
-//! in code, and the price used is recorded in `budget.tick`.
+//! in code, and the price of each call is recorded in its `budget.tick`.
 //!
 //! Adapters work on real message content ([`CompletionRequest`],
 //! [`Completion`]) and know nothing about the trace. `tether-core` turns those
@@ -12,15 +12,27 @@
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tether_types::Usage;
+use tether_types::{Price, Usage};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Money(pub f64);
+pub mod pricing;
+
+pub use pricing::Pricing;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ModelError {
     #[error("provider error: {0}")]
     Provider(String),
+    /// The provider answered with an error status.
+    #[error("{kind} ({status}): {message}")]
+    Api {
+        status: u16,
+        /// The provider's error type, such as `rate_limit_error`.
+        kind: String,
+        message: String,
+        request_id: Option<String>,
+    },
+    #[error("no credentials: {0}")]
+    Credentials(String),
     #[error("replay: no recorded response for request hash {0}")]
     ReplayMiss(String),
 }
@@ -52,6 +64,14 @@ pub enum Block {
         content: serde_json::Value,
         #[serde(default)]
         is_error: bool,
+    },
+    /// A block only its provider understands, kept exactly as received:
+    /// reasoning blocks with their signatures, server tool results and the
+    /// like. An adapter sends it back unchanged to the provider that made it
+    /// and leaves it out for any other.
+    Provider {
+        provider: String,
+        block: serde_json::Value,
     },
 }
 
@@ -92,6 +112,13 @@ pub struct CompletionRequest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Completion {
     pub message: Message,
+    /// The model that answered, when the provider says. It can differ from
+    /// the one asked for, after a provider-side fallback for instance.
+    pub model: Option<String>,
+    /// Why the model stopped, in the provider's words. An agent should look
+    /// at this before acting on `message`: `refusal` and `max_tokens` are
+    /// successful responses that are not finished answers.
+    pub stop_reason: Option<String>,
     pub usage: Usage,
     /// Set when the response was streamed and collapsed.
     pub ttft_ms: Option<u64>,
@@ -109,6 +136,8 @@ impl Completion {
                 role: Role::Assistant,
                 content,
             },
+            model: None,
+            stop_reason: None,
             usage: Usage::default(),
             ttft_ms: None,
             stream: false,
@@ -143,12 +172,13 @@ impl Completion {
 pub trait ModelAdapter: Send + Sync {
     fn id(&self) -> &str;
     async fn complete(&self, req: CompletionRequest) -> Result<Completion, ModelError>;
-    /// `None` when the adapter cannot price (local models).
-    fn price(&self, usage: &Usage) -> Option<Money>;
+    /// What `usage` costs on `model`. `None` when the adapter cannot price
+    /// it: a local model, or one missing from the pricing table.
+    fn price(&self, model: &str, usage: &Usage) -> Option<Price>;
 }
 
 #[cfg(feature = "anthropic")]
-pub mod anthropic {}
+pub mod anthropic;
 #[cfg(feature = "openai_compat")]
 pub mod openai_compat {}
 #[cfg(feature = "ollama")]

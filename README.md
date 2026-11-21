@@ -7,12 +7,12 @@ you the things frameworks leave out: a sandbox, hard budgets, a permission
 layer, and a trace of every model call, tool call and policy decision that you
 can replay, diff and eval against.
 
-> Status: pre-alpha, v0.2 "it refuses" in progress. `tether run` plays a
+> Status: pre-alpha, v0.3 "it replays" in progress. `tether run` plays a
 > scripted agent under a policy file: rules allow, deny or ask at the terminal,
-> budgets halt the run, tools run in the process sandbox, and every decision
-> lands in a verifiable trace that `tether inspect` and `tether verify` read.
-> Real model adapters and the SDKs are not built yet, so an agent of your own
-> has to be Rust code linked against `tether-core`.
+> budgets halt the run, tools run in a sandbox, and every decision lands in a
+> verifiable trace that `tether inspect` and `tether verify` read. The
+> Anthropic adapter makes real model calls from Rust code linked against
+> `tether-core`. Replay, diff and the SDKs are not built yet.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)

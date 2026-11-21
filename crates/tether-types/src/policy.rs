@@ -31,3 +31,11 @@ pub struct BudgetSnapshot {
     pub tool_calls_used: u64,
     pub tool_calls_limit: Option<u64>,
 }
+
+/// What one model call cost, recorded on the `budget.tick` that follows it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Price {
+    pub usd: f64,
+    /// Version of the pricing table the cost was computed from.
+    pub table: String,
+}

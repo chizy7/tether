@@ -78,7 +78,14 @@ pub enum EventType {
     SandboxExit(serde_json::Value),
 
     #[serde(rename = "budget.tick")]
-    BudgetTick(crate::policy::BudgetSnapshot),
+    BudgetTick {
+        #[serde(flatten)]
+        budget: crate::policy::BudgetSnapshot,
+        /// Cost of the model call this tick follows. Absent after a tool
+        /// call, and when the adapter cannot price the model.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        price: Option<crate::policy::Price>,
+    },
 
     #[serde(rename = "checkpoint")]
     Checkpoint { step: u64, snapshot: Option<String> },

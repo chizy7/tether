@@ -15,10 +15,11 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }
+reqwest = { workspace = true, optional = true }
 
 [features]
 default = ["anthropic", "fake"]
-anthropic = []
+anthropic = ["dep:reqwest"]
 openai_compat = []
 ollama = []
 replay = []

@@ -127,16 +127,19 @@ fn describe(event: &Event) -> (&str, String) {
                 req.tools.len()
             ),
         ),
-        EventType::ModelResponse(resp) => (
-            "model.response",
-            format!(
+        EventType::ModelResponse(resp) => {
+            let mut line = format!(
                 "{} in / {} out tokens, {} ms, {} tool calls",
                 resp.usage.input_tokens,
                 resp.usage.output_tokens,
                 resp.latency_ms,
                 resp.tool_calls.len()
-            ),
-        ),
+            );
+            if let Some(reason) = &resp.stop_reason {
+                line.push_str(&format!(", {reason}"));
+            }
+            ("model.response", line)
+        }
         EventType::ToolCall(call) => (
             "tool.call",
             format!("{} {}", call.name, clip(&call.arguments.to_string())),
@@ -188,16 +191,22 @@ fn describe(event: &Event) -> (&str, String) {
         }
         EventType::SandboxExec(data) => ("sandbox.exec", clip(&data.to_string())),
         EventType::SandboxExit(data) => ("sandbox.exit", clip(&data.to_string())),
-        EventType::BudgetTick(budget) => (
-            "budget.tick",
-            format!(
+        EventType::BudgetTick { budget, price } => {
+            let mut line = format!(
                 "{} tokens, ${}, {} s, {} tool calls",
                 of(budget.tokens_used, budget.tokens_limit),
                 of(format!("{:.4}", budget.usd_used), budget.usd_limit),
                 of(budget.wall_secs_used, budget.wall_secs_limit),
                 of(budget.tool_calls_used, budget.tool_calls_limit),
-            ),
-        ),
+            );
+            if let Some(price) = price {
+                line.push_str(&format!(
+                    " (call ${:.4}, prices {})",
+                    price.usd, price.table
+                ));
+            }
+            ("budget.tick", line)
+        }
         EventType::Checkpoint { step, snapshot } => (
             "checkpoint",
             format!(

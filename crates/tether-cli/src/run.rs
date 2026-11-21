@@ -158,7 +158,7 @@ async fn agent(run: &mut Run, task: &str) -> Result<String, RunError> {
                         is_error: result.is_error,
                     });
                 }
-                Block::ToolResult { .. } => {}
+                Block::ToolResult { .. } | Block::Provider { .. } => {}
             }
         }
         if results.is_empty() {
