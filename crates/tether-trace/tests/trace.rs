@@ -1,9 +1,10 @@
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 
 use serde_json::json;
 use tether_trace::{
-    verify, BlobStore, NewEvent, TraceError, TraceReader, TraceWriter, INLINE_LIMIT,
+    verify, BlobStore, NewEvent, TraceError, TraceFollower, TraceReader, TraceWriter, INLINE_LIMIT,
 };
 use tether_types::{
     Event, EventType, ModelRequest, Payload, RunId, RunState, ToolCall, ToolResult,
@@ -294,4 +295,41 @@ fn blob_store_rejects_hashes_that_are_not_hashes() {
         );
         assert!(!store.contains(bad));
     }
+}
+
+#[test]
+fn a_follower_reads_a_trace_as_it_is_written_and_waits_out_a_half_line() {
+    let (path, events) = small_trace("follower");
+    let bytes = fs::read(&path).expect("read");
+    let line_ends: Vec<usize> = bytes
+        .iter()
+        .enumerate()
+        .filter_map(|(at, byte)| (*byte == b'\n').then_some(at + 1))
+        .collect();
+    assert!(events.len() >= 3);
+
+    // The trace so far: one whole event and half of the next.
+    let growing = path.with_file_name("growing.jsonl");
+    let cut = line_ends[0] + 10;
+    fs::write(&growing, &bytes[..cut]).expect("write");
+    let mut follower = TraceFollower::open(&growing).expect("open");
+    assert_eq!(follower.poll().expect("poll"), events[..1]);
+    // Nothing new, and the half line is not damage.
+    assert_eq!(follower.poll().expect("poll"), []);
+
+    // The writer finishes that event and writes the rest.
+    let mut file = fs::OpenOptions::new()
+        .append(true)
+        .open(&growing)
+        .expect("open");
+    file.write_all(&bytes[cut..]).expect("append");
+    assert_eq!(follower.poll().expect("poll"), events[1..]);
+    assert_eq!(follower.poll().expect("poll"), []);
+
+    // It verifies as it goes: an event out of order is an error.
+    file.write_all(&bytes[..line_ends[0]]).expect("append");
+    assert!(matches!(
+        follower.poll(),
+        Err(TraceError::SeqGap { found: 0, .. })
+    ));
 }

@@ -608,6 +608,54 @@ fails and 2 when the suite cannot be run. A task that cannot be replayed
 fails; the others still run. `--scripts <dir>` gives each task a scripted
 stand-in for the live model, for tests and demos.
 
+### OpenTelemetry export
+
+`tether export otlp <run>` turns a trace into OpenTelemetry spans and sends
+them to a collector. It reads the trace file and nothing else, so it works
+on any trace after the fact, and `--follow` exports a live run by reading
+the file as it grows (`TraceFollower` in `tether-trace`, which verifies the
+chain as it goes and waits out a half-written last line). The run loop has
+no exporter in it and no second code path.
+
+One OpenTelemetry trace per run:
+
+| Span | From | Notes |
+| --- | --- | --- |
+| `tether.run` | first event to last | Root. `run.state` changes are span events; totals from the last `budget.tick`; the outcome; an error status with the reason when the run halted |
+| `step N` | first to last event of the step | Child of the run. A `checkpoint` is a span event. A step done again after a resume is a second span |
+| `chat <model>` | `model.request` to `model.response` | Provider, model, token counts, stop reason, and the call's price from the tick that follows |
+| `execute_tool <name>` | `tool.call` to `tool.result` | Tool, server, call id, duration; an error status when the result is an error |
+| `policy.decision <outcome>` | the decision; for an ask, until its `policy.answer` | Child of the call it is about. Rule, reason, who answered. An ask's span is the time spent waiting |
+
+Model and tool spans use the OpenTelemetry GenAI attribute names where one
+exists (`gen_ai.operation.name`, `gen_ai.provider.name`,
+`gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.tool.name` and
+so on); everything else is under `tether.`. No message or tool content is
+exported, only what happened and how long it took: prompts, arguments and
+results stay in the trace.
+
+Trace and span ids are derived from the run id and each event's `seq`, so
+exporting a trace twice gives the same ids. A call or an ask with no answer
+in the trace, because the run halted or is still going, is closed at the
+last event and marked `tether.incomplete`.
+
+With `--follow`, a span is sent when it completes, so a step arrives after
+the calls inside it and the run's own span arrives last, when the run
+finishes or halts, or on Ctrl-C. A halted run that is resumed later is a new
+export.
+
+Spans go out as OTLP over HTTP in the JSON encoding, `POST <endpoint>/v1/traces`,
+which collectors accept on port 4318. This is written by hand in the CLI:
+the format is small and stable, and the OpenTelemetry SDK crates would be
+the largest dependency in the tree for one command. The endpoint is
+`--endpoint`, else `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (the whole address),
+else `OTEL_EXPORTER_OTLP_ENDPOINT`, else `http://localhost:4318`.
+`OTEL_EXPORTER_OTLP_HEADERS` carries credentials for a hosted backend and
+`OTEL_SERVICE_NAME` sets the service name, `tether` by default. `--out
+<file>` writes the requests to a file, one per line, and sends nothing.
+There is no gRPC transport and no retry: a collector that refuses is an
+error.
+
 ### Timings under replay
 
 Four things in a trace come from live clock reads, so a replay that measured

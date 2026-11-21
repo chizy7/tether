@@ -67,6 +67,6 @@ pub mod writer;
 
 pub use blob::BlobStore;
 pub use diff::{diff, TraceDiff};
-pub use reader::{verify, TraceReader, VerifyReport};
+pub use reader::{verify, TraceFollower, TraceReader, VerifyReport};
 pub use resumed::effective;
 pub use writer::{NewEvent, TraceWriter};

@@ -7,6 +7,7 @@ use tether_types::{Decision, Event, EventType, Payload};
 
 mod diff;
 mod eval;
+mod export;
 mod pack;
 mod replay;
 mod resume;
@@ -21,6 +22,31 @@ mod run;
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
+}
+
+#[derive(Subcommand)]
+enum ExportCmd {
+    /// Export a trace as OpenTelemetry spans: one trace per run, a span per
+    /// step, and under it a span for each model call, tool call and policy
+    /// decision. Sent as OTLP over HTTP in JSON to a collector, by default
+    /// the one at `http://localhost:4318`. The standard variables
+    /// `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` and
+    /// `OTEL_SERVICE_NAME` are read. No message or tool content is sent.
+    Otlp {
+        /// Path of the `<run>.jsonl`, or a packed `<run>.tar`.
+        run: PathBuf,
+        /// Keep reading the trace as it is written and export each span as
+        /// it completes, until the run finishes or halts, or Ctrl-C.
+        #[arg(long)]
+        follow: bool,
+        /// The collector's address; `/v1/traces` is added to it.
+        #[arg(long, conflicts_with = "out")]
+        endpoint: Option<String>,
+        /// Write the OTLP requests to this file, one JSON document per
+        /// line, and send nothing.
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -117,6 +143,11 @@ enum Cmd {
         #[arg(long)]
         scripts: Option<PathBuf>,
     },
+    /// Send a trace somewhere else in another format.
+    Export {
+        #[command(subcommand)]
+        format: ExportCmd,
+    },
     /// Print a trace in readable form. Takes the path of a `<run>.jsonl`.
     Inspect { run: String },
     /// Continue a halted or crashed run from its last checkpoint, appending
@@ -212,6 +243,23 @@ async fn main() -> anyhow::Result<()> {
                 Ok(true) => Ok(()),
                 Err(e) => Err(e),
             }
+        }
+        Cmd::Export {
+            format:
+                ExportCmd::Otlp {
+                    run,
+                    follow,
+                    endpoint,
+                    out,
+                },
+        } => {
+            let options = export::Options {
+                run,
+                follow,
+                endpoint,
+                out,
+            };
+            export::otlp(options).await
         }
         Cmd::Resume { run, script } => resume::resume(&run, script.as_deref()).await,
         Cmd::Pack { run, out } => pack::pack(&run, out.as_deref()),

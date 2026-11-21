@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Lines};
+use std::io::{BufRead, BufReader, Lines, Read};
 use std::path::Path;
 
 use tether_types::{Event, EventType, Payload, RunId, SCHEMA_VERSION};
@@ -18,12 +18,18 @@ use crate::{BlobStore, Result, TraceError};
 #[derive(Debug)]
 pub struct TraceReader {
     lines: Lines<BufReader<File>>,
+    check: Checker,
+    done: bool,
+}
+
+/// Parses lines in order and checks each against the ones before it.
+#[derive(Debug)]
+struct Checker {
     line_no: u64,
     verify: bool,
     next_seq: u64,
     prev_hash: String,
     run: Option<RunId>,
-    done: bool,
 }
 
 impl TraceReader {
@@ -31,11 +37,7 @@ impl TraceReader {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             lines: BufReader::new(File::open(path)?).lines(),
-            line_no: 0,
-            verify: true,
-            next_seq: 0,
-            prev_hash: String::new(),
-            run: None,
+            check: Checker::new(),
             done: false,
         })
     }
@@ -44,13 +46,25 @@ impl TraceReader {
     /// damaged one. Lines that do not parse are still errors.
     pub fn open_unverified(path: impl AsRef<Path>) -> Result<Self> {
         let mut reader = Self::open(path)?;
-        reader.verify = false;
+        reader.check.verify = false;
         Ok(reader)
     }
 
     /// Hash of the last event read: the head of the chain so far.
     pub fn head(&self) -> &str {
-        &self.prev_hash
+        &self.check.prev_hash
+    }
+}
+
+impl Checker {
+    fn new() -> Self {
+        Self {
+            line_no: 0,
+            verify: true,
+            next_seq: 0,
+            prev_hash: String::new(),
+            run: None,
+        }
     }
 
     fn malformed(&self, reason: impl Into<String>) -> TraceError {
@@ -60,7 +74,9 @@ impl TraceReader {
         }
     }
 
+    /// The event on the next line of the trace.
     fn read_line(&mut self, line: &str) -> Result<Event> {
+        self.line_no += 1;
         let event: Event = serde_json::from_str(line).map_err(|e| self.malformed(e.to_string()))?;
         if !self.verify {
             return Ok(event);
@@ -122,12 +138,50 @@ impl Iterator for TraceReader {
                 return Some(Err(e.into()));
             }
         };
-        self.line_no += 1;
-        let result = self.read_line(&line);
-        if result.is_err() && self.verify {
+        let result = self.check.read_line(&line);
+        if result.is_err() && self.check.verify {
             self.done = true;
         }
         Some(result)
+    }
+}
+
+/// Reads a trace that may still be being written, verifying it as it goes.
+///
+/// Each [`poll`](Self::poll) returns the events written since the last one.
+/// A last line with no newline yet is an event half written: it is left for
+/// the next poll, not reported as damage.
+#[derive(Debug)]
+pub struct TraceFollower {
+    file: File,
+    /// Bytes read that do not yet end in a newline.
+    pending: Vec<u8>,
+    check: Checker,
+}
+
+impl TraceFollower {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        Ok(Self {
+            file: File::open(path)?,
+            pending: Vec::new(),
+            check: Checker::new(),
+        })
+    }
+
+    /// The events appended since the last poll, in order. Empty when there
+    /// are none yet. An error is final: the trace is damaged from there on.
+    pub fn poll(&mut self) -> Result<Vec<Event>> {
+        self.file.read_to_end(&mut self.pending)?;
+        let Some(end) = self.pending.iter().rposition(|byte| *byte == b'\n') else {
+            return Ok(Vec::new());
+        };
+        let rest = self.pending.split_off(end + 1);
+        let complete = std::mem::replace(&mut self.pending, rest);
+        let text = std::str::from_utf8(&complete)
+            .map_err(|e| self.check.malformed(format!("not UTF-8: {e}")))?;
+        text.lines()
+            .map(|line| self.check.read_line(line))
+            .collect()
     }
 }
 

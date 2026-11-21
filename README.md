@@ -17,7 +17,8 @@ can replay, diff and eval against.
 > and no cost, optionally under a changed policy or prompt, and `tether diff`
 > shows where two runs diverge. `tether eval` (on `master`, not yet in a
 > release) replays a suite of recorded tasks under a new prompt or model and
-> checks each against assertions over its trace. `tether resume` carries a halted or crashed
+> checks each against assertions over its trace, and `tether export otlp`
+> (also on `master`) sends a trace to an OpenTelemetry collector as spans. `tether resume` carries a halted or crashed
 > run on from its last checkpoint, and `tether pack` puts a trace and its
 > blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
 > for agents in other languages, and the Python SDK in `sdks/python` is the
