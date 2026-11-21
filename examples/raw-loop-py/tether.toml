@@ -1,0 +1,20 @@
+# Policy for the raw-loop-py example. A real model can ask for anything, so
+# only the file tools and a few read-only commands are allowed. Anything else
+# asks, and with nobody attached to answer, an ask halts the run.
+
+[budget]
+max_usd = 0.50
+max_tool_calls = 20
+max_wall_secs = 300
+# Do not wait ten minutes for an answer nobody is there to give.
+ask_timeout_secs = 5
+
+[[rule]]
+name = "files"
+match = { tool = ["sandbox.write_file", "sandbox.read_file", "sandbox.list_dir"] }
+action = "allow"
+
+[[rule]]
+name = "read-only-commands"
+match = { tool = "sandbox.exec", argv0 = ["cat", "ls", "head", "wc", "pwd", "echo"] }
+action = "allow"

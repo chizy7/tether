@@ -17,7 +17,8 @@ can replay, diff and eval against.
 > shows where two runs diverge. `tether resume` carries a halted or crashed
 > run on from its last checkpoint, and `tether pack` puts a trace and its
 > blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
-> for agents in other languages; the SDKs that talk to it are not built yet.
+> for agents in other languages, and the Python SDK in `sdks/python` is the
+> first client. It is not on PyPI yet; install it from a checkout.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)

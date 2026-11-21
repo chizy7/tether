@@ -10,3 +10,5 @@ node_modules/
 __pycache__/
 *.egg-info/
 dist/
+.venv/
+.pytest_cache/

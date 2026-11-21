@@ -33,6 +33,22 @@ jobs:
       - run: cargo clippy -p tether-sandbox --all-targets --features docker -- -D warnings
       - run: cargo test -p tether-sandbox --features docker
 
+  python-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # The SDK's tests drive a real daemon.
+      - run: cargo build -p tetherd
+      - run: pip install -e "sdks/python[dev]"
+      - run: python -m pytest sdks/python
+      # The committed gRPC stubs must match the proto.
+      - run: sh sdks/python/scripts/gen_proto.sh && git diff --exit-code sdks/python/src/tether/_proto
+
   msrv:
     runs-on: ubuntu-latest
     steps:

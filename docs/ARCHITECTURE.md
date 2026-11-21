@@ -563,6 +563,23 @@ subcommand calling the same `tetherd::serve`), in its own process group so
 Ctrl-C meant for the agent does not take it down, logging to
 `<dir>/tetherd.log`.
 
+The Python SDK (`sdks/python`, package `tether-sdk`, module `tether`) is
+the first client. `tether.Run(...)` connects to the socket, starting the
+daemon if nothing answers, and creates a run; `run.complete` and
+`run.call_tool` are one request each; `run.tools`, `finish`, `halt`,
+`answer` and `events` map to the rest. As a context manager, a run that
+leaves its block without a word is finished, or halted if the block raised.
+The SDK holds no logic: messages are plain dicts in Tether's form, passed
+through as JSON, and the only helpers build a user or system message and the
+message of tool results. Its gRPC stubs are generated from the proto and
+committed, so installing it needs no protoc. `examples/raw-loop-py` is the
+Python twin of `examples/raw-loop`: the two agents leave traces that
+`tether diff` finds no divergence between.
+
+One thing every client over a Unix socket must do: name an HTTP/2 authority.
+gRPC clients default to sending the socket's path, which the daemon's HTTP
+stack rejects. The SDK sets `localhost`.
+
 Limits today: the daemon has only the `process` sandbox and the `anthropic`
 and `fake` providers; a run whose client disappears without `Finish` or
 `Halt` stays in progress and keeps the daemon up; and an ask from a run with

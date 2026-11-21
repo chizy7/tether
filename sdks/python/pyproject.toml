@@ -1,0 +1,30 @@
+[project]
+name = "tether-sdk"
+version = "0.1.0"
+description = "Python client for Tether: run agents you don't trust on infrastructure you do."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+dependencies = [
+    # The committed stubs in tether/_proto were generated with these versions
+    # and refuse to load on older ones. Regenerate with scripts/gen_proto.sh.
+    "grpcio>=1.85.3",
+    "protobuf>=7.35.1,<8",
+]
+
+[project.optional-dependencies]
+# grpcio-tools is pinned so regenerating the stubs gives the committed bytes.
+dev = ["pytest>=8", "grpcio-tools==1.85.3"]
+
+[project.urls]
+Repository = "https://github.com/chizy7/tether"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tether"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
