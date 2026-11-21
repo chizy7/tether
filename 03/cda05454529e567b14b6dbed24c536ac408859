@@ -1,0 +1,109 @@
+.github/workflows/pypi.yml
+  s_830eda70c48de9::t_8aa439480132d1 1
+  s_830eda70c48de9::t_7820d39575fb97 2-57
+  s_830eda70c48de9::t_62bfaae445bd9c 58-60
+README.md
+  s_830eda70c48de9::t_c36e1449ee5397 13-15
+  s_830eda70c48de9::t_cf59d6b97e29b4 16
+  s_830eda70c48de9::t_a463fe3ee27675 17
+  s_830eda70c48de9::t_12ddbb3127003a 18
+  s_830eda70c48de9::t_ea2abacff7312a 19
+  s_830eda70c48de9::t_7f21bd897caa5a 20
+  s_830eda70c48de9::t_7820d39575fb97 21,45-48,50-56,93
+  s_830eda70c48de9::t_2a0c6538d6994e 30-36
+  s_830eda70c48de9::t_0986ceae5bd907 37
+  s_830eda70c48de9::t_8aa439480132d1 49
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_8aa439480132d1 598
+docs/PLAN.md
+  s_830eda70c48de9::t_1b7373b2e524ac 93
+  s_830eda70c48de9::t_a671b8588b7ace 94
+  s_830eda70c48de9::t_4119242c24f8ad 95
+  s_830eda70c48de9::t_cf59d6b97e29b4 96
+  s_830eda70c48de9::t_a463fe3ee27675 97
+  s_830eda70c48de9::t_12ddbb3127003a 98
+  s_830eda70c48de9::t_ea2abacff7312a 99
+  s_830eda70c48de9::t_7f21bd897caa5a 100
+  s_830eda70c48de9::t_2a0c6538d6994e 101
+  s_830eda70c48de9::t_c36e1449ee5397 102
+  s_830eda70c48de9::t_8aa439480132d1 103,120
+docs/RELEASING.md
+  s_830eda70c48de9::t_7820d39575fb97 1-8,10-35,37-49
+  s_830eda70c48de9::t_8aa439480132d1 9,36
+sdks/python/README.md
+  s_830eda70c48de9::t_8aa439480132d1 1,28
+  s_830eda70c48de9::t_c5c296069b8834 3,23
+  s_830eda70c48de9::t_1af1c32cbcd535 27,29-35
+  s_830eda70c48de9::t_8522e6eab523ee 55,63
+sdks/python/pyproject.toml
+  s_830eda70c48de9::t_8aa439480132d1 2
+  s_830eda70c48de9::t_9c139f23bb12f8 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "03cda05454529e567b14b6dbed24c536ac408859",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:e673724aa842305fe3fd1fe7e0fa28f7878152faf17a38b4e7f19dc8ba7dadcb",
+      "stats": {
+        "total_additions": 10,
+        "total_deletions": 10,
+        "accepted_lines": 10,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/pypi.yml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "docs/RELEASING.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "sdks/python/README.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"03cda05454529e567b14b6dbed24c536ac408859","tree":"ac48652f611cca9e60610b8be62b6fe5a08a4462","files":{".github/workflows/pypi.yml":"6791fb860f7ececeb4a65668080bb44681dfee40","README.md":"0348100fa884636dd6de010b3e2fe8a15215b20b","docs/ARCHITECTURE.md":"949f79b27d877032483ce430f06916afdf6db6e6","docs/PLAN.md":"e731bc829df5880cda0fac7956143ea081224b18","docs/RELEASING.md":"756ca405d0d1d0e2270ac6b89cfeb30254ea356e","sdks/python/README.md":"18049409862dfc0b6d0dd480afd89121e99b914b","sdks/python/pyproject.toml":"909449cdcdc55510f1bf51f940e26368b7f08cd7"},"digest":"74d7c44c60d090343cdf5521bb0076da4f6185c7534b9740a29374fc427c3edf"}
+}
