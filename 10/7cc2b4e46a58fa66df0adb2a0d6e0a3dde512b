@@ -1,0 +1,50 @@
+.github/workflows/npm.yml
+  s_830eda70c48de9::t_8a2dad4d478075 41-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "107cc2b4e46a58fa66df0adb2a0d6e0a3dde512b",
+  "branch": "typescript-sdk",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:7de14593c18841d644fefdd821363871084e9b4e0d1d73ab153686afa5765a75",
+      "total_additions": 3,
+      "total_deletions": 2,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:7de14593c18841d644fefdd821363871084e9b4e0d1d73ab153686afa5765a75",
+      "stats": {
+        "total_additions": 3,
+        "total_deletions": 2,
+        "accepted_lines": 3,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/npm.yml": {
+            "total_additions": 3,
+            "total_deletions": 2,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"107cc2b4e46a58fa66df0adb2a0d6e0a3dde512b","tree":"11ab87425179ece472522bd6302e7b03e0a770f6","files":{".github/workflows/npm.yml":"71f9f8086a67ca2a355fa169f4ee7554d4a7e893"},"digest":"b255525fda35f99d624b9496bbbd6ee003fab6a7cbe72c88718a8e10efe81fb0"}
+}
