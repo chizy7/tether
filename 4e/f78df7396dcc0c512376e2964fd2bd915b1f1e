@@ -1,0 +1,83 @@
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_ff412837a1e47e 52-63
+README.md
+  s_830eda70c48de9::t_71831677682b43 10-11,18-19
+  s_830eda70c48de9::t_81f50b85c91aea 20-21
+  s_830eda70c48de9::t_6ae26e38d613ef 24
+  s_830eda70c48de9::t_5eeeb118d359c3 25-26
+  s_830eda70c48de9::t_a5f8230f03151b 29-33,40
+  s_830eda70c48de9::t_2be10e328c9792 34-39
+  s_830eda70c48de9::t_98aa5c848863e5 66-67,71-72,78-79,83-84
+docs/PLAN.md
+  s_830eda70c48de9::t_7adff82d332be7 122
+  s_830eda70c48de9::t_9bd7d23de6f2d2 123
+  s_830eda70c48de9::t_81f50b85c91aea 124
+  s_830eda70c48de9::t_306d3632f04aa6 125
+  s_830eda70c48de9::t_5eeeb118d359c3 126
+  s_830eda70c48de9::t_2be10e328c9792 127
+examples/evals/.gitignore
+  s_830eda70c48de9::t_5181900707b5e4 1-3
+examples/evals/README.md
+  s_830eda70c48de9::t_ff412837a1e47e 1-3,5,8-9,12-49,52-83,91-99
+  s_830eda70c48de9::t_2be10e328c9792 4,50-51,85-90
+  s_830eda70c48de9::t_a5f8230f03151b 6-7,10-11,84
+examples/evals/demo.tape
+  s_830eda70c48de9::t_ff412837a1e47e 1-35
+examples/evals/prompt.txt
+  s_830eda70c48de9::t_5181900707b5e4 1
+examples/evals/record.py
+  s_830eda70c48de9::t_5a0fdcac6196fd 1-138
+examples/evals/regressed.txt
+  s_830eda70c48de9::t_5181900707b5e4 1
+examples/evals/suite/eval.toml
+  s_830eda70c48de9::t_5181900707b5e4 1-68
+examples/evals/tasks.json
+  s_830eda70c48de9::t_5181900707b5e4 1-35,38,40-41,43-45
+  s_830eda70c48de9::t_a5f8230f03151b 36-37,39,42
+examples/evals/tether.toml
+  s_830eda70c48de9::t_5181900707b5e4 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "4ef78df7396dcc0c512376e2964fd2bd915b1f1e",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:b2ae43491681ead042f68235043114ac82bfe2999219efcd457379425bc795c0",
+      "stats": {
+        "total_additions": 16,
+        "total_deletions": 16,
+        "accepted_lines": 16,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 6,
+            "total_deletions": 4,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/evals/README.md": {
+            "total_additions": 9,
+            "total_deletions": 11,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"4ef78df7396dcc0c512376e2964fd2bd915b1f1e","tree":"fcca0841b20e41afdd4d768c5fe32ad6cf7bf7f0","files":{".github/workflows/ci.yml":"e182320462c38823eb49596f26e7ecb6327da3bc","README.md":"9799201024745b4f950a9c5a0f5955a279a3cbe3","docs/PLAN.md":"49b43a862f3c147e09a1287985a05256bbc89ab5","examples/evals/.gitignore":"3f4cc1cb3876616cbf18162627fd3b6cab3b466f","examples/evals/README.md":"438cc4bac3ce40d8afccc40f71df4641dc8b2c29","examples/evals/demo.tape":"499d59f8335fcbbfb481eafa77568a9480472634","examples/evals/prompt.txt":"c8e484edc3a8dabade9cc4589c654353a011b949","examples/evals/record.py":"146e5edf9e837c5502033f5710cf2736a0ed50f7","examples/evals/regressed.txt":"0945ccad80767729340e552c0ffae846a05bd934","examples/evals/suite/eval.toml":"d8df5da1bbcacd410f5e6067a7dcd2b090ca2c33","examples/evals/tasks.json":"dd86533074fe69cb1906778f030f919462697a6a","examples/evals/tether.toml":"220adaf9443699b005ee78d907ddbb621415a8aa"},"digest":"b5f13a4e1a2f32617b3c407b6d655ff0c3edcbd2f94f1b113d3ab6836da1bd65"}
+}
