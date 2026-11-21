@@ -1,0 +1,137 @@
+docs/PLAN.md
+  s_830eda70c48de9::t_f773a9ac7e7743 75
+examples/raw-loop/main.rs
+  s_830eda70c48de9::t_8ec3cd1de1e7b7 25
+  s_830eda70c48de9::t_9169e90b8c4a44 98
+crates/tether-sandbox/src/lib.rs
+  s_830eda70c48de9::t_9169e90b8c4a44 3-7,13-14,19,21-22,24-26,30-44,100-101
+README.md
+  s_830eda70c48de9::t_f773a9ac7e7743 72-84,88-91
+  s_830eda70c48de9::t_787157434f752d 85-87
+crates/tether-sandbox/src/process.rs
+  s_830eda70c48de9::t_8ec3cd1de1e7b7 51-52,190
+  s_830eda70c48de9::t_9169e90b8c4a44 3-20,26,33-35,37,41-50,53,58,67,71,74,79,99-163,167-182,185,187-189,191-194,196-197,202,208-209,227,231,236-248,252-253
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_f773a9ac7e7743 152,156-176
+crates/tether-sandbox/Cargo.toml
+  s_830eda70c48de9::t_59d0484e0fb24f 17-22
+crates/tether-sandbox/tests/process.rs
+  s_830eda70c48de9::t_4451a2fc390538 8-24,131-300
+  s_830eda70c48de9::t_9169e90b8c4a44 31
+crates/tether-cli/src/run.rs
+  s_830eda70c48de9::t_8ec3cd1de1e7b7 26
+  s_830eda70c48de9::t_9169e90b8c4a44 193
+crates/tether-sandbox/src/seccomp.rs
+  s_830eda70c48de9::t_4451a2fc390538 22-24,84-85,94
+  s_830eda70c48de9::t_9169e90b8c4a44 1-21,25-56,59-83,86-93,95-106
+  s_830eda70c48de9::t_f773a9ac7e7743 57-58
+crates/tether-mcp/tests/sandbox_server.rs
+  s_830eda70c48de9::t_8ec3cd1de1e7b7 10
+  s_830eda70c48de9::t_9169e90b8c4a44 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "2.2.1",
+  "base_commit_sha": "0603ac2bc264836f77473a1acaa9698a7fbce6bf",
+  "branch": "process-rlimits-seccomp",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:39905e1e287cd8d9fffce06596e084d3c642506906ae68a724569bab8c7edd35",
+      "total_additions": 546,
+      "total_deletions": 76,
+      "accepted_lines": 533,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:39905e1e287cd8d9fffce06596e084d3c642506906ae68a724569bab8c7edd35",
+      "stats": {
+        "total_additions": 546,
+        "total_deletions": 76,
+        "accepted_lines": 533,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 22,
+            "total_deletions": 7,
+            "accepted_lines": 20,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/run.rs": {
+            "total_additions": 2,
+            "total_deletions": 5,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "crates/tether-mcp/tests/sandbox_server.rs": {
+            "total_additions": 2,
+            "total_deletions": 5,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/Cargo.toml": {
+            "total_additions": 6,
+            "total_deletions": 0,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/lib.rs": {
+            "total_additions": 30,
+            "total_deletions": 4,
+            "accepted_lines": 30,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/process.rs": {
+            "total_additions": 154,
+            "total_deletions": 29,
+            "accepted_lines": 153,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/seccomp.rs": {
+            "total_additions": 116,
+            "total_deletions": 10,
+            "accepted_lines": 106,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/tests/process.rs": {
+            "total_additions": 189,
+            "total_deletions": 4,
+            "accepted_lines": 189,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 22,
+            "total_deletions": 6,
+            "accepted_lines": 22,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop/main.rs": {
+            "total_additions": 2,
+            "total_deletions": 5,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  }
+}

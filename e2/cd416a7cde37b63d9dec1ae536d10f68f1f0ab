@@ -1,0 +1,65 @@
+crates/tetherd/Cargo.toml
+  s_830eda70c48de9::t_cfacea4b80bb19 21
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_cfacea4b80bb19 5,16,28-29
+Cargo.toml
+  s_830eda70c48de9::t_cfacea4b80bb19 20,35-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "2.2.1",
+  "base_commit_sha": "e2cd416a7cde37b63d9dec1ae536d10f68f1f0ab",
+  "branch": "deps-and-ci-refresh",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:a240282709ccab12c10cbcda502a8ec7b6e663fa40fd1fd34dd08db078951283",
+      "total_additions": 10,
+      "total_deletions": 10,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:a240282709ccab12c10cbcda502a8ec7b6e663fa40fd1fd34dd08db078951283",
+      "stats": {
+        "total_additions": 10,
+        "total_deletions": 10,
+        "accepted_lines": 10,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/ci.yml": {
+            "total_additions": 4,
+            "total_deletions": 4,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "Cargo.toml": {
+            "total_additions": 5,
+            "total_deletions": 5,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "crates/tetherd/Cargo.toml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  }
+}

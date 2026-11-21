@@ -1,0 +1,107 @@
+examples/refuses/tether.toml
+  s_830eda70c48de9::t_63720a49d38d1c 1-21
+examples/refuses/demo.tape
+  s_830eda70c48de9::t_c9bf6cdb309579 1-27
+docs/PLAN.md
+  s_830eda70c48de9::t_493bbeaf471360 77
+.gitignore
+  s_830eda70c48de9::t_4d9a7c0d3ba8f8 6
+examples/refuses/script.json
+  s_830eda70c48de9::t_63720a49d38d1c 1-21
+crates/tether-cli/tests/cli.rs
+  s_830eda70c48de9::t_4d9a7c0d3ba8f8 350-400,402
+  s_830eda70c48de9::t_5d4fb40791b4c4 401
+README.md
+  s_830eda70c48de9::t_c9bf6cdb309579 18,23,28-29
+  s_830eda70c48de9::t_493bbeaf471360 19-22
+examples/refuses/README.md
+  s_830eda70c48de9::t_4d9a7c0d3ba8f8 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "2.2.1",
+  "base_commit_sha": "7e793c1edb73e5f86a381a9139f9483a1f393c47",
+  "branch": "refuses-demo",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:fa3cc49c04597091bdc0f5bbaa69d6b0d53bc19869444a7c7a09de657b23072a",
+      "total_additions": 188,
+      "total_deletions": 20,
+      "accepted_lines": 170,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:fa3cc49c04597091bdc0f5bbaa69d6b0d53bc19869444a7c7a09de657b23072a",
+      "stats": {
+        "total_additions": 188,
+        "total_deletions": 20,
+        "accepted_lines": 170,
+        "overriden_lines": 0,
+        "files": {
+          ".gitignore": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 13,
+            "total_deletions": 8,
+            "accepted_lines": 12,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/tests/cli.rs": {
+            "total_additions": 54,
+            "total_deletions": 1,
+            "accepted_lines": 53,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/refuses/README.md": {
+            "total_additions": 34,
+            "total_deletions": 0,
+            "accepted_lines": 34,
+            "overriden_lines": 0
+          },
+          "examples/refuses/demo.tape": {
+            "total_additions": 27,
+            "total_deletions": 0,
+            "accepted_lines": 27,
+            "overriden_lines": 0
+          },
+          "examples/refuses/script.json": {
+            "total_additions": 21,
+            "total_deletions": 0,
+            "accepted_lines": 21,
+            "overriden_lines": 0
+          },
+          "examples/refuses/tether.toml": {
+            "total_additions": 21,
+            "total_deletions": 0,
+            "accepted_lines": 21,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  }
+}
