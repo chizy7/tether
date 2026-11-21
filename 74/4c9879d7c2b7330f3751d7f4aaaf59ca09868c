@@ -1,0 +1,62 @@
+CLAUDE.md
+  s_830eda70c48de9::t_aaa58c2256e0e5 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "744c9879d7c2b7330f3751d7f4aaaf59ca09868c",
+  "branch": "remove-rusqlite",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:97f37f213f87444a05be0bd365f1960971891105399fa0437cb4231e56099c6c",
+      "total_additions": 1,
+      "total_deletions": 3,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:97f37f213f87444a05be0bd365f1960971891105399fa0437cb4231e56099c6c",
+      "stats": {
+        "total_additions": 1,
+        "total_deletions": 3,
+        "accepted_lines": 1,
+        "overriden_lines": 0,
+        "files": {
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "Cargo.toml": {
+            "total_additions": 0,
+            "total_deletions": 1,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/Cargo.toml": {
+            "total_additions": 0,
+            "total_deletions": 1,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"744c9879d7c2b7330f3751d7f4aaaf59ca09868c","tree":"ed5df13f47f4b885663e3c0b1fe571598bed3756","files":{"CLAUDE.md":"b22137bb11b7df11fc0002c96a288143c11d4fd0"},"digest":"bb86a3df375309759992711530051e69b600acf9a226f187a09757827ce5d10a"}
+}
