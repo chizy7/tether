@@ -27,6 +27,14 @@ The [refuses example](examples/refuses): a scripted agent tries `rm -rf .`,
 the `no-rm` rule denies it, and `tether inspect` shows the call, the decision
 with the rule that matched, and the failed result the agent got back.
 
+![Twenty tasks recorded against Claude Opus 5.5, replayed at no cost, then run again under a changed prompt, with one table of what changed](docs/replays.gif)
+
+The [replays example](examples/replays) records twenty small tasks against a
+real model, replays each with no model call and no cost, then changes the
+system prompt, replays again live, and prints what changed in one table. All
+twenty replays match their recordings; under the new prompt all twenty make
+more tool calls.
+
 ![A wrapped agent runs under Tether, then tether inspect prints its trace and tether verify checks it](docs/demo.gif)
 
 The [raw-loop example](examples/raw-loop) running under Tether with a scripted

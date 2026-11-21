@@ -1,0 +1,22 @@
+[
+  {"id": "hello", "task": "Create hello.txt containing the single word hello."},
+  {"id": "numbers", "task": "Write the numbers 1 to 5, one per line, to numbers.txt."},
+  {"id": "colors", "task": "Write three colour names to colors.txt, one per line."},
+  {"id": "haiku", "task": "Write a haiku about the sea to haiku.txt."},
+  {"id": "json", "task": "Create config.json holding a JSON object with keys name and version."},
+  {"id": "csv", "task": "Create people.csv with a header row and two rows of made-up people."},
+  {"id": "readme", "task": "Write a README.md with a title and one sentence describing a to-do app."},
+  {"id": "two-files", "task": "Create a.txt containing A and b.txt containing B."},
+  {"id": "nested", "task": "Create notes/today.txt containing the word draft."},
+  {"id": "count", "task": "Write a five-word sentence to line.txt, then tell me how many words it has."},
+  {"id": "list", "task": "Create x.txt and y.txt, each containing ok, then list the directory."},
+  {"id": "copy", "task": "Write hello to src.txt, then create dst.txt with the same content."},
+  {"id": "upper", "task": "Write the word tether to lower.txt and its upper-case form to upper.txt."},
+  {"id": "sum", "task": "Write the numbers 2, 3 and 5 to nums.txt, one per line, and tell me their sum."},
+  {"id": "todo", "task": "Create todo.md with three unchecked Markdown checkboxes."},
+  {"id": "env", "task": "Create settings.env with two KEY=value lines."},
+  {"id": "html", "task": "Create index.html with a minimal page whose title is Demo."},
+  {"id": "script", "task": "Create greet.sh that echoes hi. Do not run it."},
+  {"id": "table", "task": "Create table.md holding a Markdown table with two columns and two rows."},
+  {"id": "summary", "task": "Create one.txt containing 1 and two.txt containing 2, then tell me which files exist."}
+]

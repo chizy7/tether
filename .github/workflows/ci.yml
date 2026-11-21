@@ -46,6 +46,9 @@ jobs:
       - run: cargo build -p tetherd
       - run: pip install -e "sdks/python[dev]"
       - run: python -m pytest sdks/python
+      # The v0.3 demo with the scripted model: record, replay, re-prompt, diff.
+      - run: cargo build -p tether-cli
+      - run: PATH="$PWD/target/debug:$PATH" python examples/replays/demo.py
       # The committed gRPC stubs must match the proto.
       - run: sh sdks/python/scripts/gen_proto.sh && git diff --exit-code sdks/python/src/tether/_proto
 

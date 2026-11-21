@@ -98,7 +98,7 @@ dependency order; the last three can slip to v0.4 without hurting the demo.
 - [x] `tether pack <run>` and `tether unpack`: one tar of JSONL plus blobs, verified on pack and on unpack; `inspect`, `verify`, `diff` and `replay` accept the tar directly
 - [x] `tetherd`: tonic service from `proto/tether.proto` on a Unix socket, started on demand by the CLI and SDK, exits after its last run. Use a vendored `protoc` (`protoc-bin-vendored` or prost's) so `cargo build` never needs a system install
 - [x] Python SDK in `sdks/python`: `Run`, `complete`, `call_tool`, `tools`, context manager; thin gRPC client, no logic. `examples/raw-loop-py` is the Python twin of `raw-loop`
-- [ ] Demo: `examples/replays` records 20 tasks, edits the prompt, replays with `--live-after-divergence`, diffs, prints the table; GIF
+- [x] Demo: `examples/replays` records 20 tasks, edits the prompt, replays with `--live-after-divergence`, diffs, prints the table; GIF
 - [ ] (may slip) `openai_compat` adapter behind its feature
 - [ ] (may slip) cargo-dist release workflow, `curl | sh` install, `pip install tether-sdk` on PyPI
 - [ ] (may slip) `rusqlite` index for `inspect` and `diff` on traces over 100k events; measure before building

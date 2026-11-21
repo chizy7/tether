@@ -1,0 +1,19 @@
+# Policy for the replays demo: the file tools and a few read-only commands,
+# with a small budget per run. Anything else asks, and with nobody attached
+# to answer, an ask halts the run.
+
+[budget]
+max_usd = 0.15
+max_tool_calls = 15
+max_wall_secs = 120
+ask_timeout_secs = 5
+
+[[rule]]
+name = "files"
+match = { tool = ["sandbox.write_file", "sandbox.read_file", "sandbox.list_dir"] }
+action = "allow"
+
+[[rule]]
+name = "read-only-commands"
+match = { tool = "sandbox.exec", argv0 = ["cat", "ls", "head", "wc", "pwd", "echo"] }
+action = "allow"
