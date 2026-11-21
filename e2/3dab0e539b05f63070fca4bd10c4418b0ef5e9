@@ -1,0 +1,207 @@
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_306d3632f04aa6 55-75
+.github/workflows/npm.yml
+  s_830eda70c48de9::t_306d3632f04aa6 1-67
+README.md
+  s_830eda70c48de9::t_6ae26e38d613ef 24-25
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_6ae26e38d613ef 753-762
+docs/PLAN.md
+  s_830eda70c48de9::t_306d3632f04aa6 125
+docs/RELEASING.md
+  s_830eda70c48de9::t_306d3632f04aa6 3,10-11,14,19-23
+  s_830eda70c48de9::t_6ae26e38d613ef 33-35,43-51
+examples/raw-loop-ts/.gitignore
+  s_830eda70c48de9::t_4377e9e5d253a4 1
+examples/raw-loop-ts/README.md
+  s_830eda70c48de9::t_306d3632f04aa6 1-57
+examples/raw-loop-ts/agent.ts
+  s_830eda70c48de9::t_4377e9e5d253a4 1-94
+examples/raw-loop-ts/package.json
+  s_830eda70c48de9::t_4377e9e5d253a4 1-15
+examples/raw-loop-ts/script.json
+  s_830eda70c48de9::t_4377e9e5d253a4 1-9
+examples/raw-loop-ts/tether.toml
+  s_830eda70c48de9::t_4377e9e5d253a4 1-20
+sdks/typescript/.gitignore
+  s_830eda70c48de9::t_b74b4d99cf5982 1-4
+sdks/typescript/README.md
+  s_830eda70c48de9::t_306d3632f04aa6 1,3-93
+sdks/typescript/package.json
+  s_830eda70c48de9::t_b74b4d99cf5982 1-34
+sdks/typescript/scripts/copy-proto.mjs
+  s_830eda70c48de9::t_b74b4d99cf5982 1-13
+sdks/typescript/src/index.ts
+  s_830eda70c48de9::t_41a3182981c90f 1-30
+sdks/typescript/src/run.ts
+  s_830eda70c48de9::t_76a5cf8afbd07b 1-2,4-100,103-448,450-502
+  s_830eda70c48de9::t_41a3182981c90f 3
+  s_830eda70c48de9::t_68c0babebaa986 101-102,449
+sdks/typescript/test/run.test.ts
+  s_830eda70c48de9::t_68c0babebaa986 1-270,276-284
+  s_830eda70c48de9::t_75ada6e423e6e4 271-275
+sdks/typescript/tsconfig.json
+  s_830eda70c48de9::t_b74b4d99cf5982 1-3,5-16
+  s_830eda70c48de9::t_437538775e3679 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "e23dab0e539b05f63070fca4bd10c4418b0ef5e9",
+  "branch": "typescript-sdk",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:9c72101fcc693ff75395d0e7d89b258c7cefcf5333b41ed570bb543d391763f9",
+      "total_additions": 1303,
+      "total_deletions": 25,
+      "accepted_lines": 1293,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:9c72101fcc693ff75395d0e7d89b258c7cefcf5333b41ed570bb543d391763f9",
+      "stats": {
+        "total_additions": 1303,
+        "total_deletions": 25,
+        "accepted_lines": 1293,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/ci.yml": {
+            "total_additions": 21,
+            "total_deletions": 0,
+            "accepted_lines": 21,
+            "overriden_lines": 0
+          },
+          ".github/workflows/npm.yml": {
+            "total_additions": 67,
+            "total_deletions": 0,
+            "accepted_lines": 67,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 10,
+            "total_deletions": 0,
+            "accepted_lines": 10,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/RELEASING.md": {
+            "total_additions": 21,
+            "total_deletions": 10,
+            "accepted_lines": 21,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-ts/.gitignore": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-ts/README.md": {
+            "total_additions": 57,
+            "total_deletions": 0,
+            "accepted_lines": 57,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-ts/agent.ts": {
+            "total_additions": 94,
+            "total_deletions": 0,
+            "accepted_lines": 94,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-ts/package.json": {
+            "total_additions": 15,
+            "total_deletions": 0,
+            "accepted_lines": 15,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-ts/script.json": {
+            "total_additions": 9,
+            "total_deletions": 0,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-ts/tether.toml": {
+            "total_additions": 20,
+            "total_deletions": 0,
+            "accepted_lines": 20,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/.gitignore": {
+            "total_additions": 4,
+            "total_deletions": 0,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/README.md": {
+            "total_additions": 92,
+            "total_deletions": 2,
+            "accepted_lines": 92,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/package.json": {
+            "total_additions": 34,
+            "total_deletions": 0,
+            "accepted_lines": 34,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/scripts/copy-proto.mjs": {
+            "total_additions": 13,
+            "total_deletions": 0,
+            "accepted_lines": 13,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/src/index.ts": {
+            "total_additions": 30,
+            "total_deletions": 0,
+            "accepted_lines": 30,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/src/run.ts": {
+            "total_additions": 509,
+            "total_deletions": 7,
+            "accepted_lines": 502,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/test/run.test.ts": {
+            "total_additions": 285,
+            "total_deletions": 1,
+            "accepted_lines": 284,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/tsconfig.json": {
+            "total_additions": 18,
+            "total_deletions": 2,
+            "accepted_lines": 16,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"e23dab0e539b05f63070fca4bd10c4418b0ef5e9","tree":"70edcc45421ed3bf7556aa16477b3d75e418de2e","files":{".github/workflows/ci.yml":"c0c1230e4292870b6aa8cf55993077417e4fc134",".github/workflows/npm.yml":"85abc425eb729330638d6bcb9fd5979bd4c0a358","README.md":"1380fa96702588955aa0b08e74b2a770990b254e","docs/ARCHITECTURE.md":"8cdc5221af061c72bc77135f645ab85021b03c8f","docs/PLAN.md":"b1c32a1055a3c2857d6c12e71ece3b560bf2d211","docs/RELEASING.md":"dafa98094bc5e003151eb49c9744045c48c52eb6","examples/raw-loop-ts/.gitignore":"c2658d7d1b31848c3b71960543cb0368e56cd4c7","examples/raw-loop-ts/README.md":"6dffcfe8a5f81886e82d0efa04c5de1d85a4fdf3","examples/raw-loop-ts/agent.ts":"fbbf4fb91df712b536b908d58978aded82b40cba","examples/raw-loop-ts/package.json":"03bd8685c9237f6a545f3bb6b1addab973a3cfd0","examples/raw-loop-ts/script.json":"64d00b12483214b5efb292b6bb164eb3b1db50f9","examples/raw-loop-ts/tether.toml":"9e6618aacf13eb3278e4edb025749cc6dd06a538","sdks/typescript/.gitignore":"0c3fa73786ded75aa59c614f05ac2eec2528e981","sdks/typescript/README.md":"28799069a70fbd2ef7e9373e9920580d9f892ebb","sdks/typescript/package.json":"2828db465add48718064042352264deac2342127","sdks/typescript/scripts/copy-proto.mjs":"2389a1f58dfae2114ff82d2dfc2c22daf20a20c6","sdks/typescript/src/index.ts":"1ce30eee4e03d2fba6b495eb9bbfcb8fbb0f3df6","sdks/typescript/src/run.ts":"69ec9887a449c2ac6f9a9802bd6622900a22b43e","sdks/typescript/test/run.test.ts":"a6e74fcc7dd00d68d9fee8e12e0461a45f4a837d","sdks/typescript/tsconfig.json":"8ae736533b8a3c4166435053d12d86f63d0fc0d1"},"digest":"891785719d8afb501fa49ea9ff1677d8d748312c403672ecd0b8a1df993df93e"}
+}
