@@ -6,7 +6,7 @@ One tag ships everything. Pushing `vX.Y.Z` starts two workflows:
   builds the `tether` binary for macOS and Linux, on arm64 and x86-64, and
   puts the archives, their checksums and `tether-cli-installer.sh` on a GitHub
   release.
-- `pypi.yml` builds `sdks/python` and publishes it to PyPI as `tether-sdk`.
+- `pypi.yml` builds `sdks/python` and publishes it to PyPI as `tether-agents`.
 
 `tetherd` is not shipped as a binary of its own. The `tether` binary carries
 the daemon as `tether daemon`, and the Python SDK starts it that way when no
@@ -33,7 +33,7 @@ the daemon as `tether daemon`, and the Python SDK starts it that way when no
 ## One-time setup
 
 - **PyPI.** Publishing uses trusted publishing, so no token is stored. On
-  PyPI, add a trusted publisher for the project `tether-sdk` (a pending
+  PyPI, add a trusted publisher for the project `tether-agents` (a pending
   publisher, before the first release): this repository, workflow `pypi.yml`,
   environment `pypi`.
 - **GitHub.** Create an environment named `pypi` in the repository settings.

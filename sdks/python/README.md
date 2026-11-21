@@ -1,4 +1,4 @@
-# tether-sdk
+# tether-agents
 
 Python client for [Tether](https://github.com/chizy7/tether/tree/master/README.md). Your agent keeps its own loop;
 it calls `run.complete` where it called its provider SDK and `run.call_tool`
@@ -25,7 +25,7 @@ A complete example is in [examples/raw-loop-py](https://github.com/chizy7/tether
 ## Install
 
 ```
-pip install tether-sdk
+pip install tether-agents
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/chizy7/tether/releases/latest/download/tether-cli-installer.sh | sh
 ```
 

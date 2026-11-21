@@ -1,4 +1,4 @@
-# Publishes the Python SDK (sdks/python, `tether-sdk` on PyPI) when a version
+# Publishes the Python SDK (sdks/python, `tether-agents` on PyPI) when a version
 # tag is pushed: the same tag that release.yml builds the `tether` binary for.
 #
 # Publishing uses PyPI trusted publishing, so there is no token to store. The

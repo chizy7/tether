@@ -595,7 +595,7 @@ subcommand calling the same `tetherd::serve`), in its own process group so
 Ctrl-C meant for the agent does not take it down, logging to
 `<dir>/tetherd.log`.
 
-The Python SDK (`sdks/python`, package `tether-sdk`, module `tether`) is
+The Python SDK (`sdks/python`, package `tether-agents`, module `tether`) is
 the first client. `tether.Run(...)` connects to the socket, starting the
 daemon if nothing answers, and creates a run; `run.complete` and
 `run.call_tool` are one request each; `run.tools`, `finish`, `halt`,

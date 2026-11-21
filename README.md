@@ -46,7 +46,7 @@ events.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/chizy7/tether/releases/latest/download/tether-cli-installer.sh | sh
-pip install tether-sdk
+pip install tether-agents
 ```
 
 The first line installs the `tether` binary for macOS or Linux, on arm64 or
