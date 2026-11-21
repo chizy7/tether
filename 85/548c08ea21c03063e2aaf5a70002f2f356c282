@@ -1,0 +1,151 @@
+README.md
+  s_830eda70c48de9::t_12ddbb3127003a 18-19
+crates/tether-cli/Cargo.toml
+  s_830eda70c48de9::t_ae80f1086d0fa6 25
+crates/tether-cli/src/main.rs
+  s_830eda70c48de9::t_10814f663b5d38 9,87-104,117-119,152-153,163-166
+crates/tether-cli/src/pack.rs
+  s_830eda70c48de9::t_10814f663b5d38 1-2,4-33,36-44,49-52,54-55,66
+  s_830eda70c48de9::t_ae80f1086d0fa6 3,34-35,45-48,53,56-65
+crates/tether-cli/src/replay.rs
+  s_830eda70c48de9::t_10814f663b5d38 154-157
+crates/tether-cli/tests/cli.rs
+  s_830eda70c48de9::t_ea3180e501cf3e 1113-1124,1126-1197
+  s_830eda70c48de9::t_3d2d34e4434bc3 1125
+crates/tether-trace/Cargo.toml
+  s_830eda70c48de9::t_ffc0940cb80142 18
+  s_830eda70c48de9::t_ea3180e501cf3e 20-21
+crates/tether-trace/src/lib.rs
+  s_830eda70c48de9::t_ffc0940cb80142 47-48,62
+crates/tether-trace/src/pack.rs
+  s_830eda70c48de9::t_ffc0940cb80142 1-80,93-182
+  s_830eda70c48de9::t_10814f663b5d38 81-92
+crates/tether-trace/tests/pack.rs
+  s_830eda70c48de9::t_ea3180e501cf3e 1-100,102-178,181-288
+  s_830eda70c48de9::t_3d2d34e4434bc3 101,179-180
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_12ddbb3127003a 431-454
+docs/PLAN.md
+  s_830eda70c48de9::t_12ddbb3127003a 98
+docs/TRACE_FORMAT.md
+  s_830eda70c48de9::t_12ddbb3127003a 13-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "85548c08ea21c03063e2aaf5a70002f2f356c282",
+  "branch": "pack-unpack",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:a44971d9d4274a6ffb9cc6c105675823731bfab441587d622403eba3ff94c46b",
+      "total_additions": 742,
+      "total_deletions": 51,
+      "accepted_lines": 698,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:a44971d9d4274a6ffb9cc6c105675823731bfab441587d622403eba3ff94c46b",
+      "stats": {
+        "total_additions": 742,
+        "total_deletions": 51,
+        "accepted_lines": 698,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 1,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/Cargo.toml": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/main.rs": {
+            "total_additions": 30,
+            "total_deletions": 6,
+            "accepted_lines": 28,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/pack.rs": {
+            "total_additions": 94,
+            "total_deletions": 28,
+            "accepted_lines": 66,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/replay.rs": {
+            "total_additions": 4,
+            "total_deletions": 1,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/tests/cli.rs": {
+            "total_additions": 86,
+            "total_deletions": 1,
+            "accepted_lines": 85,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/Cargo.toml": {
+            "total_additions": 4,
+            "total_deletions": 0,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/src/lib.rs": {
+            "total_additions": 3,
+            "total_deletions": 0,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/src/pack.rs": {
+            "total_additions": 189,
+            "total_deletions": 7,
+            "accepted_lines": 182,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/tests/pack.rs": {
+            "total_additions": 293,
+            "total_deletions": 5,
+            "accepted_lines": 288,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 24,
+            "total_deletions": 0,
+            "accepted_lines": 24,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/TRACE_FORMAT.md": {
+            "total_additions": 11,
+            "total_deletions": 1,
+            "accepted_lines": 11,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"85548c08ea21c03063e2aaf5a70002f2f356c282","tree":"4b65dbdc103b436752458a3021e4f926d2655eb3","files":{"README.md":"25533551c7c9680d2eb27632a9d2fc631e21ee35","crates/tether-cli/Cargo.toml":"894e78677e9d49c47544602e888c525e8b610c5a","crates/tether-cli/src/main.rs":"ade06c1e3bf509a3477689e1dd92ac9a9b4507d2","crates/tether-cli/src/pack.rs":"eff4e5f3c8135972b310191727841f70d6fb8027","crates/tether-cli/src/replay.rs":"5dad3dafb3919ef0f0b2df22f4465571be236294","crates/tether-cli/tests/cli.rs":"fef2b258f2a457a697f7cde52c39553a81a30715","crates/tether-trace/Cargo.toml":"80982d98a5631690cee83222f305a41bac319302","crates/tether-trace/src/lib.rs":"650f2e59e2e160ee651908d2db85384b091d2283","crates/tether-trace/src/pack.rs":"f4a886b93270d6a2d6ddbc57d18265e35b12dc2f","crates/tether-trace/tests/pack.rs":"d7e6f1b8e4c4a29a9e25777c7982f2a7a329e5b7","docs/ARCHITECTURE.md":"2dbc9e0ed72f780b031d2950c80fd629ea8d141b","docs/PLAN.md":"c9862868ddbd6dc198f68fdb3a2395acb7029c04","docs/TRACE_FORMAT.md":"e2b6d21af599cc79d67de722a031dd409db2380b"},"digest":"9502840be4e40af13c068f39252788a66d150b62cdf1015ee5a971274e79b480"}
+}
