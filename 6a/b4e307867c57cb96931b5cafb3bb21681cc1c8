@@ -1,0 +1,140 @@
+crates/tether-cli/src/run.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 19-20,201,206,208
+crates/tether-core/src/lib.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 40
+crates/tether-core/src/run.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 16,49-70,79-81,108-110,129-130,136,167-169,172-174,381-389,391-411
+  s_830eda70c48de9::t_4119242c24f8ad 390
+crates/tether-core/tests/raw_loop.rs
+  s_830eda70c48de9::t_a39ef5a448546d 30-31,33
+crates/tether-core/tests/run.rs
+  s_830eda70c48de9::t_1970a953d6cb24 9-10,283,294,329,964-966,1068-1289
+  s_830eda70c48de9::t_140f8fb31e7b34 140,145,206,211,831,836,932,937
+crates/tether-sandbox/src/docker.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 129-132,308-311
+crates/tether-sandbox/src/lib.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 106-107
+crates/tether-sandbox/src/process.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 151-154
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_4119242c24f8ad 141,298,309-330
+docs/PLAN.md
+  s_830eda70c48de9::t_4119242c24f8ad 95
+docs/TRACE_FORMAT.md
+  s_830eda70c48de9::t_4119242c24f8ad 69,83,121-124
+examples/raw-loop/main.rs
+  s_830eda70c48de9::t_140f8fb31e7b34 23,170,173,175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "6ab4e307867c57cb96931b5cafb3bb21681cc1c8",
+  "branch": "checkpoints",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:4ca18f72ffa8a04853e6c01d95698482ea0e2ef034a9e82fdbcfa1794d203f0b",
+      "total_additions": 373,
+      "total_deletions": 56,
+      "accepted_lines": 365,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:4ca18f72ffa8a04853e6c01d95698482ea0e2ef034a9e82fdbcfa1794d203f0b",
+      "stats": {
+        "total_additions": 373,
+        "total_deletions": 56,
+        "accepted_lines": 365,
+        "overriden_lines": 0,
+        "files": {
+          "crates/tether-cli/src/run.rs": {
+            "total_additions": 5,
+            "total_deletions": 7,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/src/lib.rs": {
+            "total_additions": 1,
+            "total_deletions": 5,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/src/run.rs": {
+            "total_additions": 72,
+            "total_deletions": 4,
+            "accepted_lines": 69,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/tests/raw_loop.rs": {
+            "total_additions": 3,
+            "total_deletions": 2,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/tests/run.rs": {
+            "total_additions": 241,
+            "total_deletions": 26,
+            "accepted_lines": 238,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/docker.rs": {
+            "total_additions": 8,
+            "total_deletions": 1,
+            "accepted_lines": 8,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/lib.rs": {
+            "total_additions": 2,
+            "total_deletions": 0,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/process.rs": {
+            "total_additions": 4,
+            "total_deletions": 0,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 25,
+            "total_deletions": 1,
+            "accepted_lines": 24,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/TRACE_FORMAT.md": {
+            "total_additions": 7,
+            "total_deletions": 2,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop/main.rs": {
+            "total_additions": 4,
+            "total_deletions": 7,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"6ab4e307867c57cb96931b5cafb3bb21681cc1c8","tree":"13ac0e7bf7f71d866435c01dcff32df0c2759134","files":{"crates/tether-cli/src/run.rs":"aca788883e293805bcd12872011d7fecb152eaa3","crates/tether-core/src/lib.rs":"f946c65454f6cbc61afa68c6026c800ca9152ae7","crates/tether-core/src/run.rs":"0b228e293a5bdd2849c23f7178d1c7ee8c1d6247","crates/tether-core/tests/raw_loop.rs":"0c9260e5360cb309676e729a5aedcbcaa5c129d9","crates/tether-core/tests/run.rs":"15d5b0788fdb3b8c70558bdf685af8b9dfef9550","crates/tether-sandbox/src/docker.rs":"df98fac37cb30d364c665bc2eda593e9511a5ce2","crates/tether-sandbox/src/lib.rs":"665ad1be0301927139f0ff1c4aeaa77b3ff63911","crates/tether-sandbox/src/process.rs":"31d5d48f5d3126274f6ecdc936589e85cb864fbf","docs/ARCHITECTURE.md":"9e17cb666ed8a36a142d118efce2f3f653082f49","docs/PLAN.md":"e46ce323a13ca1b02e6d8ca4942c18692529a7a6","docs/TRACE_FORMAT.md":"b2145b492ca61300a89a8090b971a5321681f8f9","examples/raw-loop/main.rs":"dafae155d3304672f5a28437f5bd971feb07e081"},"digest":"2b46e9d50358dee5975ebde689427ad331d217c12d7525d85a422a2c696e03b7"}
+}
