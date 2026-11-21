@@ -1,0 +1,169 @@
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_a6a90b31f36128 36-41,43-51
+  s_830eda70c48de9::t_7f21bd897caa5a 42
+.gitignore
+  s_830eda70c48de9::t_153db03a7b0b78 13-14
+README.md
+  s_830eda70c48de9::t_cf59d6b97e29b4 15-16
+  s_830eda70c48de9::t_a463fe3ee27675 17
+  s_830eda70c48de9::t_12ddbb3127003a 18
+  s_830eda70c48de9::t_ea2abacff7312a 19
+  s_830eda70c48de9::t_7f21bd897caa5a 20-21
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_4119242c24f8ad 141,298,362-383,509-522,588,605
+  s_830eda70c48de9::t_36042f03ef6ec1 225-226,231-232,244-293
+  s_830eda70c48de9::t_cf59d6b97e29b4 234,300,309-361
+  s_830eda70c48de9::t_a463fe3ee27675 299,385-429
+  s_830eda70c48de9::t_a671b8588b7ace 301-302,455-508,589-599,606-615
+  s_830eda70c48de9::t_12ddbb3127003a 431-454
+  s_830eda70c48de9::t_ea2abacff7312a 523-565,583-587,600-604
+  s_830eda70c48de9::t_7f21bd897caa5a 566-582
+docs/PLAN.md
+  s_830eda70c48de9::t_1b7373b2e524ac 93
+  s_830eda70c48de9::t_a671b8588b7ace 94
+  s_830eda70c48de9::t_4119242c24f8ad 95
+  s_830eda70c48de9::t_cf59d6b97e29b4 96
+  s_830eda70c48de9::t_a463fe3ee27675 97
+  s_830eda70c48de9::t_12ddbb3127003a 98
+  s_830eda70c48de9::t_ea2abacff7312a 99
+  s_830eda70c48de9::t_7f21bd897caa5a 100
+examples/raw-loop-py/README.md
+  s_830eda70c48de9::t_153db03a7b0b78 1-52
+examples/raw-loop-py/agent.py
+  s_830eda70c48de9::t_153db03a7b0b78 1-77
+examples/raw-loop-py/script.json
+  s_830eda70c48de9::t_153db03a7b0b78 1-9
+examples/raw-loop-py/tether.toml
+  s_830eda70c48de9::t_153db03a7b0b78 1-20
+sdks/python/README.md
+  s_830eda70c48de9::t_153db03a7b0b78 1,3-91
+sdks/python/pyproject.toml
+  s_830eda70c48de9::t_2aa1e27571a5b8 1-15,18-30
+  s_830eda70c48de9::t_7f21bd897caa5a 16-17
+sdks/python/scripts/gen_proto.sh
+  s_830eda70c48de9::t_b61762c3539a61 1-18
+sdks/python/src/tether/__init__.py
+  s_830eda70c48de9::t_2aa1e27571a5b8 1-50
+sdks/python/src/tether/_run.py
+  s_830eda70c48de9::t_2aa1e27571a5b8 1-165,170-186,188-380
+  s_830eda70c48de9::t_a44210ec597c5e 166-169,187
+sdks/python/tests/test_run.py
+  s_830eda70c48de9::t_2aa1e27571a5b8 1-4,6-52,55-63,66-220
+  s_830eda70c48de9::t_153db03a7b0b78 5,53-54,64-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "2fd4556467ae63dcf7db37e97b91ffa91f6ad6bc",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:0976252703e98666710e90e9169941bfcc9d975ed5a2f2149b26f89efb0fff60",
+      "stats": {
+        "total_additions": 990,
+        "total_deletions": 10,
+        "accepted_lines": 984,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/ci.yml": {
+            "total_additions": 17,
+            "total_deletions": 1,
+            "accepted_lines": 16,
+            "overriden_lines": 0
+          },
+          ".gitignore": {
+            "total_additions": 2,
+            "total_deletions": 0,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 1,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 17,
+            "total_deletions": 0,
+            "accepted_lines": 17,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-py/README.md": {
+            "total_additions": 52,
+            "total_deletions": 0,
+            "accepted_lines": 52,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-py/agent.py": {
+            "total_additions": 77,
+            "total_deletions": 0,
+            "accepted_lines": 77,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-py/script.json": {
+            "total_additions": 9,
+            "total_deletions": 0,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-py/tether.toml": {
+            "total_additions": 20,
+            "total_deletions": 0,
+            "accepted_lines": 20,
+            "overriden_lines": 0
+          },
+          "sdks/python/README.md": {
+            "total_additions": 90,
+            "total_deletions": 2,
+            "accepted_lines": 90,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 31,
+            "total_deletions": 1,
+            "accepted_lines": 30,
+            "overriden_lines": 0
+          },
+          "sdks/python/scripts/gen_proto.sh": {
+            "total_additions": 18,
+            "total_deletions": 0,
+            "accepted_lines": 18,
+            "overriden_lines": 0
+          },
+          "sdks/python/src/tether/__init__.py": {
+            "total_additions": 50,
+            "total_deletions": 0,
+            "accepted_lines": 50,
+            "overriden_lines": 0
+          },
+          "sdks/python/src/tether/_run.py": {
+            "total_additions": 382,
+            "total_deletions": 2,
+            "accepted_lines": 380,
+            "overriden_lines": 0
+          },
+          "sdks/python/tests/test_run.py": {
+            "total_additions": 222,
+            "total_deletions": 2,
+            "accepted_lines": 220,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"2fd4556467ae63dcf7db37e97b91ffa91f6ad6bc","tree":"22cc558454c0faef8fd867411724d21b314784bd","files":{".github/workflows/ci.yml":"8eb30a54ade4e407adbc533b33f1663a2a21bcbb",".gitignore":"ccbc0af3b22f768294a9785ef105668ef64ade07","README.md":"3a354cb01b74003f58845745620519880a8bd98f","docs/ARCHITECTURE.md":"bf804ab534cbe369068971581a11100ed8ab6f13","docs/PLAN.md":"e3b9353f5bcafd6dcd7e2f4602983c760004dbc1","examples/raw-loop-py/README.md":"6e1aa9943d7f45f8e5264a00d2e3f5002a1c4208","examples/raw-loop-py/agent.py":"0ba6e043940ab7f131458d644b75382092c24d88","examples/raw-loop-py/script.json":"64d00b12483214b5efb292b6bb164eb3b1db50f9","examples/raw-loop-py/tether.toml":"409bf7a58158a4986d0675c03d045286764b58d7","sdks/python/README.md":"fce78c92a48fe5a960959f4c720c71e8a2b89a62","sdks/python/pyproject.toml":"7b84adf7c81ad4b274affcc30feb4573ae34994a","sdks/python/scripts/gen_proto.sh":"333eb1e8b0a72d0c54e31f2d4ac76468690873ac","sdks/python/src/tether/__init__.py":"4c343b51745d1c007e14e94e81972c72f8d86b4f","sdks/python/src/tether/_run.py":"716f07f592ebea70417d75a8a91b3328c86aad59","sdks/python/tests/test_run.py":"2040954000e0978db73b0b19f0265a4a30a30ac2"},"digest":"7b10e24a2135d56ed15375089a82bd90c31ca8b8e5500f9ae81f4e5aee772aa9"}
+}
