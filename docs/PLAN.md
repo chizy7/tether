@@ -101,7 +101,7 @@ dependency order; the last three can slip to v0.4 without hurting the demo.
 - [x] Demo: `examples/replays` records 20 tasks, edits the prompt, replays with `--live-after-divergence`, diffs, prints the table; GIF
 - [x] (may slip) `openai_compat` adapter behind its feature: Chat Completions shape, streaming collapsed, `OPENAI_BASE_URL` and `OPENAI_API_KEY`, prices from a `TETHER_PRICING` table
 - [x] (may slip) cargo-dist release workflow, `curl | sh` install, `pip install tether-agents` on PyPI: one `vX.Y.Z` tag runs both, see `docs/RELEASING.md`
-- [ ] (may slip) `rusqlite` index for `inspect` and `diff` on traces over 100k events; measure before building
+- [x] (may slip) `rusqlite` index for `inspect` and `diff` on traces over 100k events; measure before building. Measured and not built: both take half a second at 100k events, see "Long traces" in `docs/ARCHITECTURE.md`
 
 ## Stack decisions
 
@@ -111,7 +111,7 @@ dependency order; the last three can slip to v0.4 without hurting the demo.
 | CLI | clap | Standard |
 | Serialization | serde, JSONL | Human-readable, `jq`-friendly, append-only |
 | Hashing | BLAKE3 | Several GB/s per core; a million events chain in well under a second |
-| Trace index | SQLite via rusqlite | Zero-ops local cache for `inspect` and `diff`; never the source of truth |
+| Trace index | SQLite via rusqlite, if one is ever needed | Zero-ops local cache for `inspect` and `diff`; never the source of truth. Not built: measured in v0.3 and not needed yet |
 | SDK boundary | tonic (gRPC) over Unix socket | One protocol for Python and TypeScript; less maintenance than bindings |
 | MCP client | `rmcp` behind a trait, cargo feature | Protocol tracking is someone else's job; the trait keeps the exit |
 | Sandbox | `process` default, `docker` v0.2, `firecracker` v1.0 | Ship the honest baseline first; claim no more than it isolates |

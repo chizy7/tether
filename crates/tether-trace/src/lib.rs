@@ -9,8 +9,9 @@
 //!
 //! The writer is the single owner of the file; `tether-core` feeds it from a
 //! channel so events have a total order and the hash chain is computed in one
-//! place. Readers never need the index; `rusqlite` is an optional cache for
-//! `inspect` and `diff` over large traces.
+//! place. There is no index: readers go through the file, which
+//! measured fast enough at a million events (see "Long traces" in
+//! `docs/ARCHITECTURE.md`).
 //!
 //! Spec: `docs/TRACE_FORMAT.md`.
 

@@ -514,6 +514,30 @@ Alignment within a step is by position, so one extra tool call shifts
 everything after it in that step. The first divergence is the one to read;
 after it the runs are doing different things.
 
+### Long traces
+
+There is no index over a trace. The plan allowed for a SQLite one for
+`inspect` and `diff` on traces over 100k events, to be measured before it was
+built. Measured at v0.3, on an Apple M1 Max with a release build, on traces
+made by `gen_trace` (an example in `tether-trace`) at about 400 bytes an
+event:
+
+| Events | File | `inspect` | `verify` | `diff` | `diff` memory |
+| --- | --- | --- | --- | --- | --- |
+| 100,000 | 41 MB | 0.5 s | 0.2 s | 0.5 s | 190 MB |
+| 1,000,000 | 409 MB | 5.1 s | 2.1 s | 5.0 s | 1.8 GB |
+
+Every command reads and checks the whole file at about 200,000 events a
+second. `inspect` and `verify` hold one event at a time and stay under
+10 MB. `inspect` piped into `head` returns at once.
+
+So the index was not built. What it would speed up is going straight to one
+step or one event, and no command does that yet. The cost that does grow is
+`diff`'s memory: it holds both traces whole, about 900 bytes an event. That
+is fine at 100k events and heavy at a million, and an index would not change
+it. The fix, when a trace that long turns up, is for `diff` to keep only the
+fields it compares as it reads.
+
 ### Timings under replay
 
 Four things in a trace come from live clock reads, so a replay that measured
