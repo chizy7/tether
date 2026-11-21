@@ -38,8 +38,9 @@ jobs:
           fi
       - run: npm ci
         working-directory: sdks/typescript
-      # `npm pack` builds first, through the package's prepack script.
-      - run: npm pack --pack-destination "$GITHUB_WORKSPACE/dist"
+      # `npm pack` builds first, through the package's prepack script. It
+      # does not make the directory it is told to write to.
+      - run: mkdir -p "$GITHUB_WORKSPACE/dist" && npm pack --pack-destination "$GITHUB_WORKSPACE/dist"
         working-directory: sdks/typescript
       - uses: actions/upload-artifact@v7
         with:
