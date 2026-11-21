@@ -68,6 +68,7 @@ Dependencies point down only. Leaf crates never import each other or
 ## Working here
 
 - `cargo check --workspace --all-targets` and `cargo test --workspace` must pass before any commit. `cargo clippy --workspace -- -D warnings` before a PR.
+- Trace schema v0 is frozen. `crates/tether-trace/tests/compat.rs` reads traces written by v0.3.0; if it fails, the change is breaking. Never regenerate the fixtures to make it pass.
 - `tether-types` changes are schema changes: update `docs/TRACE_FORMAT.md` in the same PR, and add or update a test in `crates/tether-types/tests/`.
 - Tests never need an API key. Use the `fake` model adapter.
 - Stop and ask before: changing the event envelope, adding a new event type, adding a dependency to `tether-types`, or adding a crate.

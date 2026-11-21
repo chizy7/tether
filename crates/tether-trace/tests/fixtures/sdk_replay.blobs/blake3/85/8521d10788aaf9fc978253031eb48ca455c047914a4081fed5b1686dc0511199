@@ -1,0 +1,1 @@
+{"role":"assistant","content":[{"type":"tool_use","id":"call_2","name":"read_file","arguments":{"path":"hello.txt"}}]}

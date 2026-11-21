@@ -1,0 +1,1 @@
+{"role":"assistant","content":[{"type":"tool_use","id":"call_3","name":"exec","arguments":{"argv":["ls"]}}]}

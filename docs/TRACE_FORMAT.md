@@ -1,7 +1,7 @@
 # Tether trace format, schema v0
 
-Status: draft, frozen at v0.3. Changes before then go through `tether-types`
-and this file in the same PR.
+Status: v0, frozen 2026-11-21. Release v0.3.0 was the first to write it. See
+Compatibility at the end for what the freeze promises.
 
 ## Files
 
@@ -166,3 +166,34 @@ Resume drops a last line that has no newline before it appends.
 One serialized event is at most 1 MB. Anything larger must have spilled to a
 blob; a writer that would exceed the cap fails the run with
 `EventTooLarge` rather than writing a bad line.
+
+## Compatibility
+
+Schema v0 is frozen as of 2026-11-21. A trace written by v0.3.0 or any later
+release is read by every release after it: `inspect`, `verify`, `diff`,
+`replay`, `resume` and `unpack` keep working on it, and its hash chain keeps
+verifying, since the chain is over the bytes of each line as written.
+
+What can still change without a new version:
+
+- **A new optional field** in an event's `data`. Readers ignore fields they
+  do not know, and a field that is absent reads as its default.
+- **A new event type.** A reader that does not know a type carries it as an
+  extension event and leaves it out of replay and diff, as it does `ext.*`.
+- **The four types no release has written yet:** `run.child`,
+  `sandbox.exec`, `sandbox.exit` and `nondeterminism`. Their `data` is not
+  frozen until a release writes them.
+
+What needs `v` to go up: removing or renaming a field or a type, changing
+what a field means or the type of its value, changing the envelope or its
+field order, changing how the hash chain is computed, or changing where blobs
+live. When `v` goes up, the reader for `v: 0` stays in `tether-trace`, so
+old traces are still read. A build refuses a trace whose `v` is newer than it
+knows, by name, and does not guess.
+
+The freeze is held by a test, `crates/tether-trace/tests/compat.rs`. It reads
+traces and a pack written by the v0.3.0 release, kept in
+`crates/tether-trace/tests/fixtures/`, and checks that they verify with the
+same hashes, that each event written back out is the line it was read from,
+and that diff and resume still read them the same way. The fixtures are never
+regenerated: if the test fails, the change is a breaking one.

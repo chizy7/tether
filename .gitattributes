@@ -1,0 +1,2 @@
+# Compared byte for byte by tests/compat.rs: never convert line endings.
+crates/tether-trace/tests/fixtures/** -text

@@ -12,3 +12,8 @@ __pycache__/
 dist/
 .venv/
 .pytest_cache/
+
+# Traces written by the v0.3.0 release, kept to prove later readers still
+# read them. See crates/tether-trace/tests/compat.rs.
+!crates/tether-trace/tests/fixtures/*.jsonl
+!crates/tether-trace/tests/fixtures/*.blobs/

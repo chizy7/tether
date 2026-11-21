@@ -119,7 +119,7 @@ the launch post is live, not when the code is merged.
 
 Product:
 
-- [ ] Freeze the trace schema: `TRACE_FORMAT.md` status becomes "v0, frozen 2026-11-21"; from here `v` bumps only for a breaking change and a reader for the old `v` stays in `tether-trace`. Add a `compat` test that reads the v0.3.0 demo traces checked into `crates/tether-trace/tests/fixtures/`
+- [x] Freeze the trace schema: `TRACE_FORMAT.md` status becomes "v0, frozen 2026-11-21"; from here `v` bumps only for a breaking change and a reader for the old `v` stays in `tether-trace`. Add a `compat` test that reads the v0.3.0 demo traces checked into `crates/tether-trace/tests/fixtures/`
 - [ ] `tether eval <suite>`: a suite is a directory of recorded traces plus `eval.toml`. Assertions are over the trace only: `outcome` matches, `max_steps`, `max_usd`, `no_deny`, `tool_called` / `tool_not_called`, `file_contains` on a sandbox path. Each task replays with `--live-after-divergence` under the new `--system` or `--model`, then the assertions run. Output: one row per task (pass / fail, steps, usd, first divergence), totals, exit code 1 on any failure. No model-as-judge; that is agent-building
 - [ ] `tether export otlp <run> [--follow]`: one OpenTelemetry trace per run, one span per step, child spans for `model.*`, `tool.*` and `policy.decision`, attributes from the event. Reads the trace file, so it works live by tailing and after the fact on any trace; no second code path inside `tether-core`
 - [ ] TypeScript SDK in `sdks/typescript`: same surface as Python (`Run`, `complete`, `callTool`, `tools`), `@grpc/grpc-js` over the Unix socket, no logic. `examples/raw-loop-ts`. Publish as `tether-agents` on npm to match PyPI

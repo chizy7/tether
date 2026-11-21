@@ -1,0 +1,1 @@
+{"role":"tool","content":[{"type":"tool_result","id":"call_2","content":"denied by policy: deleting files is off limits in this run","is_error":true}]}

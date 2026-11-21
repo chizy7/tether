@@ -1,0 +1,1 @@
+{"role":"assistant","content":[{"type":"text","text":"I'll save a note first, then clear everything out."},{"type":"tool_use","id":"call_1","name":"write_file","arguments":{"content":"work in progress, do not lose\n","path":"notes.txt"}}]}
