@@ -7,6 +7,7 @@ use tether_types::{Decision, Event, EventType, Payload};
 
 mod diff;
 mod replay;
+mod resume;
 mod run;
 
 #[derive(Parser)]
@@ -69,8 +70,17 @@ enum Cmd {
     Eval,
     /// Print a trace in readable form. Takes the path of a `<run>.jsonl`.
     Inspect { run: String },
-    /// Continue a halted run from its last checkpoint.
-    Resume { run: String },
+    /// Continue a halted or crashed run from its last checkpoint, appending
+    /// to the same trace. The step that was under way is done again, against
+    /// the live model and with real tools in a fresh workspace.
+    Resume {
+        /// Path of the `<run>.jsonl` to resume.
+        run: PathBuf,
+        /// A script to stand in for the live model, as in `tether run`. Its
+        /// replies are the ones still to come.
+        #[arg(long)]
+        script: Option<PathBuf>,
+    },
     /// Verify the BLAKE3 hash chain and blob completeness. Takes the path of a `<run>.jsonl`.
     Verify { run: String },
     /// Bundle a trace and its blobs into one tar.
@@ -121,9 +131,8 @@ async fn main() -> anyhow::Result<()> {
                 Err(e) => Err(e),
             }
         }
-        Cmd::Resume { .. } | Cmd::Pack { .. } => {
-            todo!("v0.3")
-        }
+        Cmd::Resume { run, script } => resume::resume(&run, script.as_deref()).await,
+        Cmd::Pack { .. } => todo!("v0.3"),
         Cmd::Eval => todo!("v0.4"),
     };
     match result {

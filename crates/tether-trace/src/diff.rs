@@ -12,6 +12,10 @@
 //! timestamps, timings and budgets differ between any two live runs,
 //! provider-assigned ids differ too, and a model's reply shows up in the next
 //! request's message hashes or in how the run ended.
+//!
+//! A trace that was resumed is compared as the run it became. The part of a
+//! step that was under way when the run halted, and was done again after the
+//! resume, is left out.
 
 use std::collections::BTreeMap;
 
@@ -203,7 +207,9 @@ struct Compared {
 
 fn compared(events: &[Event]) -> Compared {
     let mut out = Compared::default();
-    for event in events {
+    // A resumed run is compared as the run it became: what it did before
+    // each resume and then abandoned is left out.
+    for event in crate::resumed::effective(events) {
         let item = match &event.body {
             EventType::RunCreated(data) => {
                 out.policy = Some(data["policy"].clone());

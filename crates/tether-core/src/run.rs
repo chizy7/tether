@@ -64,6 +64,14 @@ impl RunConfig {
     }
 }
 
+/// Where [`Run::resume`] picks a run up: the step of the checkpoint it goes
+/// back to and what the run had used of its budgets by then.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ResumeFrom {
+    pub step: u64,
+    pub budget: BudgetSnapshot,
+}
+
 /// The sandbox a run's tools work in, for the things the run loop itself
 /// needs from it: its name for `run.created` and a snapshot per checkpoint.
 #[derive(Clone)]
@@ -160,6 +168,53 @@ impl Run {
         });
         run.emit(None, EventType::RunCreated(created)).await?;
         run.transition(RunState::Running, "start").await?;
+        Ok(run)
+    }
+
+    /// Pick a halted run back up at a checkpoint, appending to its trace.
+    ///
+    /// The trace at `config.trace` is verified and reopened; `config.run` is
+    /// not used, the run keeps its id. The first event written is a
+    /// `run.state` of `running` with the reason `resumed`. Nothing here
+    /// restores the sandbox or the agent's history: the caller does both,
+    /// from [`crate::Recording::resume_plan`], before and after this.
+    pub async fn resume(
+        config: RunConfig,
+        deps: RunDeps,
+        from: ResumeFrom,
+    ) -> Result<Self, RunError> {
+        let tools = deps.tools.list_tools().await?;
+        // Limits are the policy's; what was used comes from the trace.
+        let mut budget = deps.policy.limits().fresh();
+        budget.tokens_used = from.budget.tokens_used;
+        budget.usd_used = from.budget.usd_used;
+        budget.wall_secs_used = from.budget.wall_secs_used;
+        budget.tool_calls_used = from.budget.tool_calls_used;
+        deps.kill.watch_file(config.trace.with_extension("halt"));
+        let writer = TraceWriter::open_append(&config.trace)?;
+        // Elapsed time carries on from the checkpoint. The time the run
+        // spent halted is not counted.
+        let started_ms = deps
+            .clock
+            .now_ms()
+            .saturating_sub(budget.wall_secs_used * 1000);
+        let mut run = Self {
+            trace: TraceHandle::spawn(writer),
+            started_ms,
+            deps,
+            agent: config.agent,
+            tools,
+            state: RunState::Halted,
+            step: from.step,
+            budget,
+            checkpoint_every: config.checkpoint_every,
+            checkpointed: from.step,
+            cursor: 0,
+            recorded_ts: None,
+            rebased: false,
+        };
+        run.transition(RunState::Running, tether_trace::resumed::RESUMED)
+            .await?;
         Ok(run)
     }
 

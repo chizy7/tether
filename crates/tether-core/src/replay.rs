@@ -22,12 +22,15 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use async_trait::async_trait;
 use serde_json::Value;
 use tether_mcp::{McpClient, McpError, ToolSpec};
-use tether_models::{Completion, CompletionRequest, Message, ModelAdapter, ModelError, ToolDef};
+use tether_models::{
+    Block, Completion, CompletionRequest, Message, ModelAdapter, ModelError, ToolDef,
+};
 use tether_policy::{KillSwitch, Limits, OnTimeout, Policy, RunCtx, Verdict};
 use tether_trace::blob::hash_bytes;
 use tether_trace::{BlobStore, TraceError, TraceReader};
 use tether_types::{
-    Decision, Event, EventType, ModelRequest, Payload, Price, RunState, ToolCall, ToolResult, Usage,
+    BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, Price,
+    RunState, ToolCall, ToolResult, Usage,
 };
 
 use crate::ask::{Answerer, AskOutcome, AskRequest};
@@ -239,6 +242,23 @@ impl Recording {
         self.events[seq as usize + 1..].iter().find_map(pick)
     }
 
+    /// A recorded `model.response` as the completion the agent got.
+    fn completion(&self, response: &ModelResponse) -> Result<Completion, ReplayError> {
+        Ok(Completion {
+            message: self.message(&response.message)?,
+            model: None,
+            stop_reason: response.stop_reason.clone(),
+            usage: response.usage,
+            ttft_ms: response.ttft_ms,
+            stream: response.stream,
+            provider_request_id: response.provider_request_id.clone(),
+            raw: match &response.raw {
+                Some(hash) => Some(self.blobs.get(hash)?),
+                None => None,
+            },
+        })
+    }
+
     fn model_calls(&self) -> Result<Vec<ModelCall>, ReplayError> {
         let mut calls = Vec::new();
         for event in &self.events {
@@ -250,19 +270,7 @@ impl Recording {
                 _ => None,
             });
             let outcome = match response {
-                Some(response) => Ok(Completion {
-                    message: self.message(&response.message)?,
-                    model: None,
-                    stop_reason: response.stop_reason.clone(),
-                    usage: response.usage,
-                    ttft_ms: response.ttft_ms,
-                    stream: response.stream,
-                    provider_request_id: response.provider_request_id.clone(),
-                    raw: match &response.raw {
-                        Some(hash) => Some(self.blobs.get(hash)?),
-                        None => None,
-                    },
-                }),
+                Some(response) => Ok(self.completion(response)?),
                 // The provider failed and the run halted with its error.
                 None => Err(halt_reason(&self.events)
                     .and_then(|reason| reason.strip_prefix("model error: "))
@@ -340,6 +348,7 @@ impl Recording {
                 None => None,
             };
             calls.push(ToolCallRecord {
+                seq: event.seq,
                 call: call.clone(),
                 dispatched,
                 result,
@@ -352,6 +361,11 @@ impl Recording {
     /// The stand-ins for a replay of this recording, handing over to `live`
     /// after a divergence.
     pub fn parts(&self, live: Live) -> Result<ReplayParts, ReplayError> {
+        if self.events.iter().any(tether_trace::resumed::is_resume) {
+            return Err(invalid(
+                "it was resumed, and replaying a resumed trace is not supported yet",
+            ));
+        }
         let state = Arc::new(ReplayState::default());
         let kill = KillSwitch::new();
         let provider = self.created()["model"]["provider"]
@@ -452,6 +466,129 @@ impl Recording {
     }
 }
 
+/// Where a halted run is picked back up, and with what.
+pub struct ResumePlan {
+    /// The step of the checkpoint the run goes back to; 0 for the start.
+    pub step: u64,
+    /// What the run had used of its budgets at that checkpoint.
+    pub budget: BudgetSnapshot,
+    pub next: ResumeNext,
+    /// The tool calls that ran before the checkpoint, in order, without
+    /// those marked `external`. Running them again in a fresh sandbox
+    /// rebuilds what the sandbox held.
+    pub earlier_calls: Vec<ToolCall>,
+    /// How many times the run has been resumed before.
+    pub resumes: u64,
+}
+
+/// What the agent does first after a resume.
+pub enum ResumeNext {
+    /// Make this request again: the one the run made after the checkpoint,
+    /// whose step is being done over.
+    Ask(CompletionRequest),
+    /// The run halted between steps. Carry on from the last finished step:
+    /// its request, the reply to it, and the results of its tool calls.
+    Continue {
+        request: CompletionRequest,
+        reply: Box<Completion>,
+        results: Vec<Block>,
+    },
+}
+
+impl Recording {
+    /// Work out how to resume this run from its last checkpoint.
+    pub fn resume_plan(&self) -> Result<ResumePlan, ReplayError> {
+        // What an earlier resume abandoned is not part of the run any more.
+        let effective = tether_trace::effective(&self.events);
+        let state = effective.iter().rev().find_map(|e| match &e.body {
+            EventType::RunStateChanged { state, .. } => Some(*state),
+            _ => None,
+        });
+        if state == Some(RunState::Finished) {
+            return Err(invalid("the run finished, so there is nothing to resume"));
+        }
+
+        let checkpoint = effective.iter().rev().find_map(|e| match &e.body {
+            EventType::Checkpoint { step, .. } => Some((*step, e.seq)),
+            _ => None,
+        });
+        // With no checkpoint the run goes back to its start.
+        let (step, upto) = checkpoint.unwrap_or((0, 1));
+        let standing = |seq: u64| effective.iter().any(|e| e.seq == seq);
+        let before = || effective.iter().filter(move |e| e.seq <= upto);
+
+        let budget = before()
+            .rev()
+            .find_map(|e| match &e.body {
+                EventType::PolicyDecision { budget, .. } | EventType::BudgetTick { budget, .. } => {
+                    Some(*budget)
+                }
+                _ => None,
+            })
+            .unwrap_or_default();
+
+        let calls = self.tool_calls()?;
+        let earlier_calls = calls
+            .iter()
+            .filter(|c| c.seq <= upto && standing(c.seq) && c.dispatched && !c.call.external)
+            .map(|c| c.call.clone())
+            .collect();
+
+        let asked_after = effective.iter().find_map(|e| match &e.body {
+            EventType::ModelRequest(request) if e.seq > upto => Some(request),
+            _ => None,
+        });
+        let next = if let Some(request) = asked_after {
+            ResumeNext::Ask(self.completion_request(request)?)
+        } else {
+            let last = before().rev().find_map(|e| match &e.body {
+                EventType::ModelRequest(request) => Some((e.seq, request)),
+                _ => None,
+            });
+            let Some((asked, request)) = last else {
+                return Err(invalid(
+                    "the run halted before it asked the model anything, so the trace does not say what it was for",
+                ));
+            };
+            let response = self.answer_to(asked, |e| match &e.body {
+                EventType::ModelResponse(r) if e.parent == Some(asked) => Some(r),
+                _ => None,
+            });
+            let Some(response) = response else {
+                return Err(invalid("its last finished step has no model response"));
+            };
+            ResumeNext::Continue {
+                request: self.completion_request(request)?,
+                reply: Box::new(self.completion(response)?),
+                results: calls
+                    .iter()
+                    .filter(|c| c.seq > asked && c.seq <= upto && standing(c.seq))
+                    .filter_map(|c| {
+                        let result = c.result.as_ref()?;
+                        Some(Block::ToolResult {
+                            id: c.call.id.clone(),
+                            content: serde_json::json!(result.content),
+                            is_error: result.is_error,
+                        })
+                    })
+                    .collect(),
+            }
+        };
+
+        Ok(ResumePlan {
+            step,
+            budget,
+            next,
+            earlier_calls,
+            resumes: self
+                .events
+                .iter()
+                .filter(|e| tether_trace::resumed::is_resume(e))
+                .count() as u64,
+        })
+    }
+}
+
 struct ModelCall {
     /// Hashes of the request's messages: what a request is matched on.
     messages: Vec<String>,
@@ -539,6 +676,8 @@ impl ModelAdapter for ReplayModel {
 }
 
 struct ToolCallRecord {
+    /// `seq` of the `tool.call`.
+    seq: u64,
     call: ToolCall,
     /// Whether the call actually ran: allowed, or asked and answered yes.
     dispatched: bool,

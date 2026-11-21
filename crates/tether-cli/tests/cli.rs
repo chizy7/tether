@@ -879,3 +879,234 @@ fn replay_restores_elapsed_time_without_waiting_for_it() {
     assert_faithful(&original, &replayed, &out);
     assert!(inspect_run_at(&replayed).contains("halted: budget exceeded: max_wall_secs"));
 }
+
+/// The replies the scripted model still owes after its first turn: the
+/// script a resume carries on with.
+const REST_OF_SCRIPT: &str = r#"{
+  "task": "unused",
+  "replies": [
+    [{"type": "tool_use", "id": "call_2", "name": "exec",
+      "arguments": {"argv": ["rm", "notes.txt"]}}],
+    [{"type": "text", "text": "Done."}]
+  ]
+}"#;
+
+/// Resume the one trace in `dir` with the rest of the script, typing `stdin`.
+fn tether_resume(dir: &std::path::Path, stdin: &str) -> Output {
+    let script = dir.join("rest.json");
+    fs::write(&script, REST_OF_SCRIPT).expect("write script");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tether"))
+        .arg("resume")
+        .arg(trace_in(dir))
+        .arg("--script")
+        .arg(&script)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn tether");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(stdin.as_bytes())
+        .expect("write stdin");
+    child.wait_with_output().expect("wait")
+}
+
+/// A resumed run did the same things as one that was never interrupted.
+fn assert_same_as_uninterrupted(test: &str, resumed: &std::path::Path) {
+    let (straight, out) = tether_run(test, POLICY, "y\n");
+    assert!(out.status.success(), "{out:?}");
+    let diff = tether(&["diff", &trace_in(&straight), &trace_in(resumed)]);
+    let text = String::from_utf8_lossy(&diff.stdout);
+    assert_eq!(diff.status.code(), Some(0), "{text}");
+    assert!(text.contains("no divergence"), "{text}");
+}
+
+#[cfg(unix)]
+#[test]
+fn resume_carries_a_halted_run_to_the_end_in_the_same_trace() {
+    // Halted in step 2: nobody answered the ask about `rm`.
+    let (dir, out) = tether_run("cli_resume_halted", POLICY, "");
+    assert!(!out.status.success());
+    let before = fs::read_to_string(trace_in(&dir)).expect("read");
+
+    let out = tether_resume(&dir, "y\n");
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("finished: Done."),
+        "{out:?}"
+    );
+
+    // The same trace, appended to: what was there is untouched and the
+    // chain still verifies across the resume.
+    let after = fs::read_to_string(trace_in(&dir)).expect("read");
+    assert!(after.starts_with(&before));
+    let verified = tether(&["verify", &trace_in(&dir)]);
+    assert!(verified.status.success(), "{verified:?}");
+
+    let trace = inspect_run(&dir);
+    let lines: Vec<&str> = trace.lines().collect();
+    let halted = lines
+        .iter()
+        .position(|l| l.contains("halted: ask unanswered"))
+        .expect("halt");
+    // The resume marker follows the halt, in the step of the checkpoint.
+    assert!(
+        lines[halted + 1].contains("step 1") && lines[halted + 1].contains("running: resumed"),
+        "{trace}"
+    );
+    // Step 2 is then done again from its request.
+    assert!(
+        lines[halted + 2].contains("step 2") && lines[halted + 2].contains("model.request"),
+        "{trace}"
+    );
+    assert!(trace.contains("allow by cli"), "{trace}");
+    assert!(
+        trace
+            .trim_end()
+            .lines()
+            .last()
+            .expect("line")
+            .contains("run.finished"),
+        "{trace}"
+    );
+
+    // A fresh workspace: notes.txt was put back by running the earlier
+    // write again, then really removed by the resumed `rm`.
+    let workspace = PathBuf::from(trace_in(&dir).replace(".jsonl", ".resume-1.workspace"));
+    assert!(workspace.is_dir());
+    assert!(!workspace.join("notes.txt").exists());
+    assert!(trace.contains(r#""exit_code":0"#), "{trace}");
+    // The halted run's own workspace is left as it was.
+    assert!(dir.join("out/workspace/notes.txt").exists());
+
+    assert_same_as_uninterrupted("cli_resume_halted_straight", &dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn resume_recovers_a_run_that_crashed_mid_write() {
+    // A whole run, cut off partway through step 2 as a crash would leave it:
+    // no halt, and half an event at the end.
+    let (dir, _) = tether_run("cli_resume_crashed", POLICY, "y\n");
+    let trace = trace_in(&dir);
+    let text = fs::read_to_string(&trace).expect("read");
+    let cut = text
+        .find("\"type\":\"policy.ask\"")
+        .expect("the ask in step 2");
+    fs::write(&trace, &text[..cut]).expect("truncate");
+    assert!(!tether(&["verify", &trace]).status.success());
+
+    let out = tether_resume(&dir, "y\n");
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("dropped an unfinished last line"),
+        "{out:?}"
+    );
+    assert!(tether(&["verify", &trace]).status.success());
+    assert!(inspect_run(&dir).contains("running: resumed"));
+
+    assert_same_as_uninterrupted("cli_resume_crashed_straight", &dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_run_can_be_resumed_more_than_once() {
+    let (dir, _) = tether_run("cli_resume_twice", POLICY, "");
+    // Resumed, and again nobody answers: halted a second time.
+    let out = tether_resume(&dir, "");
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("ask unanswered"),
+        "{out:?}"
+    );
+
+    let out = tether_resume(&dir, "y\n");
+    assert!(out.status.success(), "{out:?}");
+    let trace = inspect_run(&dir);
+    assert_eq!(trace.matches("running: resumed").count(), 2, "{trace}");
+    assert_eq!(
+        trace.matches("halted: ask unanswered").count(),
+        2,
+        "{trace}"
+    );
+    assert!(tether(&["verify", &trace_in(&dir)]).status.success());
+    // Each resume gets its own workspace.
+    assert!(PathBuf::from(trace_in(&dir).replace(".jsonl", ".resume-2.workspace")).is_dir());
+
+    // Both abandoned attempts at step 2 are left out of the comparison.
+    assert_same_as_uninterrupted("cli_resume_twice_straight", &dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn resume_between_steps_carries_on_from_the_finished_step() {
+    // The sleep spends the one-second wall budget, so the run halts as it
+    // asks for step 2, with step 1 finished and checkpointed.
+    let script = r#"{
+      "task": "Wait.",
+      "replies": [
+        [{"type": "tool_use", "id": "call_1", "name": "exec", "arguments": {"argv": ["sleep", "1"]}}],
+        [{"type": "text", "text": "Never said."}]
+      ]
+    }"#;
+    let policy = "[budget]\nmax_wall_secs = 1\n\n[[rule]]\nname = \"all\"\naction = \"allow\"\n";
+    let (dir, out) = tether_run_script("cli_resume_between", script, policy, "");
+    assert!(!out.status.success());
+
+    // Elapsed time carries on from the checkpoint, so the budget is still
+    // spent and the resumed run halts again, before asking the model.
+    let out = tether_resume(&dir, "");
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("budget exceeded: max_wall_secs"),
+        "{out:?}"
+    );
+    let trace = inspect_run(&dir);
+    let tail: Vec<&str> = trace.lines().rev().take(2).collect();
+    assert!(tail[1].contains("running: resumed"), "{trace}");
+    assert!(
+        tail[0].contains("halted: budget exceeded: max_wall_secs"),
+        "{trace}"
+    );
+    assert!(tether(&["verify", &trace_in(&dir)]).status.success());
+}
+
+#[cfg(unix)]
+#[test]
+fn resume_refuses_what_it_cannot_resume() {
+    // A finished run.
+    let (dir, _) = tether_run("cli_resume_finished", POLICY, "y\n");
+    let out = tether_resume(&dir, "");
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("the run finished"),
+        "{out:?}"
+    );
+
+    // A halt file still in place would stop the run again at once.
+    let (dir, _) = tether_run("cli_resume_halt_file", POLICY, "");
+    let halt_file = trace_in(&dir).replace(".jsonl", ".halt");
+    fs::write(&halt_file, "").expect("write halt file");
+    let before = fs::read_to_string(trace_in(&dir)).expect("read");
+    let out = tether_resume(&dir, "y\n");
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("remove it first"),
+        "{out:?}"
+    );
+    assert_eq!(fs::read_to_string(trace_in(&dir)).expect("read"), before);
+
+    // A resumed trace cannot be replayed yet, and says so.
+    fs::remove_file(&halt_file).expect("remove halt file");
+    assert!(tether_resume(&dir, "y\n").status.success());
+    let (_, _, out) = tether_replay(&dir, &[], "");
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr)
+            .contains("replaying a resumed trace is not supported yet"),
+        "{out:?}"
+    );
+}

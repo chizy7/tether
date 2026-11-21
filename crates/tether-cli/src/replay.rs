@@ -35,7 +35,7 @@ pub struct Options {
 
 /// The model to carry on with after a divergence: the script if one was
 /// given, else the provider the recording used.
-fn live_model(
+pub(crate) fn live_model(
     recording: &Recording,
     script: Option<&Path>,
 ) -> anyhow::Result<Arc<dyn ModelAdapter>> {
@@ -85,13 +85,13 @@ fn set_system(messages: &mut Vec<Message>, system: &str) {
 }
 
 /// Where a replay had got to when it left the recording: enough to carry on.
-struct Turn {
+pub(crate) struct Turn {
     /// The last request made, to copy its model, tools and params.
-    request: CompletionRequest,
+    pub(crate) request: CompletionRequest,
     /// The reply to it.
-    reply: Completion,
+    pub(crate) reply: Completion,
     /// Results of the tool calls the reply asked for that have been made.
-    results: Vec<Block>,
+    pub(crate) results: Vec<Block>,
 }
 
 fn result_block(id: &str, result: &tether_types::ToolResult) -> Block {
@@ -104,7 +104,7 @@ fn result_block(id: &str, result: &tether_types::ToolResult) -> Block {
 
 /// Carry on from `turn` as a plain tool loop: run the tools the model asked
 /// for, feed the results back, stop when it asks for none.
-async fn carry_on(run: &mut Run, mut turn: Turn) -> Result<String, RunError> {
+pub(crate) async fn carry_on(run: &mut Run, mut turn: Turn) -> Result<String, RunError> {
     loop {
         let mut said = String::new();
         let mut asked = 0;

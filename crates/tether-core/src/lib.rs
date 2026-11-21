@@ -38,5 +38,7 @@ pub mod run;
 mod trace_task;
 
 pub use ask::{Answerer, AskOutcome, AskRequest, Unattended};
-pub use replay::{Live, Recording, ReplayError, ReplayParts, ReplayState, Timeline};
-pub use run::{Run, RunConfig, RunDeps, RunError, SandboxRef};
+pub use replay::{
+    Live, Recording, ReplayError, ReplayParts, ReplayState, ResumeNext, ResumePlan, Timeline,
+};
+pub use run::{ResumeFrom, Run, RunConfig, RunDeps, RunError, SandboxRef};

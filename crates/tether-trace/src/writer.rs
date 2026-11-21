@@ -55,6 +55,37 @@ impl TraceWriter {
         })
     }
 
+    /// Reopen an existing trace to append to it, for a resumed run. The
+    /// whole trace is verified first and the chain carries on from its last
+    /// event. A last line cut short by a crash is dropped before that: it was
+    /// never a complete event.
+    pub fn open_append(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
+        drop_partial_line(path)?;
+        let mut reader = crate::TraceReader::open(path)?;
+        let mut last = None;
+        for event in reader.by_ref() {
+            last = Some(event?);
+        }
+        let last = last.ok_or_else(|| TraceError::Malformed {
+            line: 0,
+            reason: "an empty trace has no run to resume".into(),
+        })?;
+        Ok(Self {
+            file: OpenOptions::new().append(true).open(path)?,
+            run: last.run,
+            next_seq: last.seq + 1,
+            prev_hash: reader.head().to_owned(),
+            blobs: BlobStore::for_trace(path),
+            failed: false,
+        })
+    }
+
+    /// The run this writer appends to.
+    pub fn run(&self) -> &RunId {
+        &self.run
+    }
+
     /// The blob store beside this trace. Callers put model messages and raw
     /// provider bodies here and record the returned hashes in their events.
     pub fn blobs(&self) -> &BlobStore {
@@ -129,4 +160,22 @@ impl TraceWriter {
         self.file.sync_data()?;
         Ok(())
     }
+}
+
+/// Remove a last line that does not end in a newline: the start of an event
+/// whose write a crash interrupted. Returns whether anything was removed.
+pub fn drop_partial_line(path: impl AsRef<Path>) -> Result<bool> {
+    let path = path.as_ref();
+    let bytes = std::fs::read(path)?;
+    if bytes.last().is_none_or(|last| *last == b'\n') {
+        return Ok(false);
+    }
+    let keep = bytes
+        .iter()
+        .rposition(|b| *b == b'\n')
+        .map_or(0, |at| at + 1);
+    let file = OpenOptions::new().write(true).open(path)?;
+    file.set_len(keep as u64)?;
+    file.sync_all()?;
+    Ok(true)
 }

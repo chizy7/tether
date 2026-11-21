@@ -134,6 +134,23 @@ A message blob is `{"role", "content": [block, ...]}`. A block is `text`,
 where `block` is the provider's own JSON for a block Tether does not model,
 kept unchanged.
 
+## Resumed runs
+
+A resumed run appends to its own trace. The resume is marked by a `run.state`
+of `running` with the reason `resumed`, whose `step` is the step of the
+checkpoint the run went back to (0 if it had none). `seq` stays dense and the
+hash chain continues across it.
+
+Because resume goes back to a checkpoint, the events between that checkpoint
+and the marker were abandoned: the start of a step, and the `run.state` that
+halted it. They stay in the trace, and the step is then recorded again after
+the marker with the same `step` number. To read the run as it finally went,
+drop everything after the last checkpoint that precedes each marker, up to
+but not including the marker. A trace can be resumed more than once.
+
+A crashed run has no closing `run.state`, and may end in a partial line.
+Resume drops a last line that has no newline before it appends.
+
 ## Size limits
 
 One serialized event is at most 1 MB. Anything larger must have spilled to a

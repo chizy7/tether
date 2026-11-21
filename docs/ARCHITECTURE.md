@@ -296,7 +296,7 @@ sandbox tools are unaffected.
 All three re-run the core loop while feeding it recorded answers.
 
 - **Checkpoint:** every N steps (default 1) a `checkpoint` event with the step and, if supported, a sandbox `SnapshotId`. The trace up to that seq is the checkpoint. See "Checkpoints" below.
-- **Resume:** read to the last checkpoint, restore the snapshot (or replay writes into a fresh sandbox), rebuild message history from `model.*` and `tool.*` events, continue live with `run.state = resumed`.
+- **Resume:** go back to the last checkpoint, restore the snapshot (or replay writes into a fresh sandbox), rebuild message history from `model.*` and `tool.*` events, and continue live in the same trace after a `run.state` of `running` with reason `resumed`. See "Resume" below.
 - **Replay:** run a trace again, answered from the recording: requests matched to recorded responses by message hash, recorded tool results and human answers given back, timings restored; no network, no cost. Policy is re-evaluated live, which is how a policy change is tested against old runs. See "Replay" below.
 - **Diff:** align two traces by step and report where model requests, tool calls or policy decisions diverge. See "Diff" below.
 
@@ -381,6 +381,52 @@ Each `docker` snapshot is a committed image, one per checkpoint, labelled
 
 The run loop reaches the sandbox through `RunDeps::sandbox`, which also puts
 the backend's name in `run.created.sandbox`.
+
+### Resume
+
+`tether resume <run.jsonl> [--script <file>]` carries on a run that halted or
+crashed. It appends to the same trace; nothing already written changes, and
+the hash chain runs unbroken across the resume.
+
+1. **Repair.** A crash can leave half an event at the end of the file. A last
+   line with no newline was never a complete event and is dropped. The trace
+   is then verified, and a trace that fails is not appended to.
+2. **Go back.** The run returns to its last checkpoint, or to its start if it
+   has none. Budgets used so far come from the trace at that point; limits
+   come from the policy. Elapsed time carries on from the checkpoint, so time
+   spent halted is not counted.
+3. **Rebuild the sandbox.** With a null snapshot the tool calls that ran
+   before the checkpoint are run again, in order, in a fresh workspace
+   `<run>.resume-<n>.workspace`. Tools marked `external` are not run again.
+   The halted run's own workspace is left as it was.
+4. **Mark.** `run.state` `running`, reason `resumed`, in the checkpoint's step.
+5. **Carry on.** The step that was under way is done again from its
+   `model.request`, whose messages are read back from the blob store. If the
+   run halted between steps, the next request is built from the finished
+   step's request, reply and tool results.
+
+The step that was under way therefore appears in the trace twice: once
+abandoned, once done. `tether_trace::effective` gives the events of the run
+as it finally went, leaving out the stretch between each resume's checkpoint
+and its marker. `tether diff` compares that, so a resumed run and one that
+was never interrupted do not diverge.
+
+`Run::resume` in the core does steps 2 and 4 and reopens the trace;
+`Recording::resume_plan` works out the rest. As with replay, what asks is
+outside the core: with no agent attached, `tether resume` is a plain tool
+loop.
+
+Limits today:
+
+- The run is held to the policy recorded in its trace, and there is no way to
+  resume under another. A run halted by a spent budget halts again at once.
+  A trace with no policy file cannot be resumed by the CLI.
+- Only the `process` sandbox, so only the replay-the-calls path. Restoring a
+  `docker` snapshot is not wired into the CLI.
+- A `<run>.halt` file must be removed first, or the run would halt again.
+- A resumed trace cannot be replayed yet.
+- Doing a step again costs its model call again, and the model may answer
+  differently from the abandoned attempt.
 
 ### Diff
 
