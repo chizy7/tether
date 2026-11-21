@@ -656,6 +656,49 @@ else `OTEL_EXPORTER_OTLP_ENDPOINT`, else `http://localhost:4318`.
 There is no gRPC transport and no retry: a collector that refuses is an
 error.
 
+### Trace viewer
+
+`tether ui <run> [<run-b>]` shows a trace in the browser. The page is one
+HTML file, `ui/index.html`, with plain JavaScript and no build step, built
+into the binary with `include_str!`. A small server in the CLI serves it on
+the loopback address with JSON endpoints beside it, and every endpoint is a
+thin layer over `tether-trace`: the viewer shows nothing the CLI cannot
+already print.
+
+| Endpoint | What it returns | Same as |
+| --- | --- | --- |
+| `/api/runs` | For each run: its state, outcome, totals, and its steps with what stands out in each | `tether inspect`, summed |
+| `/api/run/<a\|b>/step/<n>` | The events of a step, each with its one-line summary and the event whole | `tether inspect` |
+| `/api/run/<a\|b>/blob/<hash>` | A stored message or tool result | the blob store |
+| `/api/diff` | Per-step counts and every divergence | `tether diff` |
+
+The page has the steps down the left as one line with a knot per step, the
+events of the chosen step in the middle, and the chosen event in full on the
+right, where a blob hash opens the content behind it. A denied call, an ask,
+a failed tool and a halt are marked on the event and on its step, and the
+line is cut at the step where a run halted. The page opens on the step that
+most needs looking at: the halt, else the first denial, else the last step.
+With two runs it opens on the comparison, at the step where they part, with
+the two runs' events side by side.
+
+The traces are read once, when the command starts; a run still being written
+is shown as it was then. A trace that does not verify is still shown, with
+the reason at the top.
+
+A trace holds whatever the agent saw and said, so the server keeps it on the
+machine:
+
+- It listens on `127.0.0.1` only, on a free port unless `--port` names one.
+- It answers only requests whose `Host` is that address or `localhost`, so
+  another site's name pointed at the loopback address gets nothing.
+- It sends no cross-origin header, so another site's page cannot read a
+  response.
+- The page's content security policy allows nothing but its own script and
+  style, by a nonce made at each start, and no outside connection. Trace
+  content is put on the page as text, never as markup.
+- A blob is looked up by hash and by nothing else, so the endpoint cannot be
+  used to read another file.
+
 ### Timings under replay
 
 Four things in a trace come from live clock reads, so a replay that measured

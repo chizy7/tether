@@ -12,6 +12,7 @@ mod pack;
 mod replay;
 mod resume;
 mod run;
+mod ui;
 
 #[derive(Parser)]
 #[command(
@@ -143,6 +144,22 @@ enum Cmd {
         #[arg(long)]
         scripts: Option<PathBuf>,
     },
+    /// Look at a trace in the browser: steps down the side, the events of
+    /// each, and any stored message or result on a click. Policy refusals,
+    /// asks and halts stand out. With two traces, also where they diverge.
+    /// Serves on this machine only, until Ctrl-C.
+    Ui {
+        /// Path of a `<run>.jsonl` or a packed `<run>.tar`.
+        run: String,
+        /// A second trace, to compare the first with.
+        run_b: Option<String>,
+        /// The port to serve on. Default: one that is free.
+        #[arg(long, default_value_t = 0)]
+        port: u16,
+        /// Do not open a browser; just print the address.
+        #[arg(long)]
+        no_open: bool,
+    },
     /// Send a trace somewhere else in another format.
     Export {
         #[command(subcommand)]
@@ -261,6 +278,19 @@ async fn main() -> anyhow::Result<()> {
             };
             export::otlp(options).await
         }
+        Cmd::Ui {
+            run,
+            run_b,
+            port,
+            no_open,
+        } => {
+            let options = ui::Options {
+                runs: std::iter::once(run).chain(run_b).collect(),
+                port,
+                open: !no_open,
+            };
+            ui::ui(options).await
+        }
         Cmd::Resume { run, script } => resume::resume(&run, script.as_deref()).await,
         Cmd::Pack { run, out } => pack::pack(&run, out.as_deref()),
         Cmd::Unpack { tar, dir } => pack::unpack(&tar, dir.as_deref()),
@@ -335,7 +365,7 @@ fn inspect(path: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn describe(event: &Event) -> (&str, String) {
+pub(crate) fn describe(event: &Event) -> (&str, String) {
     match &event.body {
         EventType::RunCreated(data) => {
             let tools = data["tools"].as_array().map_or(0, Vec::len);

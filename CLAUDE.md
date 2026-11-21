@@ -58,7 +58,8 @@ crates/tether-core      run loop, state machine, checkpoint, resume, replay
 crates/tether-cli       `tether` binary
 crates/tetherd          gRPC daemon (v0.3)
 proto/tether.proto      SDK service definition
-sdks/, examples/, ui/   land in v0.3 and v0.4
+sdks/, examples/        Python and TypeScript clients; runnable examples
+ui/                     the trace viewer page, built into the binary
 docs/                   PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
 ```
 

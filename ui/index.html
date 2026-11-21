@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tether trace</title>
+<style nonce="__NONCE__">
+:root {
+  --paper: #edf1f5;
+  --panel: #f8fafc;
+  --ink: #14213d;
+  --muted: #56667f;
+  --line: #c9d3df;
+  --tether: #1b6e8c;
+  --deny: #b93a2e;
+  --ask: #96600d;
+  --ok: #2c7453;
+  --chosen: #dfe8f1;
+  --sans: "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1826;
+    --panel: #162133;
+    --ink: #e3eaf3;
+    --muted: #93a3ba;
+    --line: #2b3b53;
+    --tether: #62b7d6;
+    --deny: #f08172;
+    --ask: #e2aa55;
+    --ok: #6cc39a;
+    --chosen: #1f2f47;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.45 var(--sans);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+button:focus-visible { outline: 2px solid var(--tether); outline-offset: 2px; }
+code, pre, .mono { font-family: var(--mono); font-size: 13px; }
+
+/* What happened, in a sentence, then the numbers. */
+header { padding: 20px 28px 16px; border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+header h1.halted { color: var(--deny); }
+header .why { margin: 4px 0 0; max-width: 78ch; }
+header .facts { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 22px; color: var(--muted); }
+header .facts strong { color: var(--ink); font-weight: 600; }
+.warning { margin: 12px 0 0; padding: 8px 12px; border-left: 3px solid var(--deny); background: var(--panel); max-width: 90ch; }
+nav { margin-top: 14px; display: flex; gap: 6px; }
+nav button { padding: 5px 14px; border: 1px solid var(--line); border-radius: 999px; }
+nav button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+main { display: grid; grid-template-columns: 232px minmax(0, 1fr) minmax(0, 0.9fr); min-height: 0; }
+main > section { min-height: 0; overflow: auto; }
+main > section + section { border-left: 1px solid var(--line); }
+h2 { margin: 0; padding: 14px 20px 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+/* The tether: one line down the run, a knot at each step. */
+.rail { list-style: none; margin: 0; padding: 4px 0 24px; }
+.rail li { position: relative; }
+.rail li::before {
+  content: ""; position: absolute; left: 31px; top: 0; bottom: 0; width: 2px; background: var(--tether);
+}
+.rail li:first-child::before { top: 20px; }
+.rail li:last-child::before { bottom: calc(100% - 20px); }
+.rail li.cut::before { bottom: calc(100% - 20px); }
+.rail li.cut ~ li::before { display: none; }
+.rail button { display: grid; grid-template-columns: 64px 1fr; width: 100%; padding: 9px 16px 9px 0; align-items: start; }
+.rail button[aria-current="true"] { background: var(--chosen); }
+.knot { position: relative; justify-self: center; margin-top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 2px solid var(--tether); }
+button[aria-current="true"] .knot { background: var(--tether); }
+.deny .knot, .halt .knot, .error .knot { border-color: var(--deny); }
+.ask .knot { border-color: var(--ask); }
+button[aria-current="true"].deny .knot, button[aria-current="true"].halt .knot { background: var(--deny); }
+/* Where a run was halted, the line is cut. */
+.halt .knot { border-radius: 2px; transform: rotate(45deg); }
+.rail .name { font-weight: 600; }
+.rail .note { display: block; color: var(--muted); font-size: 13px; }
+.rail .flag { display: block; font-size: 13px; font-weight: 600; }
+.deny .flag, .halt .flag, .error .flag { color: var(--deny); }
+.ask .flag { color: var(--ask); }
+.differs .flag { color: var(--deny); }
+
+/* Events of the step. */
+.events { list-style: none; margin: 0; padding: 0 0 24px; }
+.events button { display: grid; grid-template-columns: 52px 132px minmax(0, 1fr); gap: 0 8px; width: 100%; padding: 7px 20px 7px 17px; border-left: 3px solid transparent; }
+.events button:hover { background: var(--panel); }
+.events button[aria-current="true"] { background: var(--chosen); }
+.events .seq { color: var(--muted); text-align: right; font-family: var(--mono); font-size: 13px; padding-top: 1px; }
+.events .type { font-family: var(--mono); font-size: 13px; padding-top: 1px; }
+.events .summary { overflow-wrap: anywhere; }
+.events .deny, .events .halt, .events .error { border-left-color: var(--deny); }
+.events .ask { border-left-color: var(--ask); }
+.events .deny .type, .events .halt .type, .events .error .type { color: var(--deny); font-weight: 600; }
+.events .ask .type { color: var(--ask); font-weight: 600; }
+.events .parted { box-shadow: inset 0 0 0 2px var(--deny); }
+.empty { padding: 8px 20px; color: var(--muted); max-width: 60ch; }
+
+/* Two runs, side by side. */
+.pair { display: grid; grid-template-columns: 1fr 1fr; }
+.pair > div + div { border-left: 1px solid var(--line); }
+.pair .events button { grid-template-columns: 44px minmax(0, 1fr); }
+.pair .events .type { display: block; }
+.verdict { margin: 0; padding: 14px 20px; border-bottom: 1px solid var(--line); max-width: 90ch; }
+.verdict strong { color: var(--deny); }
+.verdict.same strong { color: var(--ok); }
+
+/* One event, in full. */
+.detail { padding: 0 20px 28px; }
+.detail h3 { margin: 14px 0 2px; font-size: 18px; font-weight: 600; }
+.detail .when { margin: 0 0 12px; color: var(--muted); }
+.detail pre { margin: 0; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.detail .stored { display: inline; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--tether); text-underline-offset: 3px; color: var(--tether); font-family: var(--mono); font-size: 13px; }
+.detail h4 { margin: 20px 0 6px; font-size: 14px; font-weight: 600; }
+.message { margin: 0 0 10px; }
+.message .role { font-weight: 600; margin: 0 0 4px; }
+.message p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 78ch; }
+
+@media (max-width: 980px) {
+  body { display: block; }
+  main { display: block; }
+  main > section { overflow: visible; }
+  main > section + section { border-left: 0; border-top: 1px solid var(--line); }
+  .pair { grid-template-columns: 1fr; }
+  .pair > div + div { border-left: 0; border-top: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="headline">Reading the trace</h1>
+  <p class="why" id="why"></p>
+  <ul class="facts" id="facts"></ul>
+  <div id="warning"></div>
+  <nav id="views" hidden></nav>
+</header>
+<main>
+  <section aria-labelledby="steps-title">
+    <h2 id="steps-title">Steps</h2>
+    <ol class="rail" id="rail"></ol>
+  </section>
+  <section aria-labelledby="events-title" id="middle">
+    <h2 id="events-title">Events</h2>
+    <div id="events"></div>
+  </section>
+  <section aria-labelledby="detail-title">
+    <h2 id="detail-title">Event</h2>
+    <div class="detail" id="detail"><p class="empty">Choose an event to see all of it.</p></div>
+  </section>
+</main>
+<script nonce="__NONCE__">
+"use strict";
+// Everything from a trace is put on the page as text, never as markup: a
+// trace holds whatever a model or a tool said.
+
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [name, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined || value === false) continue;
+    if (name === "class") node.className = value;
+    else if (name === "onclick") node.addEventListener("click", value);
+    else node.setAttribute(name, value);
+  }
+  for (const child of children) {
+    if (child === null || child === undefined) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+function clear(node) { node.replaceChildren(); return node; }
+async function load(path) {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`${path}: ${response.status}`);
+  return response.json();
+}
+
+const FLAGS = { deny: "denied", ask: "asked", halt: "halted", error: "a tool failed" };
+const state = { runs: {}, diff: null, view: "a", step: null, seq: null };
+const stepCache = new Map();
+function stepEvents(key, step) {
+  const id = `${key}/${step}`;
+  if (!stepCache.has(id)) stepCache.set(id, load(`/api/run/${key}/step/${step}`));
+  return stepCache.get(id);
+}
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many || one + "s"}`;
+const stepName = (step) => (step === 0 ? "Start" : `Step ${step}`);
+
+function header() {
+  const comparing = state.view === "diff";
+  const run = state.runs[comparing ? "a" : state.view];
+  const headline = $("headline");
+  const facts = clear($("facts"));
+  headline.className = "";
+  $("why").textContent = "";
+  clear($("warning"));
+
+  if (comparing) {
+    const first = state.diff.divergences[0];
+    headline.textContent = first
+      ? `The runs part at ${stepName(first.step).toLowerCase()}`
+      : "The two runs did the same things";
+    $("why").textContent = first ? `${first.what}: ${first.detail}` : "";
+    for (const key of ["a", "b"]) {
+      facts.append(el("li", {}, el("strong", {}, key.toUpperCase()), ` ${state.runs[key].path}`));
+    }
+    if (state.diff.policy_differs) facts.append(el("li", {}, "held to different policies"));
+    return;
+  }
+
+  const steps = run.steps.filter((s) => s.step > 0).length;
+  const now = run.state;
+  if (!now) {
+    headline.textContent = "This trace has no run in it";
+  } else if (now.state === "finished") {
+    headline.textContent = `Finished in ${plural(steps, "step")}`;
+    if (run.outcome !== null && run.outcome !== undefined) {
+      $("why").textContent = typeof run.outcome === "string" ? run.outcome : JSON.stringify(run.outcome);
+    }
+  } else if (now.state === "halted") {
+    headline.textContent = `Halted at ${stepName(now.step).toLowerCase()}`;
+    headline.className = "halted";
+    $("why").textContent = now.reason;
+  } else {
+    headline.textContent = `Still ${now.state} at ${stepName(now.step).toLowerCase()}`;
+    $("why").textContent = "This is the trace as it was when the page was opened.";
+  }
+  facts.append(el("li", {}, el("strong", {}, run.run || "no run id")));
+  facts.append(el("li", {}, plural(run.events, "event")));
+  if (run.budget) {
+    facts.append(el("li", {}, plural(run.budget.tokens_used, "token")));
+    facts.append(el("li", {}, `$${run.budget.usd_used.toFixed(4)}`));
+    facts.append(el("li", {}, plural(run.budget.tool_calls_used, "tool call")));
+  }
+  facts.append(el("li", {}, run.path));
+  if (run.damaged) {
+    $("warning").append(
+      el("p", { class: "warning" },
+        `This trace does not verify, so it may have been changed or cut short: ${run.damaged}. What could be read is shown.`),
+    );
+  }
+}
+
+function views() {
+  const nav = clear($("views"));
+  if (!state.runs.b) return;
+  nav.hidden = false;
+  for (const [view, label] of [["a", "Run A"], ["b", "Run B"], ["diff", "Compare"]]) {
+    nav.append(el("button", {
+      type: "button",
+      "aria-pressed": String(state.view === view),
+      onclick: () => show(view),
+    }, label));
+  }
+}
+
+function rail() {
+  const list = clear($("rail"));
+  const comparing = state.view === "diff";
+  const steps = comparing ? state.diff.steps : state.runs[state.view].steps;
+  for (const s of steps) {
+    let mark = null, note = "", flag = null;
+    if (comparing) {
+      const counts = (c) => (c ? `${c.model_requests + c.tool_calls + c.decisions}` : "none");
+      note = `A ${counts(s.a)}, B ${counts(s.b)} compared`;
+      if (!s.a || !s.b) { mark = "differs"; flag = `only in ${s.a ? "A" : "B"}`; }
+      else if (s.divergences) { mark = "differs deny"; flag = plural(s.divergences, "difference"); }
+    } else {
+      mark = s.mark;
+      const parts = [];
+      if (s.model_requests) parts.push(plural(s.model_requests, "model call"));
+      if (s.tool_calls) parts.push(plural(s.tool_calls, "tool call"));
+      note = parts.join(", ") || plural(s.events, "event");
+      flag = FLAGS[s.mark] || null;
+    }
+    const item = el("li", { class: !comparing && s.mark === "halt" ? "cut" : null },
+      el("button", {
+        type: "button",
+        class: mark,
+        "aria-current": String(state.step === s.step),
+        onclick: () => chooseStep(s.step),
+      },
+        el("span", { class: "knot" }),
+        el("span", {},
+          el("span", { class: "name" }, stepName(s.step)),
+          el("span", { class: "note" }, note),
+          flag ? el("span", { class: "flag" }, flag) : null)));
+    list.append(item);
+  }
+}
+
+function eventList(key, events, parted) {
+  if (!events.length) return el("p", { class: "empty" }, "Nothing in this step.");
+  const list = el("ol", { class: "events" });
+  for (const e of events) {
+    const classes = [e.mark, parted === e.seq ? "parted" : null].filter(Boolean).join(" ");
+    list.append(el("li", {},
+      el("button", {
+        type: "button",
+        class: classes || null,
+        "aria-current": String(state.seq === `${key}/${e.seq}`),
+        onclick: () => chooseEvent(key, e),
+      },
+        el("span", { class: "seq" }, e.seq),
+        key && state.view === "diff"
+          ? el("span", {}, el("span", { class: "type" }, e.type), el("span", { class: "summary" }, e.summary))
+          : el("span", { class: "type" }, e.type),
+        key && state.view === "diff" ? null : el("span", { class: "summary" }, e.summary))));
+  }
+  return list;
+}
+
+async function events() {
+  const box = $("events");
+  const step = state.step;
+  const view = state.view;
+  if (step === null) { clear(box).append(el("p", { class: "empty" }, "This trace has no steps.")); return; }
+  $("events-title").textContent = `${stepName(step)}: events`;
+  if (view !== "diff") {
+    const list = await stepEvents(view, step);
+    if (state.step !== step || state.view !== view) return;
+    clear(box).append(eventList(view, list, null));
+    return;
+  }
+  const [a, b] = await Promise.all([stepEvents("a", step), stepEvents("b", step)]);
+  if (state.step !== step || state.view !== view) return;
+  const here = state.diff.divergences.filter((d) => d.step === step);
+  const first = here[0];
+  const verdict = first
+    ? el("p", { class: "verdict" }, el("strong", {}, "Different here. "), `${first.what}: ${first.detail}`)
+    : el("p", { class: "verdict same" }, el("strong", {}, "Same here. "),
+        "The model calls, tool calls and policy decisions of this step match.");
+  clear(box).append(verdict, el("div", { class: "pair" },
+    el("div", {}, el("h2", {}, "Run A"), eventList("a", a, first && first.a ? first.a.seq : null)),
+    el("div", {}, el("h2", {}, "Run B"), eventList("b", b, first && first.b ? first.b.seq : null))));
+}
+
+const HASH = /^blake3:[0-9a-f]{64}$/;
+// JSON as text, with each stored piece of content as something to open.
+function renderJson(value, key, depth, into) {
+  const pad = "  ".repeat(depth);
+  if (typeof value === "string" && HASH.test(value)) {
+    into.append(el("button", { type: "button", class: "stored", onclick: () => openBlob(key, value) }, JSON.stringify(value)));
+  } else if (Array.isArray(value) && value.length) {
+    into.append("[\n");
+    value.forEach((item, at) => {
+      into.append(pad + "  ");
+      renderJson(item, key, depth + 1, into);
+      into.append(at < value.length - 1 ? ",\n" : "\n");
+    });
+    into.append(pad + "]");
+  } else if (value && typeof value === "object" && Object.keys(value).length) {
+    into.append("{\n");
+    const names = Object.keys(value);
+    names.forEach((name, at) => {
+      into.append(`${pad}  ${JSON.stringify(name)}: `);
+      renderJson(value[name], key, depth + 1, into);
+      into.append(at < names.length - 1 ? ",\n" : "\n");
+    });
+    into.append(pad + "}");
+  } else {
+    into.append(JSON.stringify(value));
+  }
+}
+
+function chooseEvent(key, e) {
+  state.seq = `${key}/${e.seq}`;
+  for (const button of document.querySelectorAll(".events button")) button.setAttribute("aria-current", "false");
+  const box = clear($("detail"));
+  const event = e.event;
+  box.append(el("h3", {}, `${e.type}, event ${e.seq}`));
+  const answers = event.parent !== undefined && event.parent !== null ? `, answering event ${event.parent}` : "";
+  box.append(el("p", { class: "when" }, `${event.ts}${answers}`));
+  const pre = el("pre");
+  renderJson(event.data, key, 0, pre);
+  box.append(pre, el("div", { id: "stored" }));
+  events();
+}
+
+function messageNode(message) {
+  const node = el("div", { class: "message" }, el("p", { class: "role" }, message.role));
+  for (const block of message.content) {
+    if (block.type === "text") node.append(el("p", {}, block.text));
+    else if (block.type === "tool_use") node.append(el("p", {}, `Calls ${block.name} with ${JSON.stringify(block.arguments)}`));
+    else if (block.type === "tool_result") {
+      const content = typeof block.content === "string" ? block.content : JSON.stringify(block.content, null, 2);
+      node.append(el("p", {}, `${block.is_error ? "Failed result" : "Result"}: ${content}`));
+    } else node.append(el("p", {}, JSON.stringify(block, null, 2)));
+  }
+  return node;
+}
+
+async function openBlob(key, hash) {
+  const box = clear($("stored"));
+  box.append(el("h4", {}, "Stored content"), el("p", { class: "when mono" }, hash));
+  try {
+    const blob = await load(`/api/run/${key}/blob/${hash}`);
+    const value = blob.value;
+    if (blob.kind === "binary") box.append(el("p", {}, `${blob.bytes} bytes that are not text.`));
+    else if (blob.kind === "text") box.append(el("pre", {}, value));
+    else if (value && typeof value.role === "string" && Array.isArray(value.content)) box.append(messageNode(value));
+    else box.append(el("pre", {}, JSON.stringify(value, null, 2)));
+  } catch (error) {
+    box.append(el("p", {}, "This content is not in the blob store beside the trace."));
+  }
+  box.scrollIntoView({ block: "nearest" });
+}
+
+function chooseStep(step) {
+  state.step = step;
+  state.seq = null;
+  rail();
+  events();
+}
+
+// Open on the step that most needs looking at.
+function startingStep() {
+  if (state.view === "diff") {
+    const first = state.diff.divergences[0];
+    const steps = state.diff.steps;
+    return first ? first.step : steps.length ? steps[steps.length - 1].step : null;
+  }
+  const steps = state.runs[state.view].steps;
+  const trouble = steps.find((s) => s.mark === "halt") || steps.find((s) => s.mark === "deny");
+  return trouble ? trouble.step : steps.length ? steps[steps.length - 1].step : null;
+}
+
+function show(view) {
+  state.view = view;
+  state.seq = null;
+  state.step = startingStep();
+  clear($("detail")).append(el("p", { class: "empty" }, "Choose an event to see all of it."));
+  header();
+  views();
+  rail();
+  events();
+}
+
+(async () => {
+  try {
+    state.runs = await load("/api/runs");
+    if (state.runs.b) state.diff = await load("/api/diff");
+    document.title = `Tether: ${state.runs.a.run || state.runs.a.path}`;
+    show(state.runs.b ? "diff" : "a");
+  } catch (error) {
+    $("headline").textContent = "The trace could not be loaded";
+    $("why").textContent = `${error.message}. Is tether ui still running?`;
+  }
+})();
+</script>
+</body>
+</html>

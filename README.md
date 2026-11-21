@@ -22,7 +22,8 @@ can replay, diff and eval against.
 > run on from its last checkpoint, and `tether pack` puts a trace and its
 > blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
 > for agents in other languages, with a Python SDK in `sdks/python` and a
-> TypeScript one in `sdks/typescript` (on `master`, not yet on npm).
+> TypeScript one in `sdks/typescript`, both published as `tether-agents`.
+> `tether ui` (on `master`) shows a trace in the browser.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
@@ -50,12 +51,13 @@ events.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/chizy7/tether/releases/latest/download/tether-cli-installer.sh | sh
-pip install tether-agents
+pip install tether-agents     # Python
+npm install tether-agents     # or TypeScript
 ```
 
 The first line installs the `tether` binary for macOS or Linux, on arm64 or
-x86-64, into `~/.cargo/bin`. The second installs the Python SDK, which starts
-the daemon built into that binary when it needs one. There is no Windows
+x86-64, into `~/.cargo/bin`. The others install an SDK, which starts the
+daemon built into that binary when it needs one. There is no Windows
 build.
 
 ## What it is, and is not
