@@ -5,6 +5,10 @@
 # Prices change; check https://platform.claude.com/docs/en/about-claude/pricing
 # and bump `version` when you edit a row.
 #
+# Only Anthropic models have rows. For any other model, or for prices that
+# have moved, write a table in this format and name it in TETHER_PRICING; it
+# replaces this one.
+#
 # A model missing from this table has no price: its calls cost nothing as far
 # as max_usd is concerned, and its ticks carry no price.
 

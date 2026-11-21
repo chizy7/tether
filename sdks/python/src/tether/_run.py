@@ -202,8 +202,9 @@ class Run:
     block finishes the run, or halts it if the block raised.
 
     ``policy`` is the path of a ``tether.toml``; without one there are no
-    rules and every tool call asks. ``provider`` is ``"anthropic"`` or, for
-    tests and demos, ``"fake"`` with ``script`` naming a file of scripted
+    rules and every tool call asks. ``provider`` is ``"anthropic"``,
+    ``"openai_compat"`` for a server with an OpenAI-style chat completions
+    endpoint (``OPENAI_BASE_URL``, ``OPENAI_API_KEY``) or, for tests and demos, ``"fake"`` with ``script`` naming a file of scripted
     replies. ``dir`` is where the trace goes. Unset arguments fall back to
     ``TETHER_POLICY``, ``TETHER_DIR`` and ``TETHER_SOCKET``, which
     ``tether run -- <command>`` sets.

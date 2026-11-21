@@ -14,6 +14,8 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tether_types::{Price, Usage};
 
+#[cfg(any(feature = "anthropic", feature = "openai_compat"))]
+mod http;
 pub mod pricing;
 
 pub use pricing::Pricing;
@@ -184,7 +186,7 @@ pub trait ModelAdapter: Send + Sync {
 #[cfg(feature = "anthropic")]
 pub mod anthropic;
 #[cfg(feature = "openai_compat")]
-pub mod openai_compat {}
+pub mod openai_compat;
 #[cfg(feature = "ollama")]
 pub mod ollama {}
 #[cfg(feature = "fake")]

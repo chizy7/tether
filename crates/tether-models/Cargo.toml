@@ -20,7 +20,7 @@ reqwest = { workspace = true, optional = true }
 [features]
 default = ["anthropic", "fake"]
 anthropic = ["dep:reqwest"]
-openai_compat = []
+openai_compat = ["dep:reqwest"]
 ollama = []
 fake = []
 

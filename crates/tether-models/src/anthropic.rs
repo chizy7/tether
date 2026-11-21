@@ -23,6 +23,7 @@ use async_trait::async_trait;
 use serde_json::{json, Map, Value};
 use tether_types::{Price, Usage};
 
+use crate::http::{self, env, provider, Failed, Sse};
 use crate::{
     Block, Completion, CompletionRequest, Message, ModelAdapter, ModelError, Pricing, Role,
 };
@@ -59,14 +60,6 @@ pub struct AnthropicAdapter {
     retry_delay: Duration,
 }
 
-fn provider(message: impl Into<String>) -> ModelError {
-    ModelError::Provider(message.into())
-}
-
-fn env(name: &str) -> Option<String> {
-    std::env::var(name).ok().filter(|value| !value.is_empty())
-}
-
 impl AnthropicAdapter {
     /// An adapter that authenticates with an API key.
     pub fn new(api_key: impl Into<String>) -> Self {
@@ -75,7 +68,8 @@ impl AnthropicAdapter {
 
     /// Credentials from the environment: `ANTHROPIC_API_KEY`, or failing that
     /// an OAuth token in `ANTHROPIC_AUTH_TOKEN`. `ANTHROPIC_BASE_URL`
-    /// overrides the endpoint.
+    /// overrides the endpoint, and `TETHER_PRICING` names a pricing table to
+    /// use in place of the built-in one.
     pub fn from_env() -> Result<Self, ModelError> {
         let mut adapter = if let Some(key) = env("ANTHROPIC_API_KEY") {
             Self::new(key)
@@ -89,20 +83,12 @@ impl AnthropicAdapter {
         if let Some(url) = env("ANTHROPIC_BASE_URL") {
             adapter = adapter.base_url(url);
         }
-        Ok(adapter)
+        Ok(adapter.pricing(Pricing::from_env()?))
     }
 
     fn with_auth(auth: Auth) -> Self {
-        let http = reqwest::Client::builder()
-            .user_agent(concat!("tether/", env!("CARGO_PKG_VERSION")))
-            .connect_timeout(Duration::from_secs(30))
-            // Between chunks, not for the whole response: a long answer
-            // streams for minutes.
-            .read_timeout(Duration::from_secs(600))
-            .build()
-            .unwrap_or_default();
         Self {
-            http,
+            http: http::client(),
             base_url: DEFAULT_BASE_URL.into(),
             auth,
             betas: Vec::new(),
@@ -163,40 +149,8 @@ impl AnthropicAdapter {
 
     /// One HTTP attempt. `Err(Failed { retry: true, .. })` is worth trying again.
     async fn attempt(&self, body: &[u8], started: Instant) -> Result<Completion, Failed> {
-        let mut response = self
-            .request(body.to_vec())
-            .send()
-            .await
-            .map_err(|e| Failed::retryable(provider(format!("request failed: {e}")), None))?;
-
-        let header = |name: &str| {
-            response
-                .headers()
-                .get(name)
-                .and_then(|value| value.to_str().ok())
-                .map(str::to_owned)
-        };
-        let request_id = header("request-id");
-        let status = response.status();
-        if !status.is_success() {
-            let should_retry = header("x-should-retry");
-            let retry_after = header("retry-after")
-                .and_then(|secs| secs.parse::<f64>().ok())
-                .filter(|secs| secs.is_finite() && *secs >= 0.0)
-                .map(|secs| Duration::from_secs_f64(secs.min(60.0)));
-            let text = response.text().await.unwrap_or_default();
-            let error = api_error(status.as_u16(), &text, request_id);
-            let retry = match should_retry.as_deref() {
-                Some("true") => true,
-                Some("false") => false,
-                _ => matches!(status.as_u16(), 408 | 409 | 429) || status.is_server_error(),
-            };
-            return Err(Failed {
-                error,
-                retry,
-                after: retry_after,
-            });
-        }
+        let (mut response, request_id) =
+            http::send(self.request(body.to_vec()), "request-id", api_error).await?;
 
         // Past this point output may already be billed, so nothing retries.
         let fatal = |e: reqwest::Error| Failed::fatal(provider(format!("reading response: {e}")));
@@ -229,30 +183,6 @@ impl AnthropicAdapter {
     }
 }
 
-struct Failed {
-    error: ModelError,
-    retry: bool,
-    after: Option<Duration>,
-}
-
-impl Failed {
-    fn fatal(error: ModelError) -> Self {
-        Self {
-            error,
-            retry: false,
-            after: None,
-        }
-    }
-
-    fn retryable(error: ModelError, after: Option<Duration>) -> Self {
-        Self {
-            error,
-            retry: true,
-            after,
-        }
-    }
-}
-
 /// An error status as a [`ModelError::Api`], from the provider's error body.
 fn api_error(status: u16, body: &str, request_id: Option<String>) -> ModelError {
     let parsed: Value = serde_json::from_str(body).unwrap_or(Value::Null);
@@ -278,19 +208,10 @@ impl ModelAdapter for AnthropicAdapter {
         let body = serde_json::to_vec(&request_body(&req, self.stream)?)
             .map_err(|e| provider(format!("encoding request: {e}")))?;
         let started = Instant::now();
-        let mut delay = self.retry_delay;
-        let mut retries = 0;
-        loop {
-            match self.attempt(&body, started).await {
-                Ok(completion) => return Ok(completion),
-                Err(failed) if failed.retry && retries < self.max_retries => {
-                    tokio::time::sleep(failed.after.unwrap_or(delay)).await;
-                    delay *= 2;
-                    retries += 1;
-                }
-                Err(failed) => return Err(failed.error),
-            }
-        }
+        http::with_retries(self.max_retries, self.retry_delay, || {
+            self.attempt(&body, started)
+        })
+        .await
     }
 
     fn price(&self, model: &str, usage: &Usage) -> Option<Price> {
@@ -470,10 +391,7 @@ pub fn parse_message(message: &Value) -> Result<Completion, ModelError> {
 /// response if that ever happens.
 #[derive(Default)]
 pub struct StreamCollector {
-    /// Bytes of a line not yet ended.
-    line: Vec<u8>,
-    /// `data:` lines of the event being read.
-    data: String,
+    sse: Sse,
     message: Option<Map<String, Value>>,
     blocks: Vec<Value>,
     /// Tool input arrives as pieces of JSON text, one string per block.
@@ -490,27 +408,8 @@ impl StreamCollector {
 
     /// Take the next bytes of the stream. Chunks may split anywhere.
     pub fn feed(&mut self, chunk: &[u8]) -> Result<(), ModelError> {
-        for byte in chunk {
-            if *byte != b'\n' {
-                self.line.push(*byte);
-                continue;
-            }
-            let line = std::mem::take(&mut self.line);
-            let line = String::from_utf8_lossy(&line);
-            let line = line.strip_suffix('\r').unwrap_or(&line);
-            if line.is_empty() {
-                // A blank line ends the event.
-                let data = std::mem::take(&mut self.data);
-                if !data.is_empty() {
-                    self.event(&data)?;
-                }
-            } else if let Some(data) = line.strip_prefix("data:") {
-                if !self.data.is_empty() {
-                    self.data.push('\n');
-                }
-                self.data.push_str(data.strip_prefix(' ').unwrap_or(data));
-            }
-            // `event:` repeats the type inside the data; comments start with `:`.
+        for data in self.sse.feed(chunk) {
+            self.event(&data)?;
         }
         Ok(())
     }

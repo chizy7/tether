@@ -10,9 +10,9 @@ can replay, diff and eval against.
 > Status: pre-alpha, v0.3 "it replays" in progress. `tether run` plays a
 > scripted agent under a policy file: rules allow, deny or ask at the terminal,
 > budgets halt the run, tools run in a sandbox, and every decision lands in a
-> verifiable trace that `tether inspect` and `tether verify` read. The
-> Anthropic adapter makes real model calls from Rust code linked against
-> `tether-core`. `tether replay` runs a recorded trace again with no network
+> verifiable trace that `tether inspect` and `tether verify` read. Real model
+> calls go through the Anthropic adapter, or the `openai_compat` adapter for
+> any server with an OpenAI-style chat completions endpoint. `tether replay` runs a recorded trace again with no network
 > and no cost, optionally under a changed policy or prompt, and `tether diff`
 > shows where two runs diverge. `tether resume` carries a halted or crashed
 > run on from its last checkpoint, and `tether pack` puts a trace and its

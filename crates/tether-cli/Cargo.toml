@@ -19,7 +19,7 @@ tether-policy = { workspace = true }
 tether-sandbox = { workspace = true }
 tether-mcp = { workspace = true }
 tether-models = { workspace = true }
-tetherd = { path = "../tetherd" }
+tetherd = { path = "../tetherd", default-features = false }
 async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -32,6 +32,11 @@ tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 time = { workspace = true }
+
+[features]
+default = ["openai_compat"]
+# The adapter for servers that speak the OpenAI Chat Completions shape.
+openai_compat = ["tether-models/openai_compat", "tetherd/openai_compat"]
 
 [lints]
 workspace = true

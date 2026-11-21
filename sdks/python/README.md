@@ -44,7 +44,7 @@ itself a few seconds after its last run.
 
 | | |
 | --- | --- |
-| `Run(policy=, provider=, script=, dir=, workspace=, agent=, betas=, socket=)` | Start a run. `provider` is `"anthropic"` or, with `script`, `"fake"` |
+| `Run(policy=, provider=, script=, dir=, workspace=, agent=, betas=, socket=)` | Start a run. `provider` is `"anthropic"`, `"openai_compat"` (any server with an OpenAI-style `/chat/completions`, set by `OPENAI_BASE_URL` and `OPENAI_API_KEY`) or, with `script`, `"fake"` |
 | `run.tools` | The tools the run offers |
 | `run.complete(model=, messages=, tools=, params=)` | One model turn. Returns a `Reply` |
 | `run.call_tool(call)` | Run a tool the model asked for. Returns a `ToolResult` |

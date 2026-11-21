@@ -37,7 +37,7 @@ message CreateRunRequest {
   string policy_path = 2;   // empty: no rules, so every call asks
   string sandbox = 3;       // process (default) | docker | firecracker
   string workspace = 4;     // default <dir>/<run_id>.workspace
-  string provider = 5;      // anthropic (default) | fake
+  string provider = 5;      // anthropic (default) | openai_compat | fake
   string script_path = 6;   // for provider "fake": the replies, as in `tether run --script`
   string dir = 7;           // where the trace goes; default .tether
   repeated string betas = 8; // provider beta headers a params field needs

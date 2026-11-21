@@ -229,7 +229,7 @@ pub trait ModelAdapter: Send + Sync {
 | Adapter | Phase | Notes |
 | --- | --- | --- |
 | `anthropic` | v0.3 | Messages API over HTTP, tool use; streaming collapsed to one event with `ttft_ms`; key from `ANTHROPIC_API_KEY` |
-| `openai_compat` | v0.3 | Chat Completions shape |
+| `openai_compat` | v0.3 | Chat Completions shape over HTTP, for OpenAI and the servers that copy its endpoint; server from `OPENAI_BASE_URL`, key from `OPENAI_API_KEY`; cargo feature `openai_compat` |
 | `ollama` | after v0.4 | Local; `price` returns `None` |
 | replay | v0.3 | Not in `tether-models`: the stand-in built by `tether-core::replay`, which returns recorded `model.response` events |
 | `fake` | v0.1 | Scripted responses for tests; no API key |
@@ -278,11 +278,43 @@ The `anthropic` adapter:
 - **Version.** Each release pins one API version (`2026-10-21`), which no
   longer accepts `temperature`, `top_p` or `top_k`.
 
+The `openai_compat` adapter talks to any server with an OpenAI-style
+`/chat/completions`: OpenAI, a hosted gateway, or a local server. It is
+behind the `openai_compat` cargo feature of `tether-models`, which the
+`tether` and `tetherd` binaries turn on by default.
+
+- **Request.** `params` passes through as the body's other fields. The
+  adapter adds only `stream` and, when streaming, `stream_options` asking for
+  usage in the last chunk. System messages stay in the conversation as
+  `system` messages. An assistant turn carries its `tool_use` blocks as
+  `tool_calls`, with arguments as JSON text. Each `tool_result` block becomes
+  a `tool` message of its own.
+- **Response.** Only the first choice is read. Streamed by default and
+  collapsed into the body a non-streaming call would have returned.
+  `stop_reason` is the choice's `finish_reason`, so it reads `stop`,
+  `tool_calls`, `length` or `content_filter` here, not Anthropic's words.
+  Tokens read from the cache are counted inside `prompt_tokens` on the wire;
+  the adapter takes them out of `input_tokens` and reports them as
+  `cache_read_tokens`, the way every other adapter does.
+- **What the shape cannot carry.** A tool result has no error flag, so
+  `is_error` is not sent. Reasoning text that some servers return beside the
+  answer is not put in the message, because servers disagree on whether it
+  may be sent back; it is still in the raw body. A refusal is kept as a
+  `provider` block and goes back in the message's `refusal` field.
+- **Errors.** As for `anthropic`: a rate limit or server error is retried
+  twice with backoff, anything else is a `ModelError::Api`.
+- **Credentials.** `OPENAI_BASE_URL` is the address `/chat/completions` is
+  appended to and defaults to OpenAI's. `OPENAI_API_KEY` is sent as a bearer
+  token; it may be left out for a server that needs none.
+
 Prices live in `crates/tether-models/pricing.toml`, dollars per million
 tokens, with a `version`. The cost of each model call and that version are
 recorded in the `budget.tick` after it. A model missing from the table has no
 price: its calls do not count toward `max_usd` and its ticks carry no price.
-`Pricing::from_toml` loads a different table. Two things are under-counted:
+The built-in table has rows for Anthropic models only, so calls through
+`openai_compat` are unpriced until a table is given. `Pricing::from_toml`
+loads a different table, and the adapters' `from_env` reads one from the file
+named in `TETHER_PRICING`; it replaces the built-in table whole. Two things are under-counted:
 one-hour cache writes are priced as five-minute ones, and Claude Haiku 5.5's
 higher rate for prompts over 100K tokens is not modelled.
 

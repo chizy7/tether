@@ -11,6 +11,7 @@ real either way and run in the sandbox.
 
     python agent.py
     ANTHROPIC_API_KEY=... python agent.py --model anthropic
+    OPENAI_BASE_URL=http://localhost:11434/v1 python agent.py --model openai_compat <model name>
 """
 
 import sys
@@ -35,7 +36,8 @@ def agent(run: tether.Run, model: str, params: dict) -> str:
         messages.append(reply.message)
         results = [run.call_tool(call) for call in reply.tool_calls]
         # A refusal or a cut-off answer is a reply, but not a finished one.
-        if reply.stop_reason in ("refusal", "max_tokens"):
+        # The last two are what an OpenAI-style server calls the same things.
+        if reply.stop_reason in ("refusal", "max_tokens", "content_filter", "length"):
             return f"stopped early ({reply.stop_reason}): {reply.text}"
         if not results:
             return reply.text
@@ -55,8 +57,16 @@ def main() -> int:
         # A small task: ask for the least reasoning effort.
         model = "claude-opus-5-5"
         params = {"output_config": {"effort": "low"}, "fallbacks": "default"}
+    elif len(args) == 3 and args[:2] == ["--model", "openai_compat"]:
+        # Any server with an OpenAI-style chat completions endpoint, at
+        # OPENAI_BASE_URL. The model is whatever that server calls it.
+        settings = dict(provider="openai_compat")
+        model, params = args[2], {}
     else:
-        print("usage: agent.py [--model fake|anthropic]", file=sys.stderr)
+        print(
+            "usage: agent.py [--model fake|anthropic|openai_compat <model name>]",
+            file=sys.stderr,
+        )
         return 2
 
     # The file tools and a few read-only commands are allowed; anything else

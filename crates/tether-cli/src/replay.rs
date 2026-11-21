@@ -67,6 +67,10 @@ pub(crate) fn live_model(
             }
             Ok(Arc::new(adapter))
         }
+        #[cfg(feature = "openai_compat")]
+        Some("openai_compat") => Ok(Arc::new(
+            tether_models::openai_compat::OpenAiCompatAdapter::from_env()?,
+        )),
         Some(other) => bail!(
             "no live adapter for the recorded provider {other:?}; pass --script to stand in for it"
         ),

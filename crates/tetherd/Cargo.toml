@@ -39,5 +39,10 @@ protoc-bin-vendored = "3"
 [dev-dependencies]
 tempfile = "3"
 
+[features]
+default = ["openai_compat"]
+# The adapter for servers that speak the OpenAI Chat Completions shape.
+openai_compat = ["tether-models/openai_compat"]
+
 [lints]
 workspace = true

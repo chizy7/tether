@@ -46,6 +46,19 @@ impl Pricing {
         })
     }
 
+    /// The table in the file `TETHER_PRICING` names, or the built-in one
+    /// when it is unset. The file replaces the built-in table whole.
+    pub fn from_env() -> Result<Self, ModelError> {
+        match std::env::var("TETHER_PRICING") {
+            Ok(path) if !path.is_empty() => {
+                let text = std::fs::read_to_string(&path)
+                    .map_err(|e| ModelError::Provider(format!("pricing table {path}: {e}")))?;
+                Self::from_toml(&text)
+            }
+            _ => Ok(Self::builtin()),
+        }
+    }
+
     pub fn from_toml(text: &str) -> Result<Self, ModelError> {
         toml::from_str(text).map_err(|e| ModelError::Provider(format!("pricing table: {e}")))
     }

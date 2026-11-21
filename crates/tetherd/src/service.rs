@@ -184,6 +184,12 @@ impl Daemon {
                 }
                 Ok(Arc::new(adapter))
             }
+            #[cfg(feature = "openai_compat")]
+            "openai_compat" => {
+                let adapter = tether_models::openai_compat::OpenAiCompatAdapter::from_env()
+                    .map_err(|e| Status::failed_precondition(e.to_string()))?;
+                Ok(Arc::new(adapter))
+            }
             "fake" => {
                 let text = std::fs::read_to_string(&req.script_path)
                     .map_err(|e| invalid("script_path", e))?;

@@ -38,9 +38,20 @@ ANTHROPIC_API_KEY=... python agent.py --model anthropic
 ```
 
 This makes real, billed calls to Claude Opus 5.5; the task is small and costs
-a few cents. The key is read by the daemon, so it must be set in the
+a few cents.
+
+```
+OPENAI_BASE_URL=http://localhost:11434/v1 python agent.py --model openai_compat <model name>
+```
+
+This uses any server with an OpenAI-style chat completions endpoint: a local
+one as above, or OpenAI itself with `OPENAI_API_KEY` set and no base URL. The
+model needs to support tool calls. Calls are unpriced unless `TETHER_PRICING`
+names a pricing table with a row for the model.
+
+Keys and addresses are read by the daemon, so they must be set in the
 environment the daemon starts from. If a daemon is already running without
-it, wait a few seconds for it to exit, or stop it.
+them, wait a few seconds for it to exit, or stop it.
 
 `tether.toml` holds the run to a policy: the file tools and a few read-only
 commands are allowed, anything else asks and then halts the run, and budgets
