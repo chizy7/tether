@@ -1,0 +1,100 @@
+.gitattributes
+  s_830eda70c48de9::t_44f24c7c72e216 1-2
+.gitignore
+  s_830eda70c48de9::t_1333293e4610dc 15-19
+CLAUDE.md
+  s_830eda70c48de9::t_7adff82d332be7 71
+crates/tether-trace/tests/compat.rs
+  s_830eda70c48de9::t_1333293e4610dc 1-43,45-49,51-79,81-117,119-187
+  s_830eda70c48de9::t_7adff82d332be7 44,50,80
+  s_830eda70c48de9::t_f6d1a6753c6b19 118
+crates/tether-trace/tests/fixtures/README.md
+  s_830eda70c48de9::t_7adff82d332be7 1-22
+docs/PLAN.md
+  s_830eda70c48de9::t_7adff82d332be7 122
+docs/TRACE_FORMAT.md
+  s_830eda70c48de9::t_7adff82d332be7 3-4,169-199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "63cb30cb9b17b36ac887d5e22db45ca166666198",
+  "branch": "freeze-trace-schema",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:97b03b3c68aa4a3a1792d4a21bae734080bdfb73934b3f9cbd40f14d1260f291",
+      "total_additions": 259,
+      "total_deletions": 11,
+      "accepted_lines": 251,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:97b03b3c68aa4a3a1792d4a21bae734080bdfb73934b3f9cbd40f14d1260f291",
+      "stats": {
+        "total_additions": 259,
+        "total_deletions": 11,
+        "accepted_lines": 251,
+        "overriden_lines": 0,
+        "files": {
+          ".gitattributes": {
+            "total_additions": 2,
+            "total_deletions": 0,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          ".gitignore": {
+            "total_additions": 5,
+            "total_deletions": 0,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/tests/compat.rs": {
+            "total_additions": 195,
+            "total_deletions": 8,
+            "accepted_lines": 187,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/tests/fixtures/README.md": {
+            "total_additions": 22,
+            "total_deletions": 0,
+            "accepted_lines": 22,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/TRACE_FORMAT.md": {
+            "total_additions": 33,
+            "total_deletions": 2,
+            "accepted_lines": 33,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"63cb30cb9b17b36ac887d5e22db45ca166666198","tree":"95f01cea3fb395234c04ce155355cfe5c9d7730d","files":{".gitattributes":"4248672baa4b5d6d9986d40bebea4eb9a56587c6",".gitignore":"77ee3c548d2047d9e817cdc0bb5367701d4d70b1","CLAUDE.md":"a82019cdedca4c01001fd82e1d0b063105eb661d","crates/tether-trace/tests/compat.rs":"40165a2a782f847a9fcb3bea1fa2cd66f48b0834","crates/tether-trace/tests/fixtures/README.md":"2bfc3f2dedba7b57587604b043d5c2fff763f4b9","docs/PLAN.md":"b4560c7a8cf1d154df48ae2617c8f3704de81ed7","docs/TRACE_FORMAT.md":"adde3068bed323842da93fdf4c02cb3e4f3ee451"},"digest":"49f2580be319d4d7681981af8bcca232950cdf745c0170da30c025f7cf950d32"}
+}
