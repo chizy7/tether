@@ -1,0 +1,58 @@
+crates/tether-cli/src/ui.rs
+  s_830eda70c48de9::t_16db5ec99e1355 377-388
+crates/tether-cli/tests/ui.rs
+  s_830eda70c48de9::t_16db5ec99e1355 9,83-85,107-108,117-121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "397db0496fff7a614ff5e3e65024598721e221ff",
+  "branch": "tether-ui",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:797336cc644761465a995a5876434e5e5529bc0cc1b0d738ec665ba8689c0cb8",
+      "total_additions": 23,
+      "total_deletions": 7,
+      "accepted_lines": 23,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:797336cc644761465a995a5876434e5e5529bc0cc1b0d738ec665ba8689c0cb8",
+      "stats": {
+        "total_additions": 23,
+        "total_deletions": 7,
+        "accepted_lines": 23,
+        "overriden_lines": 0,
+        "files": {
+          "crates/tether-cli/src/ui.rs": {
+            "total_additions": 12,
+            "total_deletions": 2,
+            "accepted_lines": 12,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/tests/ui.rs": {
+            "total_additions": 11,
+            "total_deletions": 5,
+            "accepted_lines": 11,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"397db0496fff7a614ff5e3e65024598721e221ff","tree":"2e16e9a464c3ca80a0a9e01688f9ba7d7e22b26b","files":{"crates/tether-cli/src/ui.rs":"b7c7ea38ec4f7daa68480577c828b280b1a23854","crates/tether-cli/tests/ui.rs":"4793ab5266185743be44c11f09976ab7c2b63d63"},"digest":"86a0078a4145c83d9b050cc6dfe1224c3cec567beb0cd27dbef27e68af36eb44"}
+}
