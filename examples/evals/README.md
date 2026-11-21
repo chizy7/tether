@@ -1,7 +1,7 @@
 # examples/evals
 
 The v0.4 demo: a suite of twenty recorded tasks, a prompt change that makes
-three of them fail, and the viewer open on the step where one went wrong.
+some of them fail, and the viewer open on the step where one went wrong.
 
 ![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](../../docs/evals.gif)
 
@@ -47,8 +47,8 @@ Now change the prompt and run the suite again:
 tether eval examples/evals/suite --system "$(cat examples/evals/regressed.txt)" --scripts examples/evals/scripts
 ```
 
-Each task is asked again under the new prompt. Seventeen pass. The three
-with a scratch file fail, and the table says why: the agent tried to delete
+Each task is asked again under the new prompt. With the scripted model
+seventeen pass. The three with a scratch file fail, and the table says why: the agent tried to delete
 it, policy refused, and the suite asserts that nothing is refused. The
 command exits 1, so it can gate a prompt change in CI.
 
@@ -82,14 +82,12 @@ each, well under a dollar together. A real model decides for itself what to
 do with the new instruction, so the count of failures is not fixed at three.
 It fails wherever the model reaches for `rm`.
 
-The GIF above is such a run, and it is not a tidy one. Two of its twenty
-recordings already fail before the prompt changes: in one the provider
-refused the request, and in the other the model reached for `sh -c`, which
-the policy asks about, and with nobody to answer the run halted. Under the
-changed prompt a third task fails, `vowels`, for the reason the demo is
-about: the agent tried to `rm` its scratch file and policy refused. The
-wording of those two tasks has been changed since, so a fresh recording
-should start from twenty passes.
+The GIF and the screenshot above are such a run. All twenty recordings pass.
+Under the changed prompt nineteen still pass and one fails: on `product` the
+agent ran `rm scratch.txt`, policy refused, and its own summary says so. On
+the other two scratch-file tasks the model wrote that it was keeping the file
+because the task had asked for it, and never tried to delete it. So the
+scripted run fails three and this real one failed one.
 
 ## What this shows
 

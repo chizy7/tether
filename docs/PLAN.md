@@ -124,7 +124,7 @@ Product:
 - [x] `tether export otlp <run> [--follow]`: one OpenTelemetry trace per run, one span per step, child spans for `model.*`, `tool.*` and `policy.decision`, attributes from the event. Reads the trace file, so it works live by tailing and after the fact on any trace; no second code path inside `tether-core`
 - [x] TypeScript SDK in `sdks/typescript`: same surface as Python (`Run`, `complete`, `callTool`, `tools`), `@grpc/grpc-js` over the Unix socket, no logic. `examples/raw-loop-ts`. Publish as `tether-agents` on npm to match PyPI
 - [x] `tether ui <run> [<run-b>]`: one HTML file embedded in the binary with `include_str!`, served on localhost with a JSON endpoint over `tether-trace`. Steps down the left, events in the middle, blob content on click, policy decisions and halts highlighted; with two runs, the diff view. Vanilla JS, no build step. Built last of the product items, after the CLI can do everything it shows
-- [x] Demo: `examples/evals` with a 20-task suite, a deliberately regressed prompt that fails three, `tether eval` output, `tether ui` on a failure; GIF
+- [x] Demo: `examples/evals` with a 20-task suite, a deliberately regressed prompt that fails three, `tether eval` output, `tether ui` on a failure; GIF. Three fail with the scripted model; in the recorded run against Claude Opus 5.5 one did
 
 Launch:
 
