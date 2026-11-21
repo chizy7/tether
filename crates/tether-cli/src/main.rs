@@ -6,6 +6,7 @@ use tether_trace::{verify, TraceReader};
 use tether_types::{Decision, Event, EventType, Payload};
 
 mod diff;
+mod replay;
 mod run;
 
 #[derive(Parser)]
@@ -35,8 +36,31 @@ enum Cmd {
         #[arg(long, default_value = ".tether")]
         dir: PathBuf,
     },
-    /// Re-run a recorded trace with no network and no cost.
-    Replay { run: String },
+    /// Re-run a recorded trace, answering it from the recording: no network
+    /// and no cost. Policy is evaluated again, so `--policy` shows what a
+    /// changed policy would have decided. Writes a new trace to compare with
+    /// `tether diff`. Exits 1 if the replay left the recording and stopped.
+    Replay {
+        /// Path of the `<run>.jsonl` to replay.
+        run: PathBuf,
+        /// Where to write the new trace. Default: `<run>.replay.jsonl`.
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Hold the replay to this policy instead of the recorded one.
+        #[arg(long)]
+        policy: Option<PathBuf>,
+        /// Replace the system prompt of every replayed request.
+        #[arg(long)]
+        system: Option<String>,
+        /// When the replay asks for something the recording does not have,
+        /// carry on live: the real model, and real tools in a fresh
+        /// workspace beside the new trace.
+        #[arg(long)]
+        live_after_divergence: bool,
+        /// A script to stand in for the live model, as in `tether run`.
+        #[arg(long, requires = "live_after_divergence")]
+        script: Option<PathBuf>,
+    },
     /// Align two traces by step and report where they diverge. Takes the
     /// paths of two `<run>.jsonl`. Exits 0 if they agree, 1 if they diverge
     /// and 2 if either cannot be read.
@@ -74,7 +98,30 @@ async fn main() -> anyhow::Result<()> {
                 std::process::exit(2)
             }
         },
-        Cmd::Replay { .. } | Cmd::Resume { .. } | Cmd::Pack { .. } => {
+        Cmd::Replay {
+            run,
+            out,
+            policy,
+            system,
+            live_after_divergence,
+            script,
+        } => {
+            let options = replay::Options {
+                run,
+                out,
+                policy,
+                system,
+                live: live_after_divergence,
+                script,
+            };
+            match replay::replay(options).await {
+                // The replay left the recording and had nothing to carry on with.
+                Ok(false) => std::process::exit(1),
+                Ok(true) => Ok(()),
+                Err(e) => Err(e),
+            }
+        }
+        Cmd::Resume { .. } | Cmd::Pack { .. } => {
             todo!("v0.3")
         }
         Cmd::Eval => todo!("v0.4"),

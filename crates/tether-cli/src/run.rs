@@ -31,10 +31,25 @@ use tokio::sync::{mpsc, Mutex};
 /// A scripted agent: what it is asked, and what the model says each turn.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Script {
-    task: String,
+pub(crate) struct Script {
+    pub(crate) task: String,
     /// One entry per model turn, each a list of content blocks.
-    replies: Vec<Vec<Block>>,
+    pub(crate) replies: Vec<Vec<Block>>,
+}
+
+impl Script {
+    pub(crate) fn read(path: &Path) -> anyhow::Result<Self> {
+        let text = std::fs::read_to_string(path)
+            .with_context(|| format!("reading script {}", path.display()))?;
+        serde_json::from_str(&text).with_context(|| format!("parsing script {}", path.display()))
+    }
+}
+
+/// A policy file as a policy.
+pub(crate) fn read_policy(path: &Path) -> anyhow::Result<RulePolicy> {
+    let text = std::fs::read_to_string(path)
+        .with_context(|| format!("reading policy {}", path.display()))?;
+    RulePolicy::from_toml(&text).with_context(|| format!("loading policy {}", path.display()))
 }
 
 /// Puts each `ask` to the terminal and reads `y` or `n` from stdin.
@@ -106,6 +121,12 @@ impl Answerer for TerminalAnswerer {
 /// stuck inside a long call, exits at once.
 fn kill_on_sigint() -> KillSwitch {
     let kill = KillSwitch::new();
+    trip_on_sigint(&kill);
+    kill
+}
+
+/// Make Ctrl-C trip `kill`, and a second Ctrl-C exit at once.
+pub(crate) fn trip_on_sigint(kill: &KillSwitch) {
     let handle = kill.clone();
     tokio::spawn(async move {
         if tokio::signal::ctrl_c().await.is_ok() {
@@ -116,7 +137,6 @@ fn kill_on_sigint() -> KillSwitch {
             std::process::exit(130);
         }
     });
-    kill
 }
 
 /// The agent loop: ask the model, run the tools it asks for, feed the
@@ -173,18 +193,10 @@ async fn agent(run: &mut Run, task: &str) -> Result<String, RunError> {
 }
 
 pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Result<()> {
-    let text = std::fs::read_to_string(script)
-        .with_context(|| format!("reading script {}", script.display()))?;
-    let script: Script = serde_json::from_str(&text)
-        .with_context(|| format!("parsing script {}", script.display()))?;
+    let script = Script::read(script)?;
     // No policy file means no rules, and with no rules every call asks.
     let policy = match policy {
-        Some(path) => {
-            let text = std::fs::read_to_string(path)
-                .with_context(|| format!("reading policy {}", path.display()))?;
-            RulePolicy::from_toml(&text)
-                .with_context(|| format!("loading policy {}", path.display()))?
-        }
+        Some(path) => read_policy(path)?,
         None => RulePolicy::default(),
     };
 
@@ -209,6 +221,7 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
         answerer: Arc::new(TerminalAnswerer::default()),
         kill: kill_on_sigint(),
         clock,
+        replay: None,
     };
 
     let mut run = Run::start(config, deps).await?;

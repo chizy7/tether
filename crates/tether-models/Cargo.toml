@@ -1,6 +1,6 @@
 [package]
 name = "tether-models"
-description = "ModelAdapter trait with anthropic, openai_compat, ollama, replay and fake adapters."
+description = "ModelAdapter trait with anthropic, openai_compat, ollama and fake adapters."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -22,7 +22,6 @@ default = ["anthropic", "fake"]
 anthropic = ["dep:reqwest"]
 openai_compat = []
 ollama = []
-replay = []
 fake = []
 
 [lints]

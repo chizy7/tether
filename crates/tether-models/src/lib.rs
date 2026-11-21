@@ -35,6 +35,10 @@ pub enum ModelError {
     Credentials(String),
     #[error("replay: no recorded response for request hash {0}")]
     ReplayMiss(String),
+    /// An error a recorded run got from its provider, given again on replay
+    /// in the provider's own words.
+    #[error("{0}")]
+    Replayed(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,9 +187,5 @@ pub mod anthropic;
 pub mod openai_compat {}
 #[cfg(feature = "ollama")]
 pub mod ollama {}
-#[cfg(feature = "replay")]
-pub mod replay {
-    //! Answers from recorded `model.response` events, matched by request hash.
-}
 #[cfg(feature = "fake")]
 pub mod fake;

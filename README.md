@@ -12,8 +12,9 @@ can replay, diff and eval against.
 > budgets halt the run, tools run in a sandbox, and every decision lands in a
 > verifiable trace that `tether inspect` and `tether verify` read. The
 > Anthropic adapter makes real model calls from Rust code linked against
-> `tether-core`, and `tether diff` shows where two runs diverge. Replay and
-> the SDKs are not built yet.
+> `tether-core`. `tether replay` runs a recorded trace again with no network
+> and no cost, optionally under a changed policy or prompt, and `tether diff`
+> shows where two runs diverge. Resume and the SDKs are not built yet.
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)

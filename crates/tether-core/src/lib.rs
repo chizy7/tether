@@ -33,12 +33,10 @@ impl Clock for SystemClock {
 }
 
 pub mod ask;
+pub mod replay;
 pub mod run;
 mod trace_task;
 
 pub use ask::{Answerer, AskOutcome, AskRequest, Unattended};
+pub use replay::{Live, Recording, ReplayError, ReplayParts, ReplayState, Timeline};
 pub use run::{Run, RunConfig, RunDeps, RunError, SandboxRef};
-
-pub mod replay {
-    //! Re-run a trace with the replay adapter and a replay sandbox.
-}

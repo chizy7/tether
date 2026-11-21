@@ -231,7 +231,7 @@ pub trait ModelAdapter: Send + Sync {
 | `anthropic` | v0.3 | Messages API over HTTP, tool use; streaming collapsed to one event with `ttft_ms`; key from `ANTHROPIC_API_KEY` |
 | `openai_compat` | v0.3 | Chat Completions shape |
 | `ollama` | after v0.4 | Local; `price` returns `None` |
-| `replay` | v0.3 | Reads `model.response` events from a trace |
+| replay | v0.3 | Not in `tether-models`: the stand-in built by `tether-core::replay`, which returns recorded `model.response` events |
 | `fake` | v0.1 | Scripted responses for tests; no API key |
 
 Adapters see message content in full and know nothing about the trace:
@@ -297,7 +297,7 @@ All three re-run the core loop while feeding it recorded answers.
 
 - **Checkpoint:** every N steps (default 1) a `checkpoint` event with the step and, if supported, a sandbox `SnapshotId`. The trace up to that seq is the checkpoint. See "Checkpoints" below.
 - **Resume:** read to the last checkpoint, restore the snapshot (or replay writes into a fresh sandbox), rebuild message history from `model.*` and `tool.*` events, continue live with `run.state = resumed`.
-- **Replay:** run the whole trace with the `replay` adapter and a replay sandbox; requests matched to recorded responses by content hash; no network, no cost. Policy is re-evaluated live, which is how a policy change is tested against old runs.
+- **Replay:** run a trace again, answered from the recording: requests matched to recorded responses by message hash, recorded tool results and human answers given back, timings restored; no network, no cost. Policy is re-evaluated live, which is how a policy change is tested against old runs. See "Replay" below.
 - **Diff:** align two traces by step and report where model requests, tool calls or policy decisions diverge. See "Diff" below.
 
 Where determinism breaks: a changed prompt stops replay at the divergence
@@ -305,6 +305,59 @@ Where determinism breaks: a changed prompt stops replay at the divergence
 the recorded result and are never re-invoked; clock, random and env go through
 `Clock` and `Rng` traits satisfied from `nondeterminism` events; agent-side
 nondeterminism is out of scope and shows up in diff as the agent's own change.
+
+### Replay
+
+`tether-core::replay` answers a run from a recording. `Recording::load` reads
+and verifies a trace; `Recording::parts` builds stand-ins for everything a
+run asks of the outside:
+
+| Stand-in | Gives back | Matched on |
+| --- | --- | --- |
+| model | the recorded `model.response`, its price, or the provider's recorded error | the request's message hashes |
+| tools | the recorded `tool.result`, whole even if it had spilled to a blob | tool name and arguments |
+| answerer | the recorded `policy.answer`, in order | order |
+| timeline | `ts`, `latency_ms`, `duration_ms`, `wall_secs_used`, checkpoint snapshot ids | the same kind of event within the same call |
+
+Policy is the one thing not played back. The replay evaluates the recorded
+policy file again, or another one, so a changed policy can be tried against
+an old run. A trace with no policy file plays back its recorded decisions.
+
+A replay **diverges** the first time it is asked something the recording
+cannot answer: a model request whose messages hash differently, a tool call
+it has no result for (including a call the recording denied and so never
+ran), or an ask it has no answer to. From then on each stand-in hands over
+to its live counterpart if it was given one (`Live`), and fails if not.
+Before the live tools run their first call they are brought up to date by
+running again the calls that had been replayed; tools marked `external` are
+never run again. A stricter policy is not a divergence: denying a call needs
+nothing the recording lacks, so the replay runs to the end and `tether diff`
+shows which decisions changed.
+
+Halts that came from outside the run are replayed from their recorded
+reason, since nothing else in the trace says they happened: an unanswered
+ask (`ask unanswered after N s`), the kill switch (`kill switch: ...`) and a
+provider error (`model error: ...`).
+
+The core only answers. Whatever asks is outside it, in keeping with design
+rule 5: either the original agent run again, or `tether replay`, which
+re-issues the recorded requests and tool calls in order.
+
+```
+tether replay <run.jsonl> [--out <path>] [--policy <tether.toml>]
+              [--system <text>] [--live-after-divergence [--script <file>]]
+```
+
+It writes a new trace, `<run>.replay.jsonl` by default, with its own run id.
+`tether diff` of a trace and its replay is empty, and stricter than that:
+every event is equal but for the run id and the hash chain. `--system`
+replaces the system prompt of each replayed request, which diverges at the
+first one. `--live-after-divergence` then carries on as a plain tool loop
+against the live model (the recorded provider, or `--script` to stand in for
+it) and real tools in a fresh workspace beside the new trace, never the
+recorded run's. Without it the replay stops where it diverged and exits 1.
+Request headers are not in a trace, so the one beta header the Anthropic
+adapter needs for a recorded `fallbacks` field is added back by name.
 
 ### Checkpoints
 
@@ -359,10 +412,10 @@ Alignment within a step is by position, so one extra tool call shifts
 everything after it in that step. The first divergence is the one to read;
 after it the runs are doing different things.
 
-### Timings under replay (to build in v0.3)
+### Timings under replay
 
-Four things in a trace come from live clock reads, so a replay that measures
-them afresh gets different values every time:
+Four things in a trace come from live clock reads, so a replay that measured
+them afresh would get different values every time:
 
 | Field | Where | Computed from |
 | --- | --- | --- |
@@ -371,22 +424,24 @@ them afresh gets different values every time:
 | `duration_ms` | `tool.result` | clock read before and after the tool call |
 | `wall_secs_used` | `policy.decision`, `budget.tick`, `run.finished` | clock read minus the run's start |
 
-None of these reads is recorded as a `nondeterminism` event today; only the
-values derived from them are in the trace. Left alone, a replayed model call
-takes about 0 ms where the original took 800, every `model.response` and
-`tool.result` differs from the original, and `tether diff` reports a
-divergence on every event. Wall time has a second consequence: a run that
-halted on `max_wall_secs` would not halt at the same point when replayed.
+None of these reads is recorded as a `nondeterminism` event; only the values
+derived from them are in the trace. A replay therefore restores them from the
+recorded events rather than measuring them, which is design rule 4 applied to
+time. As the run loop writes each event it finds the event's counterpart in
+the recording, the next recorded event of the same kind within the same
+call, and copies its `ts` and timing fields. The budget check before a call
+uses the elapsed time on the next recorded budget, so a run that halted on
+`max_wall_secs` halts at the same point. Under a changed policy a call can
+have more or fewer events than it had; the ones it still has line up, and an
+event with no counterpart takes the time of the one before it.
 
-Replay must therefore restore these values from the recorded events rather
-than measure them: `ts` from the event being replayed, `latency_ms` and
-`duration_ms` from the recorded response and result, and `wall_secs_used`
-from the recorded budget snapshot, which is also what the budget check must
-use. This is design rule 4 applied to time. Telling `diff` to skip the fields
-instead would hide the symptom and leave the wall-clock halt wrong, so it is
-not the fix. A replay `Clock` that hands back recorded reads in order would
-also work, but only while the loop makes exactly the reads it made when the
+Telling `diff` to skip the fields instead would hide the symptom and leave
+the wall-clock halt wrong. A replay `Clock` handing back recorded reads in
+order would work only while the loop makes exactly the reads it made when the
 trace was written, which a later change to the loop would break silently.
+
+After a divergence the clock is live again. Elapsed time carries on from the
+recorded figure, and timestamps jump from the recording's to now.
 
 ## SDK boundary
 

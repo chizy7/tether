@@ -517,3 +517,365 @@ fn diff_of_a_missing_or_broken_trace_exits_2() {
         "{out:?}"
     );
 }
+
+/// Replay the one trace in `dir` with extra arguments, typing `stdin` at it.
+/// Returns the paths of the original and the replay, and the output.
+fn tether_replay(dir: &std::path::Path, args: &[&str], stdin: &str) -> (String, String, Output) {
+    let original = trace_in(dir);
+    let replayed = original.replace(".jsonl", ".replay.jsonl");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tether"))
+        .arg("replay")
+        .arg(&original)
+        .args(args)
+        // A replay must never reach for credentials or the network.
+        .env_remove("ANTHROPIC_API_KEY")
+        .env_remove("ANTHROPIC_AUTH_TOKEN")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn tether");
+    child
+        .stdin
+        .take()
+        .expect("stdin")
+        .write_all(stdin.as_bytes())
+        .expect("write stdin");
+    (original, replayed, child.wait_with_output().expect("wait"))
+}
+
+/// A trace's events with what is allowed to differ in a replay taken out:
+/// the run id and the hash chain.
+fn events_of(trace: &str) -> Vec<serde_json::Value> {
+    fs::read_to_string(trace)
+        .expect("read trace")
+        .lines()
+        .map(|line| {
+            let mut event: serde_json::Value = serde_json::from_str(line).expect("event");
+            let fields = event.as_object_mut().expect("object");
+            fields.remove("run");
+            fields.remove("hash");
+            event
+        })
+        .collect()
+}
+
+/// The acceptance test for replay: `tether diff` of a trace and its replay
+/// is empty. Checked the strict way too: every event is the same, down to
+/// timestamps and timings.
+fn assert_faithful(original: &str, replayed: &str, out: &Output) {
+    assert!(out.status.success(), "{out:?}");
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        said.contains("every request was answered from the recording"),
+        "{said}"
+    );
+
+    let diff = tether(&["diff", original, replayed]);
+    let text = String::from_utf8_lossy(&diff.stdout);
+    assert_eq!(diff.status.code(), Some(0), "{text}");
+    assert!(text.contains("no divergence"), "{text}");
+
+    let (before, after) = (events_of(original), events_of(replayed));
+    assert_eq!(before.len(), after.len());
+    for (old, new) in before.iter().zip(&after) {
+        assert_eq!(old, new);
+    }
+    let verified = tether(&["verify", replayed]);
+    assert!(verified.status.success(), "{verified:?}");
+}
+
+#[cfg(unix)]
+#[test]
+fn replay_of_a_finished_run_is_the_same_trace_and_touches_nothing() {
+    let (dir, _) = tether_run("cli_replay_finished", POLICY, "y\n");
+    // The original run removed notes.txt. Put a marker where it was: a
+    // replay must not run the tools again.
+    let marker = dir.join("out/workspace/notes.txt");
+    fs::write(&marker, "left alone").expect("write marker");
+
+    // Stdin is closed: the answer to the ask comes from the recording.
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+
+    assert_eq!(fs::read_to_string(&marker).expect("marker"), "left alone");
+    // No workspace is made for a replay that stays on its recording.
+    assert!(!PathBuf::from(replayed.replace(".jsonl", ".workspace")).exists());
+    // The new trace has its own run id.
+    let first = fs::read_to_string(&replayed).expect("read");
+    assert!(
+        first.lines().next().expect("line").contains("-replay\""),
+        "{first}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn replay_of_a_denied_call_and_of_the_refuses_example_is_faithful() {
+    // Answered no: the denial and the failed result replay as recorded.
+    let (dir, _) = tether_run("cli_replay_no", POLICY, "n\n");
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+
+    // A rule's denial, evaluated again from the recorded policy.
+    let deny = POLICY.replace("action = \"ask\"", "action = \"deny\"");
+    let (dir, _) = tether_run("cli_replay_deny", &deny, "");
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+
+    // An ask nobody answered, denied by on_timeout.
+    let timeout = format!("{POLICY}on_timeout = \"deny\"\n");
+    let (dir, _) = tether_run("cli_replay_timeout_deny", &timeout, "");
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+}
+
+#[cfg(unix)]
+#[test]
+fn replay_of_a_halted_run_halts_the_same_way() {
+    // Nobody answered the ask.
+    let (dir, out) = tether_run("cli_replay_unanswered", POLICY, "");
+    assert!(!out.status.success());
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+    assert!(inspect_run_at(&replayed).contains("halted: ask unanswered after 0 s"));
+
+    // Out of budget between two tool calls.
+    let budget = format!("[budget]\nmax_tool_calls = 1\n{POLICY}");
+    let (dir, out) = tether_run("cli_replay_budget", &budget, "y\n");
+    assert!(!out.status.success());
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+    assert!(inspect_run_at(&replayed).contains("halted: budget exceeded: max_tool_calls (1 of 1)"));
+
+    // Stopped by Ctrl-C while it waited at the prompt.
+    let (dir, _) = stop_at_the_prompt("cli_replay_sigint", |pid, _| {
+        let status = Command::new("kill")
+            .args(["-INT", &pid.to_string()])
+            .status()
+            .expect("send SIGINT");
+        assert!(status.success());
+    });
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    assert_faithful(&original, &replayed, &out);
+    assert!(inspect_run_at(&replayed).contains("halted: kill switch: sigint"));
+}
+
+fn inspect_run_at(trace: &str) -> String {
+    let out = tether(&["inspect", trace]);
+    assert!(out.status.success(), "{out:?}");
+    String::from_utf8_lossy(&out.stdout).into_owned()
+}
+
+#[cfg(unix)]
+#[test]
+fn replay_under_a_stricter_policy_shows_what_it_would_have_denied() {
+    // Recorded with the human saying yes to `rm`.
+    let (dir, _) = tether_run("cli_replay_stricter", POLICY, "y\n");
+    let deny = dir.join("deny.toml");
+    fs::write(
+        &deny,
+        POLICY.replace("action = \"ask\"", "action = \"deny\""),
+    )
+    .expect("write");
+
+    let (original, replayed, out) =
+        tether_replay(&dir, &["--policy", deny.to_str().expect("utf-8 path")], "");
+    // The replay runs to the end: a denial needs nothing the recording lacks.
+    assert!(out.status.success(), "{out:?}");
+
+    let diff = tether(&["diff", &original, &replayed]);
+    let text = String::from_utf8_lossy(&diff.stdout);
+    assert_eq!(diff.status.code(), Some(1), "{text}");
+    assert!(text.contains("held to different policies"), "{text}");
+    assert!(
+        text.contains("first divergence: step 2, policy.decision: the outcome differs"),
+        "{text}"
+    );
+    assert!(
+        text.contains("a (seq 16): ask, answered allow (rule no-rm)"),
+        "{text}"
+    );
+    assert!(
+        text.contains("deny (rule no-rm: denied by rule no-rm)"),
+        "{text}"
+    );
+    assert!(inspect_run_at(&replayed).contains("finished: agent done"));
+}
+
+#[cfg(unix)]
+#[test]
+fn replay_under_a_looser_policy_stops_where_the_recording_has_no_result() {
+    // Recorded with `rm` denied, so the recording has no real result for it.
+    let deny = POLICY.replace("action = \"ask\"", "action = \"deny\"");
+    let (dir, _) = tether_run("cli_replay_looser", &deny, "");
+    let allow = dir.join("allow.toml");
+    fs::write(
+        &allow,
+        POLICY.replace("action = \"ask\"", "action = \"allow\""),
+    )
+    .expect("write");
+
+    let (_, replayed, out) =
+        tether_replay(&dir, &["--policy", allow.to_str().expect("utf-8 path")], "");
+    assert_eq!(out.status.code(), Some(1), "{out:?}");
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        said.contains("left the recording and stopped: tool call exec ran in this replay but was not run in the recording"),
+        "{said}"
+    );
+    // The original workspace still has the file the agent wanted gone.
+    assert!(dir.join("out/workspace/notes.txt").exists());
+    assert!(inspect_run_at(&replayed).contains("allow (seq 15, rule no-rm)"));
+}
+
+/// What a stand-in live model says once a replay has gone live.
+const LIVE_SCRIPT: &str = r#"{
+  "task": "unused",
+  "replies": [
+    [{"type": "tool_use", "id": "live_1", "name": "write_file",
+      "arguments": {"path": "live.txt", "content": "written live\n"}}],
+    [{"type": "text", "text": "Done, live."}]
+  ]
+}"#;
+
+#[cfg(unix)]
+#[test]
+fn a_changed_system_prompt_stops_the_replay_or_goes_live() {
+    let (dir, _) = tether_run("cli_replay_system", POLICY, "y\n");
+
+    // Without the flag the replay stops at the first request, which the
+    // recording has no response to.
+    let (_, replayed, out) = tether_replay(&dir, &["--system", "Be careful."], "");
+    assert_eq!(out.status.code(), Some(1), "{out:?}");
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        said.contains("left the recording and stopped: model request has no recorded response"),
+        "{said}"
+    );
+    assert!(inspect_run_at(&replayed).contains("halted: model error: replay: no recorded response"));
+    fs::remove_file(&replayed).expect("remove first replay");
+
+    // With it, the stand-in live model answers and its tool call really runs,
+    // in a fresh workspace beside the new trace.
+    let script = dir.join("live.json");
+    fs::write(&script, LIVE_SCRIPT).expect("write script");
+    let (original, replayed, out) = tether_replay(
+        &dir,
+        &[
+            "--system",
+            "Be careful.",
+            "--live-after-divergence",
+            "--script",
+            script.to_str().expect("utf-8 path"),
+        ],
+        "",
+    );
+    assert!(out.status.success(), "{out:?}");
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        said.contains("left the recording and carried on live"),
+        "{said}"
+    );
+
+    let workspace = PathBuf::from(replayed.replace(".jsonl", ".workspace"));
+    assert_eq!(
+        fs::read_to_string(workspace.join("live.txt")).expect("live.txt"),
+        "written live\n"
+    );
+    assert!(inspect_run_at(&replayed).contains("outcome \"Done, live.\""));
+
+    let diff = tether(&["diff", &original, &replayed]);
+    let text = String::from_utf8_lossy(&diff.stdout);
+    assert_eq!(diff.status.code(), Some(1), "{text}");
+    assert!(
+        text.contains("first divergence: step 1, model.request: message 1 differs"),
+        "{text}"
+    );
+    assert!(text.contains("b's message: system: Be careful."), "{text}");
+}
+
+#[cfg(unix)]
+#[test]
+fn going_live_mid_run_first_brings_the_workspace_up_to_date() {
+    // Recorded: notes.txt written, `rm notes.txt` denied.
+    let deny = POLICY.replace("action = \"ask\"", "action = \"deny\"");
+    let (dir, _) = tether_run("cli_replay_catch_up", &deny, "");
+    let allow = dir.join("allow.toml");
+    fs::write(
+        &allow,
+        POLICY.replace("action = \"ask\"", "action = \"allow\""),
+    )
+    .expect("write");
+    let script = dir.join("live.json");
+    fs::write(
+        &script,
+        r#"{"task": "unused", "replies": [[{"type": "text", "text": "Removed it."}]]}"#,
+    )
+    .expect("write script");
+
+    // Now `rm` is allowed. The replay goes live at that call, in a fresh
+    // workspace, which must already hold notes.txt for `rm` to remove.
+    let (_, replayed, out) = tether_replay(
+        &dir,
+        &[
+            "--policy",
+            allow.to_str().expect("utf-8 path"),
+            "--live-after-divergence",
+            "--script",
+            script.to_str().expect("utf-8 path"),
+        ],
+        "",
+    );
+    assert!(out.status.success(), "{out:?}");
+
+    let trace = inspect_run_at(&replayed);
+    // `rm` ran for real and succeeded, which it only can if the file was there.
+    assert!(trace.contains(r#""exit_code":0"#), "{trace}");
+    assert!(trace.contains("outcome \"Removed it.\""), "{trace}");
+    let workspace = PathBuf::from(replayed.replace(".jsonl", ".workspace"));
+    assert!(workspace.is_dir());
+    assert!(!workspace.join("notes.txt").exists());
+    // The recorded run's own workspace is untouched.
+    assert!(dir.join("out/workspace/notes.txt").exists());
+}
+
+#[test]
+fn replay_refuses_to_overwrite_and_reports_a_bad_trace() {
+    let good = write_trace("cli_replay_bad");
+    // That hand-made trace does not start with run.created.
+    let out = tether(&["replay", good.to_str().expect("utf-8 path")]);
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("does not start with run.created"),
+        "{out:?}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn replay_restores_elapsed_time_without_waiting_for_it() {
+    // A run with a real one-second wait in it, halted by its wall budget.
+    let script = r#"{
+      "task": "Wait.",
+      "replies": [
+        [{"type": "tool_use", "id": "call_1", "name": "exec", "arguments": {"argv": ["sleep", "1"]}}],
+        [{"type": "text", "text": "Never said."}]
+      ]
+    }"#;
+    let policy = "[budget]\nmax_wall_secs = 1\n\n[[rule]]\nname = \"all\"\naction = \"allow\"\n";
+    let (dir, out) = tether_run_script("cli_replay_wall", script, policy, "");
+    assert!(!out.status.success());
+    assert!(inspect_run(&dir).contains("halted: budget exceeded: max_wall_secs"));
+
+    let started = std::time::Instant::now();
+    let (original, replayed, out) = tether_replay(&dir, &[], "");
+    // The sleep is not run again, and its recorded duration is in the trace.
+    assert!(
+        started.elapsed() < std::time::Duration::from_millis(900),
+        "{:?}",
+        started.elapsed()
+    );
+    assert_faithful(&original, &replayed, &out);
+    assert!(inspect_run_at(&replayed).contains("halted: budget exceeded: max_wall_secs"));
+}

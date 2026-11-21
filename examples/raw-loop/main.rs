@@ -176,6 +176,7 @@ async fn run_demo(
         answerer: Arc::new(Unattended),
         kill: KillSwitch::new(),
         clock,
+        replay: None,
     };
 
     let mut run = Run::start(config, deps).await?;

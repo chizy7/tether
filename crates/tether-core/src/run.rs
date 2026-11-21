@@ -5,6 +5,7 @@
 //! policy first and leaves its events in the trace in the order
 //! `docs/TRACE_FORMAT.md` guarantees. How the agent loops is its own business.
 
+use std::mem::discriminant;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,6 +23,7 @@ use tether_types::{
 use time::OffsetDateTime;
 
 use crate::ask::{Answerer, AskOutcome, AskRequest};
+use crate::replay::Timeline;
 use crate::trace_task::TraceHandle;
 use crate::Clock;
 
@@ -85,6 +87,9 @@ pub struct RunDeps {
     /// halt file, `<run>.halt` beside the trace.
     pub kill: KillSwitch,
     pub clock: Arc<dyn Clock>,
+    /// The recording this run replays, if it is a replay. While the run
+    /// keeps to it, timestamps and timings come from it and not the clock.
+    pub replay: Option<Arc<Timeline>>,
 }
 
 /// How often a run waiting on an ask looks at the kill switch.
@@ -108,6 +113,13 @@ pub struct Run {
     checkpoint_every: u64,
     /// The last step a checkpoint was written for.
     checkpointed: u64,
+    /// In a replay: how far into the recording this run has got.
+    cursor: usize,
+    /// In a replay: the timestamp last taken from the recording.
+    recorded_ts: Option<OffsetDateTime>,
+    /// Set once a replay has left its recording and the wall clock has been
+    /// moved to carry on from the recorded elapsed time.
+    rebased: bool,
 }
 
 impl Run {
@@ -128,6 +140,9 @@ impl Run {
             budget: limits.fresh(),
             checkpoint_every: config.checkpoint_every,
             checkpointed: 0,
+            cursor: 0,
+            recorded_ts: None,
+            rebased: false,
         };
         let created = json!({
             "agent": run.agent,
@@ -373,9 +388,52 @@ impl Run {
         (call, spec.is_some())
     }
 
+    /// The recording this run is still keeping to, if it is a replay that
+    /// has not diverged.
+    fn replaying(&self) -> Option<&Arc<Timeline>> {
+        self.deps
+            .replay
+            .as_ref()
+            .filter(|timeline| !timeline.state.diverged())
+    }
+
+    /// Bring `wall_secs_used` up to date.
+    ///
+    /// A replay takes it from the recording: the elapsed time on the next
+    /// recorded budget, so a budget check sees what the original check saw.
+    /// A recorded halt on `max_wall_secs` carries the figure in its reason.
     fn tick_wall(&mut self) {
-        let elapsed_ms = self.deps.clock.now_ms().saturating_sub(self.started_ms);
-        self.budget.wall_secs_used = elapsed_ms / 1000;
+        if let Some(timeline) = self.replaying() {
+            let ahead = timeline.events.iter().skip(self.cursor).take(2);
+            let recorded = ahead.filter_map(|event| recorded_wall(&event.body)).next();
+            if let Some(wall) = recorded {
+                self.budget.wall_secs_used = wall;
+            }
+            return;
+        }
+        let now = self.deps.clock.now_ms();
+        if self.deps.replay.is_some() && !self.rebased {
+            // Just diverged: carry on from the recorded elapsed time.
+            self.started_ms = now.saturating_sub(self.budget.wall_secs_used * 1000);
+            self.rebased = true;
+        }
+        self.budget.wall_secs_used = now.saturating_sub(self.started_ms) / 1000;
+    }
+
+    /// Halt the way a recording was halted from outside: by its kill switch,
+    /// or by anything else a replay cannot bring about itself. `checkpoint`
+    /// says whether the recording checkpointed the finished step first.
+    pub async fn halt_as_recorded(
+        &mut self,
+        reason: &str,
+        checkpoint: bool,
+    ) -> Result<(), RunError> {
+        self.ensure_running()?;
+        if checkpoint {
+            self.checkpoint().await?;
+        }
+        self.halt(reason.to_owned()).await;
+        Ok(())
     }
 
     /// Write a `checkpoint` for the step just completed, if one is due.
@@ -449,11 +507,46 @@ impl Run {
         Ok(self.trace.put_blob(encoded).await?)
     }
 
-    async fn emit(&self, parent: Option<u64>, body: EventType) -> Result<Event, RunError> {
-        let nanos = i128::from(self.deps.clock.now_ms()) * 1_000_000;
+    async fn emit(&mut self, parent: Option<u64>, mut body: EventType) -> Result<Event, RunError> {
+        // A replay writes each event with the time the recording gave its
+        // counterpart, and with its recorded timings. The counterpart is the
+        // next recorded event of the same kind within the same call: under a
+        // changed policy a call can have more or fewer events than it had,
+        // and the ones it still has line up. An event with no counterpart
+        // takes the time of the one before it.
+        let mut ts = None;
+        if let Some(timeline) = self.replaying() {
+            let ahead = timeline.events.iter().enumerate().skip(self.cursor);
+            let mut found = None;
+            for (at, old) in ahead {
+                if discriminant(&old.body) == discriminant(&body) {
+                    found = Some((at, old));
+                    break;
+                }
+                // Do not look past the start of the next call.
+                if matches!(
+                    old.body,
+                    EventType::ModelRequest(_) | EventType::ToolCall(_)
+                ) {
+                    break;
+                }
+            }
+            if let Some((at, old)) = found {
+                let (old_ts, wall) = (old.ts, restore(&mut body, &old.body));
+                self.cursor = at + 1;
+                self.recorded_ts = Some(old_ts);
+                if let Some(wall) = wall {
+                    self.budget.wall_secs_used = wall;
+                }
+            }
+            ts = self.recorded_ts;
+        }
+        let ts = ts.unwrap_or_else(|| {
+            let nanos = i128::from(self.deps.clock.now_ms()) * 1_000_000;
+            OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap_or(OffsetDateTime::UNIX_EPOCH)
+        });
         let event = NewEvent {
-            ts: OffsetDateTime::from_unix_timestamp_nanos(nanos)
-                .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+            ts,
             step: self.step,
             agent: self.agent.clone(),
             parent,
@@ -563,4 +656,62 @@ impl Run {
             Answer::Deny { by: answered_by }
         })
     }
+}
+
+/// The elapsed wall time a recorded event carries, if it carries one.
+fn recorded_wall(body: &EventType) -> Option<u64> {
+    match body {
+        EventType::PolicyDecision { budget, .. } | EventType::BudgetTick { budget, .. } => {
+            Some(budget.wall_secs_used)
+        }
+        EventType::RunFinished(data) => data["budget"]["wall_secs_used"].as_u64(),
+        // "budget exceeded: max_wall_secs (301 of 300)"
+        EventType::RunStateChanged {
+            state: RunState::Halted,
+            reason,
+        } => reason
+            .strip_prefix("budget exceeded: max_wall_secs (")?
+            .split(' ')
+            .next()?
+            .parse()
+            .ok(),
+        _ => None,
+    }
+}
+
+/// Put the recorded values of everything that came from a clock or a
+/// sandbox into `body`, an event of the same kind about to be written in the
+/// same place. Returns the recorded elapsed wall time if the event has one.
+fn restore(body: &mut EventType, old: &EventType) -> Option<u64> {
+    match (body, old) {
+        (EventType::ModelResponse(new), EventType::ModelResponse(old)) => {
+            new.latency_ms = old.latency_ms;
+        }
+        (EventType::ToolResult(new), EventType::ToolResult(old)) => {
+            new.duration_ms = old.duration_ms;
+        }
+        (
+            EventType::PolicyDecision { budget: new, .. },
+            EventType::PolicyDecision { budget: old, .. },
+        )
+        | (EventType::BudgetTick { budget: new, .. }, EventType::BudgetTick { budget: old, .. }) => {
+            new.wall_secs_used = old.wall_secs_used;
+        }
+        (EventType::RunFinished(new), EventType::RunFinished(old)) => {
+            if let Some(wall) = old["budget"]["wall_secs_used"].as_u64() {
+                new["budget"]["wall_secs_used"] = json!(wall);
+            }
+        }
+        (
+            EventType::Checkpoint { snapshot: new, .. },
+            EventType::Checkpoint { snapshot: old, .. },
+        ) => {
+            new.clone_from(old);
+        }
+        (EventType::RunCreated(new), EventType::RunCreated(old)) => {
+            new["sandbox"] = old["sandbox"].clone();
+        }
+        _ => {}
+    }
+    recorded_wall(old)
 }

@@ -146,6 +146,7 @@ async fn start_with(
         answerer: Arc::new(Unattended),
         kill: KillSwitch::new(),
         clock,
+        replay: None,
     };
     Run::start(config, deps).await
 }
@@ -212,6 +213,7 @@ async fn ask_run(
         answerer,
         kill: KillSwitch::new(),
         clock: StepClock::new(),
+        replay: None,
     };
     let mut run = Run::start(config, deps).await.expect("start");
     run.complete(request("say hi")).await.expect("completion");
@@ -837,6 +839,7 @@ async fn kill_run(
         answerer,
         kill,
         clock: StepClock::new(),
+        replay: None,
     };
     let mut run = Run::start(config, deps).await.expect("start");
     run.complete(request("say hi")).await.expect("completion");
@@ -938,6 +941,7 @@ async fn a_call_in_flight_when_the_switch_trips_is_finished_and_recorded() {
         answerer: Arc::new(Unattended),
         kill,
         clock: StepClock::new(),
+        replay: None,
     };
     let mut run = Run::start(config, deps).await.expect("start");
     run.complete(request("say hi")).await.expect("completion");
@@ -1159,6 +1163,7 @@ async fn four_steps(test: &str, every: u64, sandbox: Option<Arc<Snapshots>>) -> 
         answerer: Arc::new(Unattended),
         kill: KillSwitch::new(),
         clock: StepClock::new(),
+        replay: None,
     };
     let config = RunConfig {
         checkpoint_every: every,
