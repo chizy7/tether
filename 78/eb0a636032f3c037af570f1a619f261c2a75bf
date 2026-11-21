@@ -1,0 +1,172 @@
+README.md
+  s_830eda70c48de9::t_a463fe3ee27675 17-18
+crates/tether-cli/src/main.rs
+  s_830eda70c48de9::t_9985ccd47b3951 10,73-83,134-135
+crates/tether-cli/src/replay.rs
+  s_830eda70c48de9::t_9985ccd47b3951 38,88,90,92,94,107
+crates/tether-cli/src/resume.rs
+  s_830eda70c48de9::t_9985ccd47b3951 1-108,110-117
+  s_830eda70c48de9::t_98e37842d082a6 109
+crates/tether-cli/tests/cli.rs
+  s_830eda70c48de9::t_98e37842d082a6 882-1112
+crates/tether-core/src/lib.rs
+  s_830eda70c48de9::t_9985ccd47b3951 41-44
+crates/tether-core/src/replay.rs
+  s_830eda70c48de9::t_9985ccd47b3951 25-27,32-33,245-261,273,351,364-368,469-492,494-561,563-591,679-680
+  s_830eda70c48de9::t_98e37842d082a6 493,562
+crates/tether-core/src/run.rs
+  s_830eda70c48de9::t_9985ccd47b3951 67-74,174-217
+crates/tether-trace/src/diff.rs
+  s_830eda70c48de9::t_7ed0001bc11eb0 15-18,210-212
+crates/tether-trace/src/lib.rs
+  s_830eda70c48de9::t_7ed0001bc11eb0 61,67
+crates/tether-trace/src/resumed.rs
+  s_830eda70c48de9::t_7ed0001bc11eb0 1-48
+crates/tether-trace/src/writer.rs
+  s_830eda70c48de9::t_7ed0001bc11eb0 58-88,164-180
+crates/tether-trace/tests/resume.rs
+  s_830eda70c48de9::t_98e37842d082a6 1-194
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_a463fe3ee27675 299,385-429
+docs/PLAN.md
+  s_830eda70c48de9::t_a463fe3ee27675 97
+docs/TRACE_FORMAT.md
+  s_830eda70c48de9::t_a463fe3ee27675 137-153
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "78eb0a636032f3c037af570f1a619f261c2a75bf",
+  "branch": "resume",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:739477d43c25ae6727b96589a20eceb8e229cb733fe36976e709c5c26f0901a2",
+      "total_additions": 951,
+      "total_deletions": 35,
+      "accepted_lines": 943,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:739477d43c25ae6727b96589a20eceb8e229cb733fe36976e709c5c26f0901a2",
+      "stats": {
+        "total_additions": 951,
+        "total_deletions": 35,
+        "accepted_lines": 943,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 1,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/main.rs": {
+            "total_additions": 14,
+            "total_deletions": 5,
+            "accepted_lines": 14,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/replay.rs": {
+            "total_additions": 6,
+            "total_deletions": 6,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/resume.rs": {
+            "total_additions": 118,
+            "total_deletions": 1,
+            "accepted_lines": 117,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/tests/cli.rs": {
+            "total_additions": 231,
+            "total_deletions": 0,
+            "accepted_lines": 231,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/src/lib.rs": {
+            "total_additions": 4,
+            "total_deletions": 2,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/src/replay.rs": {
+            "total_additions": 156,
+            "total_deletions": 17,
+            "accepted_lines": 154,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/src/run.rs": {
+            "total_additions": 55,
+            "total_deletions": 0,
+            "accepted_lines": 52,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/src/diff.rs": {
+            "total_additions": 7,
+            "total_deletions": 1,
+            "accepted_lines": 7,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/src/lib.rs": {
+            "total_additions": 2,
+            "total_deletions": 0,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/src/resumed.rs": {
+            "total_additions": 48,
+            "total_deletions": 0,
+            "accepted_lines": 48,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/src/writer.rs": {
+            "total_additions": 49,
+            "total_deletions": 0,
+            "accepted_lines": 48,
+            "overriden_lines": 0
+          },
+          "crates/tether-trace/tests/resume.rs": {
+            "total_additions": 194,
+            "total_deletions": 0,
+            "accepted_lines": 194,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 47,
+            "total_deletions": 1,
+            "accepted_lines": 46,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/TRACE_FORMAT.md": {
+            "total_additions": 17,
+            "total_deletions": 0,
+            "accepted_lines": 17,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"78eb0a636032f3c037af570f1a619f261c2a75bf","tree":"7b93e224b9eeea4b31ad9c80137e431419b1a179","files":{"README.md":"8fae579ce0f4f3b866750aa52adb61606b55bf59","crates/tether-cli/src/main.rs":"750445e08e032ea25428aa85950f6961969a06c0","crates/tether-cli/src/replay.rs":"c7d4ab77b9b63063cee8e21b994674d435014ee1","crates/tether-cli/src/resume.rs":"2d5b58b31dd78d8b40f4edb86eb4c4da5fd7f16a","crates/tether-cli/tests/cli.rs":"c899955d2e5d2b1c60dfb228c0baabd624762e70","crates/tether-core/src/lib.rs":"c1b53bb24193b9737559311e838cd88afde5dba3","crates/tether-core/src/replay.rs":"9915ffa44e2c3f6bca5ddb4421cc0c0b132c6a71","crates/tether-core/src/run.rs":"ca2ba1837200949ed67d6d8626785c5a46b51613","crates/tether-trace/src/diff.rs":"9af3269eb6696ab9badf8d23653d00ed55a54eac","crates/tether-trace/src/lib.rs":"79b05292339200f4607993ca51cef8b37030a482","crates/tether-trace/src/resumed.rs":"0c8f5ea1f88aaf14266368a55e5fb6e78f767891","crates/tether-trace/src/writer.rs":"7869dfc78607eb618b5301ab586320ff3bd2529f","crates/tether-trace/tests/resume.rs":"efc0a7e13fc22785be882b922f6eae8f4fa83af0","docs/ARCHITECTURE.md":"ba7afdc565ef71a8a514fdfae9b49796f328dae0","docs/PLAN.md":"92971e3a48d0420c55b150ac7bad1f190dee15bd","docs/TRACE_FORMAT.md":"4ac0f15c394b944491193219f671f06d67611249"},"digest":"0eaae39329580ce4eca900abdc45425be9a000c35d99ad84ce6724a7509eb113"}
+}
