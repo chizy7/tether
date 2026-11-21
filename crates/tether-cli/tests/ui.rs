@@ -6,7 +6,7 @@ use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, ChildStdout, Command, Stdio};
 
 use serde_json::Value;
 
@@ -80,6 +80,9 @@ fn record(test: &str, stdin: &str) -> PathBuf {
 struct Server {
     child: Child,
     address: String,
+    /// Kept open: a server whose reader has gone away is writing to a
+    /// closed pipe.
+    _stdout: BufReader<ChildStdout>,
 }
 
 impl Drop for Server {
@@ -101,9 +104,8 @@ fn serve(traces: &[&Path]) -> Server {
         .expect("spawn tether ui");
     // The first line names the address it chose.
     let mut line = String::new();
-    BufReader::new(child.stdout.take().expect("stdout"))
-        .read_line(&mut line)
-        .expect("read address");
+    let mut stdout = BufReader::new(child.stdout.take().expect("stdout"));
+    stdout.read_line(&mut line).expect("read address");
     let address = line
         .split("http://")
         .nth(1)
@@ -112,7 +114,11 @@ fn serve(traces: &[&Path]) -> Server {
         .trim_end_matches('/')
         .to_owned();
     assert!(address.starts_with("127.0.0.1:"), "{address}");
-    Server { child, address }
+    Server {
+        child,
+        address,
+        _stdout: stdout,
+    }
 }
 
 /// One GET, by hand: the status, the header block and the body.

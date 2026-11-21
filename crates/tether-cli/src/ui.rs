@@ -374,8 +374,18 @@ pub async fn ui(options: Options) -> anyhow::Result<()> {
         .with_state(app);
 
     let url = format!("http://127.0.0.1:{port}/");
-    println!("serving {} at {url}", options.runs.join(" and "));
-    println!("Ctrl-C to stop");
+    // Written at once, and a reader that has gone away is not a reason to
+    // stop serving: `println!` would panic on a closed pipe.
+    {
+        use std::io::Write;
+        let mut out = std::io::stdout().lock();
+        let _ = writeln!(
+            out,
+            "serving {} at {url}\nCtrl-C to stop",
+            options.runs.join(" and ")
+        );
+        let _ = out.flush();
+    }
     if options.open {
         open_browser(&url);
     }
