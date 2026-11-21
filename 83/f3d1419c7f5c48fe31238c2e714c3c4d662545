@@ -1,0 +1,66 @@
+README.md
+  s_830eda70c48de9::t_2be10e328c9792 34-39
+docs/PLAN.md
+  s_830eda70c48de9::t_2be10e328c9792 127
+examples/evals/README.md
+  s_830eda70c48de9::t_2be10e328c9792 4,50-51,85-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "83f3d1419c7f5c48fe31238c2e714c3c4d662545",
+  "branch": "evals-demo",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:b2ae43491681ead042f68235043114ac82bfe2999219efcd457379425bc795c0",
+      "total_additions": 16,
+      "total_deletions": 16,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:b2ae43491681ead042f68235043114ac82bfe2999219efcd457379425bc795c0",
+      "stats": {
+        "total_additions": 16,
+        "total_deletions": 16,
+        "accepted_lines": 16,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 6,
+            "total_deletions": 4,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/evals/README.md": {
+            "total_additions": 9,
+            "total_deletions": 11,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"83f3d1419c7f5c48fe31238c2e714c3c4d662545","tree":"fcca0841b20e41afdd4d768c5fe32ad6cf7bf7f0","files":{"README.md":"9799201024745b4f950a9c5a0f5955a279a3cbe3","docs/PLAN.md":"49b43a862f3c147e09a1287985a05256bbc89ab5","examples/evals/README.md":"438cc4bac3ce40d8afccc40f71df4641dc8b2c29"},"digest":"8cb5625693a3322ceac63fd6916d2a9c79a37c3e903cfb65d89e9c69e21cd8f3"}
+}
