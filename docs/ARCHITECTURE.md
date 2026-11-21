@@ -428,6 +428,30 @@ Limits today:
 - Doing a step again costs its model call again, and the model may answer
   differently from the abandoned attempt.
 
+### Pack
+
+`tether pack <run.jsonl>` writes `<run>.tar`: the trace and the blobs it
+refers to, in one plain, uncompressed tar that any tar tool can read.
+`tether unpack <run.tar>` turns it back into the two.
+
+- The trace is verified before it is packed and after it is unpacked. A
+  trace that fails is not packed, and an unpack that fails leaves nothing
+  behind.
+- Only blobs the trace refers to go in. Anything else in the blob store is
+  left out.
+- Packing the same trace twice gives the same bytes: entries are in a fixed
+  order with no times or owners.
+- Unpack accepts exactly two kinds of entry, one `<run>.jsonl` and blobs
+  under `<run>.blobs/blake3/`, and checks every path before writing
+  anything. A tar with any other entry, or a path that would land outside
+  the target directory, is refused. Nothing is overwritten.
+
+`inspect`, `verify`, `diff` and `replay` take a `.tar` wherever they take a
+`.jsonl`. They unpack it into a scratch directory, removed afterwards, so
+reading a pack also verifies it. A replay of `run.tar` writes
+`run.replay.jsonl` beside the tar. `resume` appends to a trace and so needs
+it unpacked.
+
 ### Diff
 
 `tether diff <a> <b>` compares what two runs did, not when or how fast.

@@ -151,7 +151,10 @@ pub(crate) async fn carry_on(run: &mut Run, mut turn: Turn) -> Result<String, Ru
 /// Replay `options.run`. `Ok(false)` when the replay left the recording and
 /// stopped there.
 pub async fn replay(options: Options) -> anyhow::Result<bool> {
-    let recording = Recording::load(&options.run)
+    // A packed trace is replayed from a scratch copy; the new trace still
+    // goes beside the tar.
+    let opened = crate::pack::open(&options.run.to_string_lossy())?;
+    let recording = Recording::load(opened.path())
         .with_context(|| format!("loading {}", options.run.display()))?;
     let out = options
         .out

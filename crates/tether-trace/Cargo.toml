@@ -15,6 +15,10 @@ time = { workspace = true }
 blake3 = { workspace = true }
 thiserror = { workspace = true }
 rusqlite = { workspace = true }
+tar = { version = "0.4", default-features = false }
+
+[dev-dependencies]
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

@@ -10,7 +10,17 @@ and this file in the same PR.
 <run>.blobs/blake3/<ab>/<full hex>   content-addressed payloads over 32 KB
 ```
 
-`tether pack <run>` bundles both into one tar. All tools accept either form.
+`tether pack <run>` bundles both into one tar, `<run>.tar`:
+
+```
+<run>.jsonl
+<run>.blobs/blake3/<ab>/<full hex>   only the blobs the trace refers to
+```
+
+A plain ustar/GNU tar, uncompressed, regular files only, trace first and
+blobs in hash order, with zeroed times and owners so that packing is
+deterministic. A pack holds exactly one trace. `inspect`, `verify`, `diff`
+and `replay` accept either form; `resume` needs the unpacked form.
 
 ## Envelope
 

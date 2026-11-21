@@ -1110,3 +1110,88 @@ fn resume_refuses_what_it_cannot_resume() {
         "{out:?}"
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn a_packed_trace_can_be_read_in_place_and_unpacked() {
+    // A run with blobs: every message is one.
+    let (dir, _) = tether_run("cli_pack", POLICY, "y\n");
+    let trace = trace_in(&dir);
+    let tar = trace.replace(".jsonl", ".tar");
+
+    let out = tether(&["pack", &trace]);
+    assert!(out.status.success(), "{out:?}");
+    let said = String::from_utf8_lossy(&out.stdout);
+    assert!(said.contains(" events and 6 blobs into"), "{said}");
+    assert!(PathBuf::from(&tar).is_file());
+    // Not over an existing file.
+    assert!(!tether(&["pack", &trace]).status.success());
+
+    // The read commands take the tar as they take the trace.
+    let text = |out: Output| {
+        assert!(out.status.success(), "{out:?}");
+        String::from_utf8_lossy(&out.stdout).into_owned()
+    };
+    assert_eq!(
+        text(tether(&["inspect", &tar])),
+        text(tether(&["inspect", &trace]))
+    );
+    assert_eq!(
+        text(tether(&["verify", &tar])),
+        text(tether(&["verify", &trace]))
+    );
+    let diff = text(tether(&["diff", &tar, &trace]));
+    assert!(diff.contains("no divergence"), "{diff}");
+
+    // With the original gone, the tar alone still replays, and the new
+    // trace lands beside the tar.
+    let moved = dir.join("moved");
+    fs::create_dir_all(&moved).expect("create");
+    let lone = moved.join("only.tar");
+    fs::rename(&tar, &lone).expect("move tar");
+    let replayed = tether(&["replay", lone.to_str().expect("utf-8 path")]);
+    assert!(replayed.status.success(), "{replayed:?}");
+    let replay_trace = moved.join("only.replay.jsonl");
+    assert!(replay_trace.is_file());
+    let diff = text(tether(&[
+        "diff",
+        &trace,
+        replay_trace.to_str().expect("utf-8 path"),
+    ]));
+    assert!(diff.contains("no divergence"), "{diff}");
+
+    // Unpacked, it is the trace again, verified.
+    let unpacked = dir.join("unpacked");
+    let out = tether(&[
+        "unpack",
+        lone.to_str().expect("utf-8 path"),
+        "--dir",
+        unpacked.to_str().expect("utf-8 path"),
+    ]);
+    assert!(out.status.success(), "{out:?}");
+    let name = PathBuf::from(&trace).file_name().expect("name").to_owned();
+    assert_eq!(
+        fs::read(unpacked.join(&name)).expect("unpacked trace"),
+        fs::read(&trace).expect("original trace")
+    );
+    assert!(
+        tether(&["verify", unpacked.join(&name).to_str().expect("utf-8 path")])
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn a_tar_that_is_not_a_packed_trace_is_refused() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("cli_pack_bad");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("create test dir");
+    let tar = dir.join("junk.tar");
+    fs::write(&tar, "this is not a tar at all").expect("write");
+
+    for command in ["inspect", "verify", "unpack"] {
+        let out = tether(&[command, tar.to_str().expect("utf-8 path")]);
+        assert!(!out.status.success(), "{command}: {out:?}");
+    }
+    assert!(fs::read_dir(&dir).expect("read dir").count() == 1);
+}

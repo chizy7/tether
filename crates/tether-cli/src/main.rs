@@ -6,6 +6,7 @@ use tether_trace::{verify, TraceReader};
 use tether_types::{Decision, Event, EventType, Payload};
 
 mod diff;
+mod pack;
 mod replay;
 mod resume;
 mod run;
@@ -83,8 +84,24 @@ enum Cmd {
     },
     /// Verify the BLAKE3 hash chain and blob completeness. Takes the path of a `<run>.jsonl`.
     Verify { run: String },
-    /// Bundle a trace and its blobs into one tar.
-    Pack { run: String },
+    /// Bundle a trace and the blobs it refers to into one tar, after
+    /// verifying it. `inspect`, `verify`, `diff` and `replay` take the tar
+    /// in place of a `<run>.jsonl`.
+    Pack {
+        /// Path of the `<run>.jsonl` to pack.
+        run: PathBuf,
+        /// Where to write the tar. Default: `<run>.tar` beside the trace.
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
+    /// Unpack a packed trace and verify what comes out.
+    Unpack {
+        /// Path of the `<run>.tar`.
+        tar: PathBuf,
+        /// Directory to unpack into. Default: beside the tar.
+        #[arg(long)]
+        dir: Option<PathBuf>,
+    },
 }
 
 #[tokio::main]
@@ -97,9 +114,9 @@ async fn main() -> anyhow::Result<()> {
             policy,
             dir,
         } => run::run(&script, policy.as_deref(), &dir).await,
-        Cmd::Inspect { run } => inspect(&run),
-        Cmd::Verify { run } => verify_trace(&run),
-        Cmd::Diff { a, b } => match diff::diff_traces(&a, &b) {
+        Cmd::Inspect { run } => pack::open(&run).and_then(|trace| inspect(trace.path())),
+        Cmd::Verify { run } => pack::open(&run).and_then(|trace| verify_trace(trace.path())),
+        Cmd::Diff { a, b } => match diff_either(&a, &b) {
             Ok(true) => Ok(()),
             Ok(false) => std::process::exit(1),
             Err(e) if is_broken_pipe(&e) => Ok(()),
@@ -132,7 +149,8 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Cmd::Resume { run, script } => resume::resume(&run, script.as_deref()).await,
-        Cmd::Pack { .. } => todo!("v0.3"),
+        Cmd::Pack { run, out } => pack::pack(&run, out.as_deref()),
+        Cmd::Unpack { tar, dir } => pack::unpack(&tar, dir.as_deref()),
         Cmd::Eval => todo!("v0.4"),
     };
     match result {
@@ -140,6 +158,12 @@ async fn main() -> anyhow::Result<()> {
         Err(e) if is_broken_pipe(&e) => Ok(()),
         other => other,
     }
+}
+
+/// Diff two traces, each a `.jsonl` or a packed tar.
+fn diff_either(a: &str, b: &str) -> anyhow::Result<bool> {
+    let (a, b) = (pack::open(a)?, pack::open(b)?);
+    diff::diff_traces(a.path(), b.path())
 }
 
 fn is_broken_pipe(e: &anyhow::Error) -> bool {

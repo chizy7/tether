@@ -44,6 +44,8 @@ pub enum TraceError {
     BlobCorrupt { expected: String, found: String },
     #[error("not a blob hash: {0:?}")]
     InvalidBlobHash(String),
+    #[error("pack: {0}")]
+    Pack(String),
     #[error("event {seq} is {bytes} bytes, over the {limit} byte cap")]
     EventTooLarge {
         seq: u64,
@@ -57,6 +59,7 @@ pub type Result<T> = std::result::Result<T, TraceError>;
 pub mod blob;
 mod chain;
 pub mod diff;
+pub mod pack;
 pub mod reader;
 pub mod resumed;
 pub mod writer;
