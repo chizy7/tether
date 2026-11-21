@@ -118,10 +118,15 @@ action = "ask"
 /// Run the scripted agent in a fresh directory, typing `stdin` at it.
 /// Returns the directory and the process output.
 fn tether_run(test: &str, policy: &str, stdin: &str) -> (PathBuf, Output) {
+    tether_run_script(test, SCRIPT, policy, stdin)
+}
+
+/// The same, for a script other than [`SCRIPT`].
+fn tether_run_script(test: &str, script: &str, policy: &str, stdin: &str) -> (PathBuf, Output) {
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(test);
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("create test dir");
-    fs::write(dir.join("script.json"), SCRIPT).expect("write script");
+    fs::write(dir.join("script.json"), script).expect("write script");
     fs::write(dir.join("tether.toml"), policy).expect("write policy");
 
     let mut child = Command::new(env!("CARGO_BIN_EXE_tether"))
@@ -399,4 +404,116 @@ fn refuses_example_blocks_rm_and_the_trace_names_the_rule() {
     );
     // The later `ls` shows the file is still there.
     assert!(trace.contains(r#""stdout":"notes.txt\n""#), "{trace}");
+}
+
+/// The one trace a `tether_run` left in `dir`.
+fn trace_in(dir: &std::path::Path) -> String {
+    fs::read_dir(dir.join("out"))
+        .expect("read out dir")
+        .filter_map(|entry| Some(entry.ok()?.path()))
+        .find(|path| path.extension().is_some_and(|ext| ext == "jsonl"))
+        .expect("a trace")
+        .to_str()
+        .expect("utf-8 path")
+        .to_owned()
+}
+
+#[cfg(unix)]
+#[test]
+fn diff_of_two_runs_that_did_the_same_is_empty() {
+    // Two separate runs: different run ids, timestamps and durations.
+    let (first, _) = tether_run("cli_diff_same_a", POLICY, "y\n");
+    let (second, _) = tether_run("cli_diff_same_b", POLICY, "y\n");
+
+    let out = tether(&["diff", &trace_in(&first), &trace_in(&second)]);
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert_eq!(out.status.code(), Some(0), "{text}");
+    assert!(text.contains("no divergence"), "{text}");
+    // One line per step, all the same.
+    assert_eq!(text.matches("  same").count(), 3, "{text}");
+
+    // A trace against itself, too.
+    let out = tether(&["diff", &trace_in(&first), &trace_in(&first)]);
+    assert_eq!(out.status.code(), Some(0));
+}
+
+#[cfg(unix)]
+#[test]
+fn diff_reports_the_first_divergence_and_exits_1() {
+    // The same script and policy; the human says yes in one run and no in the other.
+    let (yes, _) = tether_run("cli_diff_yes", POLICY, "y\n");
+    let (no, _) = tether_run("cli_diff_no", POLICY, "n\n");
+
+    let out = tether(&["diff", &trace_in(&yes), &trace_in(&no)]);
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert_eq!(out.status.code(), Some(1), "{text}");
+    assert!(
+        text.contains("first divergence: step 2, policy.decision: the outcome differs"),
+        "{text}"
+    );
+    assert!(text.contains("ask, answered allow (rule no-rm)"), "{text}");
+    assert!(text.contains("ask, answered deny (rule no-rm)"), "{text}");
+    // The next request then carries a different tool result, and the diff
+    // shows the two messages from the blobs.
+    assert!(text.contains("more after it"), "{text}");
+
+    // A changed policy is called out, and a denied call differs from an asked one.
+    let deny = POLICY.replace("action = \"ask\"", "action = \"deny\"");
+    let (denied, _) = tether_run("cli_diff_deny", &deny, "");
+    let out = tether(&["diff", &trace_in(&yes), &trace_in(&denied)]);
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert_eq!(out.status.code(), Some(1), "{text}");
+    assert!(text.contains("held to different policies"), "{text}");
+    assert!(
+        text.contains("deny (rule no-rm: denied by rule no-rm)"),
+        "{text}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn diff_shows_the_messages_behind_a_changed_request() {
+    // The same run, asked in different words: the first request differs.
+    let reworded = SCRIPT.replace("Tidy up.", "Tidy up, and be careful.");
+    let (asked, _) = tether_run("cli_diff_msg_a", POLICY, "y\n");
+    let (reasked, _) = tether_run_script("cli_diff_msg_b", &reworded, POLICY, "y\n");
+
+    let out = tether(&["diff", &trace_in(&asked), &trace_in(&reasked)]);
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert_eq!(out.status.code(), Some(1), "{text}");
+    assert!(
+        text.contains(
+            "first divergence: step 1, model.request: message 1 differs (1 messages in a, 1 in b)"
+        ),
+        "{text}"
+    );
+    // The messages themselves, read from each trace's blobs.
+    assert!(text.contains("a's message: user: Tidy up."), "{text}");
+    assert!(
+        text.contains("b's message: user: Tidy up, and be careful."),
+        "{text}"
+    );
+}
+
+#[test]
+fn diff_of_a_missing_or_broken_trace_exits_2() {
+    let good = write_trace("cli_diff_good");
+    let good = good.to_str().expect("utf-8 path");
+
+    let out = tether(&["diff", good, "/no/such/trace.jsonl"]);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("opening /no/such/trace.jsonl"),
+        "{out:?}"
+    );
+
+    let broken = write_trace("cli_diff_broken");
+    let text = fs::read_to_string(&broken).expect("read");
+    fs::write(&broken, text.replace("README.md", "SECRETS.md")).expect("write");
+    let out = tether(&["diff", good, broken.to_str().expect("utf-8 path")]);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("hash chain broken"),
+        "{out:?}"
+    );
 }

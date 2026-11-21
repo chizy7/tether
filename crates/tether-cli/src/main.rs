@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 use tether_trace::{verify, TraceReader};
 use tether_types::{Decision, Event, EventType, Payload};
 
+mod diff;
 mod run;
 
 #[derive(Parser)]
@@ -36,7 +37,9 @@ enum Cmd {
     },
     /// Re-run a recorded trace with no network and no cost.
     Replay { run: String },
-    /// Align two traces by step and report where they diverge.
+    /// Align two traces by step and report where they diverge. Takes the
+    /// paths of two `<run>.jsonl`. Exits 0 if they agree, 1 if they diverge
+    /// and 2 if either cannot be read.
     Diff { a: String, b: String },
     /// Run a suite of recorded tasks and score outcomes.
     Eval,
@@ -62,7 +65,16 @@ async fn main() -> anyhow::Result<()> {
         } => run::run(&script, policy.as_deref(), &dir).await,
         Cmd::Inspect { run } => inspect(&run),
         Cmd::Verify { run } => verify_trace(&run),
-        Cmd::Replay { .. } | Cmd::Diff { .. } | Cmd::Resume { .. } | Cmd::Pack { .. } => {
+        Cmd::Diff { a, b } => match diff::diff_traces(&a, &b) {
+            Ok(true) => Ok(()),
+            Ok(false) => std::process::exit(1),
+            Err(e) if is_broken_pipe(&e) => Ok(()),
+            Err(e) => {
+                eprintln!("Error: {e:#}");
+                std::process::exit(2)
+            }
+        },
+        Cmd::Replay { .. } | Cmd::Resume { .. } | Cmd::Pack { .. } => {
             todo!("v0.3")
         }
         Cmd::Eval => todo!("v0.4"),
@@ -228,7 +240,7 @@ fn of<U: std::fmt::Display, L: std::fmt::Display>(used: U, limit: Option<L>) -> 
 }
 
 /// Keep a summary on one line.
-fn clip(text: &str) -> String {
+pub(crate) fn clip(text: &str) -> String {
     const MAX: usize = 80;
     if text.chars().count() <= MAX {
         return text.to_owned();

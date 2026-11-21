@@ -56,13 +56,11 @@ pub type Result<T> = std::result::Result<T, TraceError>;
 
 pub mod blob;
 mod chain;
+pub mod diff;
 pub mod reader;
 pub mod writer;
 
 pub use blob::BlobStore;
+pub use diff::{diff, TraceDiff};
 pub use reader::{verify, TraceReader, VerifyReport};
 pub use writer::{NewEvent, TraceWriter};
-
-pub mod diff {
-    //! Align two traces by step and report the first divergence.
-}

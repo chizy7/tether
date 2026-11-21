@@ -297,13 +297,43 @@ All three re-run the core loop while feeding it recorded answers.
 - **Checkpoint:** every N steps (default 1) a `checkpoint` event with the step and, if supported, a sandbox `SnapshotId`. The trace up to that seq is the checkpoint.
 - **Resume:** read to the last checkpoint, restore the snapshot (or replay writes into a fresh sandbox), rebuild message history from `model.*` and `tool.*` events, continue live with `run.state = resumed`.
 - **Replay:** run the whole trace with the `replay` adapter and a replay sandbox; requests matched to recorded responses by content hash; no network, no cost. Policy is re-evaluated live, which is how a policy change is tested against old runs.
-- **Diff:** align two traces by step and report where model requests, tool calls or policy decisions diverge.
+- **Diff:** align two traces by step and report where model requests, tool calls or policy decisions diverge. See "Diff" below.
 
 Where determinism breaks: a changed prompt stops replay at the divergence
 (or goes live with `--live-after-divergence`); tools marked `external` return
 the recorded result and are never re-invoked; clock, random and env go through
 `Clock` and `Rng` traits satisfied from `nondeterminism` events; agent-side
 nondeterminism is out of scope and shows up in diff as the agent's own change.
+
+### Diff
+
+`tether diff <a> <b>` compares what two runs did, not when or how fast.
+Within each step it lines up, in order:
+
+| Event | Compared | Not compared |
+| --- | --- | --- |
+| `model.request` | message hashes, model, tools, params | provider |
+| `tool.call` | name, arguments | id, server |
+| `policy.decision` | outcome; for an `ask`, how it was answered | rule name, reason, budget |
+
+and then how the runs ended: the last `run.state` and the outcome in
+`run.finished`. It prints one line per step, the first divergence with both
+sides, and for a request whose messages differ, the two messages read from
+each trace's blobs. Exit status is 0 when the traces agree, 1 when they
+diverge and 2 when one cannot be read or fails verification.
+
+Left out on purpose: `ts`, `latency_ms`, `duration_ms`, budgets, hashes and
+provider-assigned ids, which differ between any two live runs. A model's
+reply is not compared directly either. It shows up in the next request's
+message hashes, or in how the run ended if it was the last word. `provider`
+is left out so that a replay, whose adapter is not the original one, still
+compares equal. A different rule reaching the same outcome is not a
+divergence; a changed policy is noted in the header and matters only where a
+decision changes.
+
+Alignment within a step is by position, so one extra tool call shifts
+everything after it in that step. The first divergence is the one to read;
+after it the runs are doing different things.
 
 ### Timings under replay (to build in v0.3)
 
