@@ -1,0 +1,109 @@
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_a6a90b31f36128 36-41,43-48,52-57
+  s_830eda70c48de9::t_7f21bd897caa5a 42
+  s_830eda70c48de9::t_4e0fccd74e1358 49-51
+README.md
+  s_830eda70c48de9::t_cf59d6b97e29b4 15-16
+  s_830eda70c48de9::t_a463fe3ee27675 17
+  s_830eda70c48de9::t_12ddbb3127003a 18
+  s_830eda70c48de9::t_ea2abacff7312a 19
+  s_830eda70c48de9::t_7f21bd897caa5a 20-21
+  s_830eda70c48de9::t_2a0c6538d6994e 30-36
+  s_830eda70c48de9::t_0986ceae5bd907 37
+docs/PLAN.md
+  s_830eda70c48de9::t_1b7373b2e524ac 93
+  s_830eda70c48de9::t_a671b8588b7ace 94
+  s_830eda70c48de9::t_4119242c24f8ad 95
+  s_830eda70c48de9::t_cf59d6b97e29b4 96
+  s_830eda70c48de9::t_a463fe3ee27675 97
+  s_830eda70c48de9::t_12ddbb3127003a 98
+  s_830eda70c48de9::t_ea2abacff7312a 99
+  s_830eda70c48de9::t_7f21bd897caa5a 100
+  s_830eda70c48de9::t_2a0c6538d6994e 101
+examples/replays/README.md
+  s_830eda70c48de9::t_4e0fccd74e1358 1-65
+examples/replays/demo.py
+  s_830eda70c48de9::t_6bc918f3f63957 1-108,111,113,115-122,124-128,130-154,157-174,176,178,191,193,195,198,200,202,204-205,208-210,212-215
+  s_830eda70c48de9::t_4e0fccd74e1358 109-110,112,114,123,129,155-156,175,177,179-190,192,194,196-197,199,201,203,206-207,211
+examples/replays/demo.tape
+  s_830eda70c48de9::t_4e0fccd74e1358 1-3,6-17,19-25
+  s_830eda70c48de9::t_98840b416fd83f 4-5,18
+examples/replays/tasks.json
+  s_830eda70c48de9::t_6bc918f3f63957 1-22
+examples/replays/tether.toml
+  s_830eda70c48de9::t_6bc918f3f63957 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "a96dc6c7a93e81f0d6bc9844f3437b9be8520b55",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:797f5605f5932d72dcb0940de75dcc12e651fb3319f18e6ae141ffad4dfdda26",
+      "stats": {
+        "total_additions": 384,
+        "total_deletions": 27,
+        "accepted_lines": 358,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/ci.yml": {
+            "total_additions": 3,
+            "total_deletions": 0,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 11,
+            "total_deletions": 3,
+            "accepted_lines": 8,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/replays/README.md": {
+            "total_additions": 65,
+            "total_deletions": 0,
+            "accepted_lines": 65,
+            "overriden_lines": 0
+          },
+          "examples/replays/demo.py": {
+            "total_additions": 236,
+            "total_deletions": 21,
+            "accepted_lines": 215,
+            "overriden_lines": 0
+          },
+          "examples/replays/demo.tape": {
+            "total_additions": 27,
+            "total_deletions": 2,
+            "accepted_lines": 25,
+            "overriden_lines": 0
+          },
+          "examples/replays/tasks.json": {
+            "total_additions": 22,
+            "total_deletions": 0,
+            "accepted_lines": 22,
+            "overriden_lines": 0
+          },
+          "examples/replays/tether.toml": {
+            "total_additions": 19,
+            "total_deletions": 0,
+            "accepted_lines": 19,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"a96dc6c7a93e81f0d6bc9844f3437b9be8520b55","tree":"1dfe5d434f3a132aa018b13a474468de653c14aa","files":{".github/workflows/ci.yml":"de31bf47ff0c64ef3da36d51b7ac8a5086862280","README.md":"49e752da3c712614ff856165e49948a78f73d71b","docs/PLAN.md":"023b85e90bc2668f0d7836ba3e6783c61cf9f287","examples/replays/README.md":"3ee61ec2eaeb98e464a5a2892f8bdf3bb4b0f78f","examples/replays/demo.py":"6ba5889cc28516f5d4d999d49ab1ed1942d50c7c","examples/replays/demo.tape":"2ef7d66e4a8ad880f44089f4b8c0253b22e19f6a","examples/replays/tasks.json":"8642cb21cc88086c91c41c91f9b218ff969374f2","examples/replays/tether.toml":"f6687dd59ec82015c1bcb68ae90e491b383352a2"},"digest":"81a75f1294aa8b723508c2fa42253770cb02cef9b0323b8247471cc0fc21c203"}
+}
