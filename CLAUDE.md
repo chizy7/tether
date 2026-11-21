@@ -76,9 +76,11 @@ Dependencies point down only. Leaf crates never import each other or
 
 ## Current phase
 
-**v0.3 "it replays"** (weeks 9 to 12). v0.1 and v0.2 shipped 2026-11-18.
-Goal: record 20 tasks against a real model, change the prompt, replay with
-`--live-after-divergence`, diff each pair. The Anthropic adapter is item one
-because no real model call has been recorded yet. The ordered checklist is in
-`docs/PLAN.md`; work it top to bottom, one PR per item. Replay's acceptance
-test is `tether diff` of a trace against its own replay coming back empty.
+**v0.4 "it evals, and it launches"** (weeks 13 to 16). v0.3 shipped
+2026-11-21 as release v0.3.0. Goal: `tether eval` runs a suite against a new
+prompt and reports pass, fail and cost per task; `tether ui` shows the failing
+step. Then the launch. The trace schema is frozen from this phase: a change
+to `tether-types` that alters the on-disk format needs a `v` bump and a reader
+for the old version, not a silent edit. The ordered checklist is in
+`docs/PLAN.md`; product items top to bottom, one PR per item; launch items
+may run alongside from week 14.

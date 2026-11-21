@@ -103,6 +103,39 @@ dependency order; the last three can slip to v0.4 without hurting the demo.
 - [x] (may slip) cargo-dist release workflow, `curl | sh` install, `pip install tether-agents` on PyPI: one `vX.Y.Z` tag runs both, see `docs/RELEASING.md`
 - [x] (may slip) `rusqlite` index for `inspect` and `diff` on traces over 100k events; measure before building. Measured and not built: both take half a second at 100k events, see "Long traces" in `docs/ARCHITECTURE.md`
 
+v0.3 shipped 2026-11-21 as release v0.3.0: fourteen PRs, 164 tests, binaries for
+every platform via cargo-dist, `tether-agents` on PyPI, `replays` demo GIF.
+
+## v0.4 checklist: it evals, and it launches
+
+Demo that closes the phase: `tether eval` runs a suite of recorded tasks
+against a new prompt or model and prints pass, fail and cost per task, then
+`tether ui` opens the one that failed and shows the step where it went wrong.
+The launch post links that GIF.
+
+Two halves. Items 1 to 6 are product and ship in order. Items 7 to 13 are the
+launch and can run in parallel with them from week 14. The phase is done when
+the launch post is live, not when the code is merged.
+
+Product:
+
+- [ ] Freeze the trace schema: `TRACE_FORMAT.md` status becomes "v0, frozen 2026-11-21"; from here `v` bumps only for a breaking change and a reader for the old `v` stays in `tether-trace`. Add a `compat` test that reads the v0.3.0 demo traces checked into `crates/tether-trace/tests/fixtures/`
+- [ ] `tether eval <suite>`: a suite is a directory of recorded traces plus `eval.toml`. Assertions are over the trace only: `outcome` matches, `max_steps`, `max_usd`, `no_deny`, `tool_called` / `tool_not_called`, `file_contains` on a sandbox path. Each task replays with `--live-after-divergence` under the new `--system` or `--model`, then the assertions run. Output: one row per task (pass / fail, steps, usd, first divergence), totals, exit code 1 on any failure. No model-as-judge; that is agent-building
+- [ ] `tether export otlp <run> [--follow]`: one OpenTelemetry trace per run, one span per step, child spans for `model.*`, `tool.*` and `policy.decision`, attributes from the event. Reads the trace file, so it works live by tailing and after the fact on any trace; no second code path inside `tether-core`
+- [ ] TypeScript SDK in `sdks/typescript`: same surface as Python (`Run`, `complete`, `callTool`, `tools`), `@grpc/grpc-js` over the Unix socket, no logic. `examples/raw-loop-ts`. Publish as `tether-agents` on npm to match PyPI
+- [ ] `tether ui <run> [<run-b>]`: one HTML file embedded in the binary with `include_str!`, served on localhost with a JSON endpoint over `tether-trace`. Steps down the left, events in the middle, blob content on click, policy decisions and halts highlighted; with two runs, the diff view. Vanilla JS, no build step. Built last of the product items, after the CLI can do everything it shows
+- [ ] Demo: `examples/evals` with a 20-task suite, a deliberately regressed prompt that fails three, `tether eval` output, `tether ui` on a failure; GIF
+
+Launch:
+
+- [ ] Framework examples: `examples/claude-agent-sdk` and `examples/openai-agents-sdk` are README placeholders today and the README promises them. Each wraps the framework's own loop through the Python SDK in under 60 lines, or the README promise comes out
+- [ ] Repo hygiene: `CONTRIBUTING.md` (the PR question, design rules, how a phase works), `SECURITY.md` (what the sandbox does and does not isolate, how to report), `CHANGELOG.md` back-filled from v0.1.0, issue and PR templates, `good-first-issue` on five real items
+- [ ] README rewrite for a stranger: lead with the `evals` GIF, then the two-call-site code block, then install, then the honest sandbox note. Three GIFs is two too many above the fold; move `refuses` and `replays` into a "More" section
+- [ ] `docs/REPLAY.md`: the long write-up. Why the trace is the only state, per-message blobs, timings under replay, what breaks determinism and what Tether does about it. This is the launch essay; it goes on HN as the link, with the repo in the first line
+- [ ] Name collision check: "Tether" is also the USDT stablecoin, which owns the search results. Decide now whether to keep the name (and lean on `tether-agents` everywhere a package name appears) or rename before launch, when it is still cheap. Record the decision in the PLAN either way
+- [ ] Public roadmap: GitHub Project with v1.0 items (Firecracker, policy plugin API, schema v1 if ever) so the first "what's next?" issue has an answer
+- [ ] Launch: tag v0.4.0, HN post linking `docs/REPLAY.md`, r/rust, the MCP community Discord, one thread. Then two weeks of answering issues before touching v1.0. Reassess at the end of those two weeks: stars, issues from strangers, and whether anyone besides the maintainer has wrapped an agent
+
 ## Stack decisions
 
 | Layer | Choice | Why |
