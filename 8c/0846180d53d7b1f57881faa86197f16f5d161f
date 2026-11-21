@@ -1,0 +1,140 @@
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_ff412837a1e47e 52-63
+README.md
+  s_830eda70c48de9::t_a5f8230f03151b 29-38
+docs/PLAN.md
+  s_830eda70c48de9::t_ff412837a1e47e 127
+examples/evals/.gitignore
+  s_830eda70c48de9::t_5181900707b5e4 1-3
+examples/evals/README.md
+  s_830eda70c48de9::t_ff412837a1e47e 1-5,8-9,12-83,93-101
+  s_830eda70c48de9::t_a5f8230f03151b 6-7,10-11,84-92
+examples/evals/demo.tape
+  s_830eda70c48de9::t_ff412837a1e47e 1-35
+examples/evals/prompt.txt
+  s_830eda70c48de9::t_5181900707b5e4 1
+examples/evals/record.py
+  s_830eda70c48de9::t_5a0fdcac6196fd 1-138
+examples/evals/regressed.txt
+  s_830eda70c48de9::t_5181900707b5e4 1
+examples/evals/suite/eval.toml
+  s_830eda70c48de9::t_5181900707b5e4 1-68
+examples/evals/tasks.json
+  s_830eda70c48de9::t_5181900707b5e4 1-35,38,40-41,43-45
+  s_830eda70c48de9::t_a5f8230f03151b 36-37,39,42
+examples/evals/tether.toml
+  s_830eda70c48de9::t_5181900707b5e4 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "8c0846180d53d7b1f57881faa86197f16f5d161f",
+  "branch": "evals-demo",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:776787c99854a2512973f378e412730141a3298850e70b42ed7bae9a54d7d111",
+      "total_additions": 449,
+      "total_deletions": 9,
+      "accepted_lines": 441,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:776787c99854a2512973f378e412730141a3298850e70b42ed7bae9a54d7d111",
+      "stats": {
+        "total_additions": 449,
+        "total_deletions": 9,
+        "accepted_lines": 441,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/ci.yml": {
+            "total_additions": 12,
+            "total_deletions": 0,
+            "accepted_lines": 12,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 10,
+            "total_deletions": 0,
+            "accepted_lines": 10,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/evals/.gitignore": {
+            "total_additions": 3,
+            "total_deletions": 0,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "examples/evals/README.md": {
+            "total_additions": 105,
+            "total_deletions": 4,
+            "accepted_lines": 101,
+            "overriden_lines": 0
+          },
+          "examples/evals/demo.tape": {
+            "total_additions": 35,
+            "total_deletions": 0,
+            "accepted_lines": 35,
+            "overriden_lines": 0
+          },
+          "examples/evals/prompt.txt": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/evals/record.py": {
+            "total_additions": 138,
+            "total_deletions": 0,
+            "accepted_lines": 138,
+            "overriden_lines": 0
+          },
+          "examples/evals/regressed.txt": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/evals/suite/eval.toml": {
+            "total_additions": 68,
+            "total_deletions": 0,
+            "accepted_lines": 68,
+            "overriden_lines": 0
+          },
+          "examples/evals/tasks.json": {
+            "total_additions": 49,
+            "total_deletions": 4,
+            "accepted_lines": 45,
+            "overriden_lines": 0
+          },
+          "examples/evals/tether.toml": {
+            "total_additions": 26,
+            "total_deletions": 0,
+            "accepted_lines": 26,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"8c0846180d53d7b1f57881faa86197f16f5d161f","tree":"d9c2bc53fd6596d0a6061628c646125f66c7ff93","files":{".github/workflows/ci.yml":"e182320462c38823eb49596f26e7ecb6327da3bc","README.md":"2af9d262de003c100be60a77e1fa930e37285c35","docs/PLAN.md":"4ff0ac8e1196cf2dedf12e14c6768d36418b460d","examples/evals/.gitignore":"3f4cc1cb3876616cbf18162627fd3b6cab3b466f","examples/evals/README.md":"62088eeeea32b6758394f9ca46e9986fa7c0e86f","examples/evals/demo.tape":"499d59f8335fcbbfb481eafa77568a9480472634","examples/evals/prompt.txt":"c8e484edc3a8dabade9cc4589c654353a011b949","examples/evals/record.py":"146e5edf9e837c5502033f5710cf2736a0ed50f7","examples/evals/regressed.txt":"0945ccad80767729340e552c0ffae846a05bd934","examples/evals/suite/eval.toml":"d8df5da1bbcacd410f5e6067a7dcd2b090ca2c33","examples/evals/tasks.json":"dd86533074fe69cb1906778f030f919462697a6a","examples/evals/tether.toml":"220adaf9443699b005ee78d907ddbb621415a8aa"},"digest":"45cdaaf408f2a28cdcce9bc7ce87f25ae830f2e2951b58588bd2813f96f5b4d5"}
+}
