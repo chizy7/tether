@@ -10,15 +10,34 @@ rust-version.workspace = true
 [dependencies]
 tether-core = { workspace = true }
 tether-types = { workspace = true }
+tether-policy = { workspace = true }
+tether-sandbox = { workspace = true }
+tether-mcp = { workspace = true }
+tether-models = { workspace = true }
+tether-trace = { workspace = true }
 tokio = { workspace = true }
+tokio-stream = { workspace = true }
 anyhow = { workspace = true }
+async-trait = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-# tonic = { workspace = true }
-# prost = { workspace = true }
+tonic = { workspace = true }
+tonic-prost = { workspace = true }
+prost = { workspace = true }
+# For the client side of the Unix socket: `connect`.
+hyper-util = { version = "0.1", features = ["tokio"] }
+tower = { version = "0.5", features = ["util"] }
 
-# [build-dependencies]
-# tonic-build = "0.14"
+[build-dependencies]
+tonic-prost-build = "0.14"
+# A protoc binary shipped as a crate, so the build needs no system install.
+protoc-bin-vendored = "3"
+
+[dev-dependencies]
+tempfile = "3"
 
 [lints]
 workspace = true

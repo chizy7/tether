@@ -28,7 +28,7 @@ thiserror = "2"
 anyhow = "1"
 blake3 = "1"
 async-trait = "0.1"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "fs", "process", "signal", "time", "io-util"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "fs", "process", "signal", "time", "io-util", "net"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4", features = ["derive"] }
@@ -36,6 +36,8 @@ toml = "1"
 rusqlite = { version = "0.43", features = ["bundled"] }
 tonic = "0.14"
 prost = "0.14"
+tonic-prost = "0.14"
+tokio-stream = { version = "0.1", features = ["net"] }
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2"] }
 
 # Internal crates

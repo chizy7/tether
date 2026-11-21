@@ -1195,3 +1195,73 @@ fn a_tar_that_is_not_a_packed_trace_is_refused() {
     }
     assert!(fs::read_dir(&dir).expect("read dir").count() == 1);
 }
+
+#[cfg(unix)]
+#[test]
+fn run_with_a_command_starts_the_daemon_and_tells_the_agent_where_it_is() {
+    // A short directory: a Unix socket path has a small length limit.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let out_dir = dir.path().join("t");
+    let policy = dir.path().join("tether.toml");
+    fs::write(&policy, POLICY).expect("write policy");
+
+    // The "agent" checks what it was given and exits with a status of its own.
+    let agent = r#"test -S "$TETHER_SOCKET" || exit 3; echo "socket=$TETHER_SOCKET"; echo "dir=$TETHER_DIR"; echo "policy=$TETHER_POLICY"; exit 7"#;
+    let out = Command::new(env!("CARGO_BIN_EXE_tether"))
+        .arg("run")
+        .arg("--policy")
+        .arg(&policy)
+        .arg("--dir")
+        .arg(&out_dir)
+        .args(["--", "sh", "-c", agent])
+        .env("TETHER_IDLE_SECS", "1")
+        .output()
+        .expect("run tether");
+    // The agent's status is tether's.
+    assert_eq!(out.status.code(), Some(7), "{out:?}");
+
+    let said = String::from_utf8_lossy(&out.stdout);
+    let real = out_dir.canonicalize().expect("canonicalize");
+    let socket = real.join("tetherd.sock");
+    assert!(
+        said.contains(&format!("socket={}", socket.display())),
+        "{said}"
+    );
+    assert!(said.contains(&format!("dir={}", real.display())), "{said}");
+    assert!(
+        said.contains(&format!(
+            "policy={}",
+            policy.canonicalize().expect("canonicalize").display()
+        )),
+        "{said}"
+    );
+    assert!(real.join("tetherd.log").is_file());
+
+    // With no run, the daemon the command started exits by itself.
+    let mut gone = false;
+    for _ in 0..100 {
+        gone = !socket.exists();
+        if gone {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    assert!(gone, "the daemon outlived its idle time");
+}
+
+#[test]
+fn run_needs_a_script_or_a_command_and_not_both() {
+    let out = tether(&["run"]);
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("--script"),
+        "{out:?}"
+    );
+
+    let out = tether(&["run", "--script", "s.json", "--", "true"]);
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("cannot be used with"),
+        "{out:?}"
+    );
+}

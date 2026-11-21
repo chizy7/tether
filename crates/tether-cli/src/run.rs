@@ -233,3 +233,76 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
     println!("finished: {answer}");
     Ok(())
 }
+
+/// How long to wait for a daemon just started to answer on its socket.
+const DAEMON_START: Duration = Duration::from_secs(10);
+
+/// Run `command` as the agent, with the daemon up for it to talk to.
+/// Returns the command's exit status.
+///
+/// The daemon is this same binary, started in the background if nothing
+/// answers on `<dir>/tetherd.sock`. It outlives this command and exits by
+/// itself once it has been idle. Its output goes to `<dir>/tetherd.log`.
+pub async fn run_command(
+    command: &[String],
+    policy: Option<&Path>,
+    dir: &Path,
+) -> anyhow::Result<i32> {
+    let Some((program, args)) = command.split_first() else {
+        anyhow::bail!("give a script with --script, or the agent's command after --");
+    };
+    std::fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
+    let dir = dir.canonicalize()?;
+    let socket = dir.join("tetherd.sock");
+
+    if tetherd::connect(&socket).await.is_err() {
+        let log = std::fs::File::create(dir.join("tetherd.log"))?;
+        let idle = std::env::var("TETHER_IDLE_SECS")
+            .unwrap_or_else(|_| tetherd::DEFAULT_IDLE.as_secs().to_string());
+        let mut daemon = std::process::Command::new(std::env::current_exe()?);
+        daemon
+            .arg("daemon")
+            .arg("--socket")
+            .arg(&socket)
+            .args(["--idle-secs", &idle])
+            .stdin(std::process::Stdio::null())
+            .stdout(log.try_clone()?)
+            .stderr(log);
+        // Its own process group, so Ctrl-C meant for the agent does not
+        // take the daemon, and the runs it holds, down with it.
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            daemon.process_group(0);
+        }
+        daemon.spawn().context("starting the daemon")?;
+        let started = std::time::Instant::now();
+        while tetherd::connect(&socket).await.is_err() {
+            if started.elapsed() > DAEMON_START {
+                anyhow::bail!(
+                    "the daemon did not come up on {}; see {}",
+                    socket.display(),
+                    dir.join("tetherd.log").display()
+                );
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    }
+
+    let mut agent = tokio::process::Command::new(program);
+    agent
+        .args(args)
+        .env("TETHER_SOCKET", &socket)
+        .env("TETHER_DIR", &dir);
+    if let Some(policy) = policy {
+        let policy = policy
+            .canonicalize()
+            .with_context(|| format!("policy {}", policy.display()))?;
+        agent.env("TETHER_POLICY", policy);
+    }
+    let status = agent
+        .status()
+        .await
+        .with_context(|| format!("running {program}"))?;
+    Ok(status.code().unwrap_or(1))
+}

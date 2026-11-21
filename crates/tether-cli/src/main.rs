@@ -24,19 +24,35 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Run a scripted agent under a policy, asking at the terminal when
-    /// policy says `ask`.
+    /// Run an agent under a policy.
+    ///
+    /// With `--script`, the agent is a script: a task and the model's
+    /// replies, played by tether itself, asking at the terminal when policy
+    /// says `ask`. With a command after `--`, the agent is that program: the
+    /// daemon is started if it is not running and the program is told where
+    /// to find it, in TETHER_SOCKET, TETHER_DIR and TETHER_POLICY.
     Run {
         /// JSON script: `{"task": "...", "replies": [[<content block>, ...], ...]}`,
         /// one list of blocks per model turn.
-        #[arg(long)]
-        script: PathBuf,
+        #[arg(long, conflicts_with = "command")]
+        script: Option<PathBuf>,
         /// Policy file. Without one there are no rules, so every call asks.
         #[arg(long)]
         policy: Option<PathBuf>,
         /// Where the trace and the sandbox workspace go.
         #[arg(long, default_value = ".tether")]
         dir: PathBuf,
+        /// The agent program and its arguments.
+        #[arg(last = true)]
+        command: Vec<String>,
+    },
+    /// Serve the daemon on a socket. Started by `tether run -- <command>`.
+    #[command(hide = true)]
+    Daemon {
+        #[arg(long)]
+        socket: PathBuf,
+        #[arg(long, default_value_t = tetherd::DEFAULT_IDLE.as_secs())]
+        idle_secs: u64,
     },
     /// Re-run a recorded trace, answering it from the recording: no network
     /// and no cost. Policy is evaluated again, so `--policy` shows what a
@@ -110,10 +126,24 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let result = match cli.cmd {
         Cmd::Run {
-            script,
+            script: Some(script),
             policy,
             dir,
+            ..
         } => run::run(&script, policy.as_deref(), &dir).await,
+        Cmd::Run {
+            script: None,
+            policy,
+            dir,
+            command,
+        } => {
+            let status = run::run_command(&command, policy.as_deref(), &dir).await?;
+            // The agent's exit status is this command's.
+            std::process::exit(status)
+        }
+        Cmd::Daemon { socket, idle_secs } => {
+            tetherd::serve(&socket, std::time::Duration::from_secs(idle_secs)).await
+        }
         Cmd::Inspect { run } => pack::open(&run).and_then(|trace| inspect(trace.path())),
         Cmd::Verify { run } => pack::open(&run).and_then(|trace| verify_trace(trace.path())),
         Cmd::Diff { a, b } => match diff_either(&a, &b) {

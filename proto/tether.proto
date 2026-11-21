@@ -11,22 +11,36 @@ service Tether {
   rpc Complete(ModelRequest) returns (ModelResponse);
   // Agent asks for a tool. Policy, sandbox and trace all happen here.
   rpc CallTool(ToolCallRequest) returns (ToolResult);
-  // Tail the trace.
+  // The agent is done. Records run.finished and closes the trace.
+  rpc Finish(FinishRequest) returns (Empty);
+  // Tail the trace: every event so far, then each new one until the run ends.
   rpc Events(RunRef) returns (stream Event);
-  // Resolve a policy.ask.
+  // Resolve a policy.ask. The Complete or CallTool that asked is waiting.
   rpc Answer(AskAnswer) returns (Empty);
+  // Trip the run's kill switch. It halts at its next event boundary.
   rpc Halt(RunRef) returns (Empty);
 }
+
+// Errors are gRPC statuses:
+//   NOT_FOUND            no such run
+//   INVALID_ARGUMENT     a field that is not valid JSON, an unknown tool name
+//   FAILED_PRECONDITION  the run is halted or finished; the message says why
+//   UNIMPLEMENTED        a sandbox or provider this build does not have
+//   INTERNAL             the trace could not be written
 
 message Empty {}
 
 message RunRef { string run_id = 1; }
 
 message CreateRunRequest {
-  string agent = 1;
-  string policy_path = 2;
-  string sandbox = 3;       // process | docker | firecracker
-  string workspace = 4;
+  string agent = 1;         // default "main"
+  string policy_path = 2;   // empty: no rules, so every call asks
+  string sandbox = 3;       // process (default) | docker | firecracker
+  string workspace = 4;     // default <dir>/<run_id>.workspace
+  string provider = 5;      // anthropic (default) | fake
+  string script_path = 6;   // for provider "fake": the replies, as in `tether run --script`
+  string dir = 7;           // where the trace goes; default .tether
+  repeated string betas = 8; // provider beta headers a params field needs
 }
 
 message Run {
@@ -45,17 +59,20 @@ message ToolSpec {
 message ModelRequest {
   string run_id = 1;
   string model = 2;
-  string messages_json = 3;   // provider-neutral messages, JSON
-  repeated string tools = 4;
-  string params_json = 5;
+  string messages_json = 3;   // a JSON list of messages in Tether's form
+  repeated string tools = 4;  // names from Run.tools to offer the model
+  string params_json = 5;     // the provider request's other fields; empty for none
 }
 
 message ModelResponse {
-  string message_json = 1;
+  string message_json = 1;    // the reply; append it to the history unchanged
   repeated ToolCall tool_calls = 2;
   uint64 input_tokens = 3;
   uint64 output_tokens = 4;
-  uint64 latency_ms = 5;
+  reserved 5;                 // was latency_ms; timings are in the trace
+  string stop_reason = 6;     // the provider's word; empty if it gave none
+  uint64 cache_read_tokens = 7;
+  uint64 cache_write_tokens = 8;
 }
 
 message ToolCall {
@@ -76,6 +93,11 @@ message ToolResult {
   uint64 duration_ms = 4;
 }
 
+message FinishRequest {
+  string run_id = 1;
+  string outcome_json = 2;    // any JSON; empty for null
+}
+
 message Event {
   uint64 seq = 1;
   string type = 2;
@@ -84,7 +106,7 @@ message Event {
 
 message AskAnswer {
   string run_id = 1;
-  uint64 subject_seq = 2;
+  uint64 subject_seq = 2;    // seq of the tool.call or model.request asked about
   bool allow = 3;
-  string answered_by = 4;
+  string answered_by = 4;    // default "sdk"
 }

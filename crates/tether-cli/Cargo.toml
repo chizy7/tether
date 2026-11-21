@@ -19,6 +19,7 @@ tether-policy = { workspace = true }
 tether-sandbox = { workspace = true }
 tether-mcp = { workspace = true }
 tether-models = { workspace = true }
+tetherd = { path = "../tetherd" }
 async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

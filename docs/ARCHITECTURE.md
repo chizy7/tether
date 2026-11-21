@@ -520,6 +520,54 @@ TypeScript SDKs are thin clients. The agent replaces two call sites: its
 provider SDK call becomes `Complete`, its tool dispatch becomes `CallTool`.
 `tetherd` starts on demand and exits after its last run.
 
+| RPC | What it does |
+| --- | --- |
+| `CreateRun` | Starts a run: policy file, provider, sandbox, where the trace goes. Returns the run id, trace path and tool list |
+| `Complete` | One model turn. Messages are a JSON list in Tether's form; the reply comes back as JSON to append unchanged |
+| `CallTool` | One tool call, through policy and the sandbox. A denied call comes back as a result with `is_error` |
+| `Finish` | The agent is done: records `run.finished` |
+| `Events` | Streams the trace: every event so far, then each new one until the run ends |
+| `Answer` | Resolves a `policy.ask`. The `Complete` or `CallTool` that asked is waiting on it |
+| `Halt` | Trips the run's kill switch; with no call in flight the run halts at once |
+
+An SDK holds no logic beyond mapping types. Messages, params, tool arguments
+and results cross as JSON strings, so the proto does not have to follow every
+provider's message shape. Errors are gRPC statuses: `NOT_FOUND` for an
+unknown run, `INVALID_ARGUMENT` for bad JSON or an unknown tool,
+`FAILED_PRECONDITION` for a run that is halted or finished, with the reason
+in the message.
+
+The daemon (`tetherd --socket <path> [--idle-secs N]`):
+
+- **Socket.** `$TETHER_SOCKET`, else `.tether/tetherd.sock`, readable and
+  writable by its owner only, since whoever can reach it can run tools as
+  that user. A leftover socket file nobody answers is replaced; if a daemon
+  already answers there, a second one exits and leaves it to the first.
+- **Lifetime.** It exits, and removes its socket, once it has had no run in
+  progress and no event stream open for the idle period (10 s by default).
+  That covers both a daemon started and never used and one whose last run is
+  over.
+- **Runs.** One call at a time per run. `Answer` and `Halt` do not wait
+  behind a call in flight, which is what lets them reach a run that is
+  suspended on an ask.
+- **Build.** The service is generated from the proto at build time with a
+  `protoc` binary shipped as a crate, so `cargo build` needs no system
+  install.
+
+`tether run [--policy <file>] [--dir <dir>] -- <command>` is the on-demand
+start from the CLI: it starts the daemon if nothing answers on
+`<dir>/tetherd.sock`, runs the command as the agent with `TETHER_SOCKET`,
+`TETHER_DIR` and `TETHER_POLICY` set, and exits with the command's status.
+The daemon it starts is the `tether` binary itself (a hidden `daemon`
+subcommand calling the same `tetherd::serve`), in its own process group so
+Ctrl-C meant for the agent does not take it down, logging to
+`<dir>/tetherd.log`.
+
+Limits today: the daemon has only the `process` sandbox and the `anthropic`
+and `fake` providers; a run whose client disappears without `Finish` or
+`Halt` stays in progress and keeps the daemon up; and an ask from a run with
+no rules waits its full timeout unless something calls `Answer`.
+
 ## Crate graph
 
 ```
@@ -534,7 +582,9 @@ policy sandbox mcp models trace
 
 Dependencies point down only. Leaf crates never import each other or
 `tether-core`; `tether-cli` also reads traces directly via `tether-trace` for
-`inspect`, `diff` and `verify` without a daemon.
+`inspect`, `diff` and `verify` without a daemon. `tether-cli` also links
+`tetherd` as a library, for the one function that serves the daemon, so that
+`tether run -- <command>` can start it without a second binary to find.
 
 ## Decisions
 
