@@ -52,6 +52,27 @@ jobs:
       # The committed gRPC stubs must match the proto.
       - run: sh sdks/python/scripts/gen_proto.sh && git diff --exit-code sdks/python/src/tether/_proto
 
+  typescript-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+      # The SDK's tests drive a real daemon.
+      - run: cargo build -p tetherd
+      - run: npm ci
+        working-directory: sdks/typescript
+      - run: npm test
+        working-directory: sdks/typescript
+      # The example, with the scripted model, against the SDK just built.
+      - run: npm install
+        working-directory: examples/raw-loop-ts
+      - run: PATH="$GITHUB_WORKSPACE/target/debug:$PATH" npm start
+        working-directory: examples/raw-loop-ts
+
   msrv:
     runs-on: ubuntu-latest
     steps:

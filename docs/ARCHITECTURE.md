@@ -750,6 +750,16 @@ committed, so installing it needs no protoc. `examples/raw-loop-py` is the
 Python twin of `examples/raw-loop`: the two agents leave traces that
 `tether diff` finds no divergence between.
 
+The TypeScript SDK (`sdks/typescript`, package `tether-agents` on npm) is the
+same client with JavaScript's spelling: `Run.start(...)`, `run.complete`,
+`run.callTool`, `run.tools`, `finish`, `halt`, `answer`, and `events` as an
+async iterator. Where Python has a context manager it has
+`withRun(options, fn)`, which finishes the run when `fn` returns and halts it
+when `fn` throws. It uses `@grpc/grpc-js` and loads the service definition at
+start from a copy of `proto/tether.proto` shipped in the package, so it has
+no generated code. `examples/raw-loop-ts` is the third twin, and its trace
+diffs clean against the other two.
+
 One thing every client over a Unix socket must do: name an HTTP/2 authority.
 gRPC clients default to sending the socket's path, which the daemon's HTTP
 stack rejects. The SDK sets `localhost`.

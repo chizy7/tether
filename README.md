@@ -21,8 +21,8 @@ can replay, diff and eval against.
 > (also on `master`) sends a trace to an OpenTelemetry collector as spans. `tether resume` carries a halted or crashed
 > run on from its last checkpoint, and `tether pack` puts a trace and its
 > blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
-> for agents in other languages, and the Python SDK in `sdks/python` is the
-> first client.
+> for agents in other languages, with a Python SDK in `sdks/python` and a
+> TypeScript one in `sdks/typescript` (on `master`, not yet on npm).
 > Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
 
 ![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)

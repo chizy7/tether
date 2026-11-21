@@ -1,0 +1,9 @@
+{
+  "replies": [
+    [{"type": "tool_use", "id": "call_1", "name": "write_file",
+      "arguments": {"path": "hello.txt", "content": "hello from a wrapped agent\n"}}],
+    [{"type": "tool_use", "id": "call_2", "name": "exec",
+      "arguments": {"argv": ["cat", "hello.txt"]}}],
+    [{"type": "text", "text": "Wrote hello.txt and read it back."}]
+  ]
+}
