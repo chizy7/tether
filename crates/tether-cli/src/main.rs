@@ -6,6 +6,7 @@ use tether_trace::{verify, TraceReader};
 use tether_types::{Decision, Event, EventType, Payload};
 
 mod diff;
+mod eval;
 mod pack;
 mod replay;
 mod resume;
@@ -70,6 +71,11 @@ enum Cmd {
         /// Replace the system prompt of every replayed request.
         #[arg(long)]
         system: Option<String>,
+        /// Ask this model instead of the recorded one, through the same
+        /// provider. The recording has no answer from it, so this needs
+        /// `--live-after-divergence`.
+        #[arg(long, requires = "live_after_divergence")]
+        model: Option<String>,
         /// When the replay asks for something the recording does not have,
         /// carry on live: the real model, and real tools in a fresh
         /// workspace beside the new trace.
@@ -83,8 +89,34 @@ enum Cmd {
     /// paths of two `<run>.jsonl`. Exits 0 if they agree, 1 if they diverge
     /// and 2 if either cannot be read.
     Diff { a: String, b: String },
-    /// Run a suite of recorded tasks and score outcomes.
-    Eval,
+    /// Replay every recorded task in a suite and check each against the
+    /// assertions in the suite's `eval.toml`. With `--system` or `--model`
+    /// each task is asked again under the change, live from the first
+    /// request that differs, so this makes real, billed model calls. Exits 0
+    /// if every task passes, 1 if any fails and 2 if the suite cannot be run.
+    Eval {
+        /// A directory of recorded traces (`.jsonl` or packed `.tar`) and
+        /// an `eval.toml`.
+        suite: PathBuf,
+        /// Replace the system prompt of every request.
+        #[arg(long)]
+        system: Option<String>,
+        /// Ask this model instead of the recorded one, through the same
+        /// provider.
+        #[arg(long)]
+        model: Option<String>,
+        /// Hold every task to this policy instead of its recorded one.
+        #[arg(long)]
+        policy: Option<PathBuf>,
+        /// Where the new traces go. Default: `<suite>/.eval`, replaced on
+        /// each run.
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// A directory of scripts, `<task>.json` each, to stand in for the
+        /// live model, as in `tether run --script`. For tests and demos.
+        #[arg(long)]
+        scripts: Option<PathBuf>,
+    },
     /// Print a trace in readable form. Takes the path of a `<run>.jsonl`.
     Inspect { run: String },
     /// Continue a halted or crashed run from its last checkpoint, appending
@@ -160,6 +192,7 @@ async fn main() -> anyhow::Result<()> {
             out,
             policy,
             system,
+            model,
             live_after_divergence,
             script,
         } => {
@@ -168,8 +201,10 @@ async fn main() -> anyhow::Result<()> {
                 out,
                 policy,
                 system,
+                model,
                 live: live_after_divergence,
                 script,
+                attended: true,
             };
             match replay::replay(options).await {
                 // The replay left the recording and had nothing to carry on with.
@@ -181,7 +216,31 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Resume { run, script } => resume::resume(&run, script.as_deref()).await,
         Cmd::Pack { run, out } => pack::pack(&run, out.as_deref()),
         Cmd::Unpack { tar, dir } => pack::unpack(&tar, dir.as_deref()),
-        Cmd::Eval => todo!("v0.4"),
+        Cmd::Eval {
+            suite,
+            system,
+            model,
+            policy,
+            out,
+            scripts,
+        } => {
+            let options = eval::Options {
+                suite,
+                system,
+                model,
+                policy,
+                out,
+                scripts,
+            };
+            match eval::eval(options).await {
+                Ok(true) => Ok(()),
+                Ok(false) => std::process::exit(1),
+                Err(e) => {
+                    eprintln!("Error: {e:#}");
+                    std::process::exit(2)
+                }
+            }
+        }
     };
     match result {
         // The reader went away, as in `tether inspect run.jsonl | head`.

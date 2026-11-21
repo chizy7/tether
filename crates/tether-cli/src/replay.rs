@@ -29,8 +29,27 @@ pub struct Options {
     pub out: Option<PathBuf>,
     pub policy: Option<PathBuf>,
     pub system: Option<String>,
+    /// Ask this model instead of the recorded one. The recording has no
+    /// answer from it, so the replay leaves the recording at the first
+    /// request.
+    pub model: Option<String>,
     pub live: bool,
     pub script: Option<PathBuf>,
+    /// Whether an ask made live goes to the terminal. If not, it goes
+    /// unanswered and halts the run.
+    pub attended: bool,
+}
+
+/// What a replay did.
+pub struct Replayed {
+    /// The trace it wrote.
+    pub out: PathBuf,
+    /// Why it left the recording, if it did.
+    pub diverged: Option<String>,
+    /// Whether it carried on live after leaving the recording.
+    pub carried_on: bool,
+    /// The error that stopped the run, if one did.
+    pub stopped: Option<String>,
 }
 
 /// The model to carry on with after a divergence: the script if one was
@@ -152,9 +171,8 @@ pub(crate) async fn carry_on(run: &mut Run, mut turn: Turn) -> Result<String, Ru
     }
 }
 
-/// Replay `options.run`. `Ok(false)` when the replay left the recording and
-/// stopped there.
-pub async fn replay(options: Options) -> anyhow::Result<bool> {
+/// Replay `options.run` and say what happened, printing nothing.
+pub async fn run(options: &Options) -> anyhow::Result<Replayed> {
     // A packed trace is replayed from a scratch copy; the new trace still
     // goes beside the tar.
     let opened = crate::pack::open(&options.run.to_string_lossy())?;
@@ -184,7 +202,11 @@ pub async fn replay(options: Options) -> anyhow::Result<bool> {
         let tools: Arc<dyn McpClient> =
             Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
         live.tools = Some(tools);
-        live.answerer = Some(Arc::new(TerminalAnswerer::default()));
+        live.answerer = Some(if options.attended {
+            Arc::new(TerminalAnswerer::default())
+        } else {
+            Arc::new(tether_core::Unattended)
+        });
         sandbox_ref = Some(SandboxRef { sandbox, handle });
     }
     let parts = recording.parts(live)?;
@@ -199,7 +221,11 @@ pub async fn replay(options: Options) -> anyhow::Result<bool> {
         (None, None) => parts.recorded_policy.clone(),
     };
 
-    trip_on_sigint(&parts.kill);
+    // An unattended replay is one of many in `tether eval`, which handles
+    // Ctrl-C for all of them.
+    if options.attended {
+        trip_on_sigint(&parts.kill);
+    }
     let config = RunConfig {
         checkpoint_every: recording.checkpoint_every(),
         ..RunConfig::new(RunId(format!("{original}-replay")), &out)
@@ -231,6 +257,17 @@ pub async fn replay(options: Options) -> anyhow::Result<bool> {
                 let mut request = recording.completion_request(recorded)?;
                 if let Some(system) = &options.system {
                     set_system(&mut request.messages, system);
+                }
+                if let Some(model) = &options.model {
+                    if *model != request.model {
+                        // Requests are matched on their messages alone, so a
+                        // changed model has to be said to be a divergence.
+                        parts.state.diverge(format!(
+                            "the model was changed from {} to {model}",
+                            request.model
+                        ));
+                        request.model.clone_from(model);
+                    }
                 }
                 match run.complete(request.clone()).await {
                     Ok(reply) => {
@@ -291,19 +328,35 @@ pub async fn replay(options: Options) -> anyhow::Result<bool> {
         }
     }
 
-    println!("replayed {} to {}", options.run.display(), out.display());
-    match &diverged {
+    Ok(Replayed {
+        out,
+        diverged,
+        carried_on,
+        stopped: stopped.map(|error| error.to_string()),
+    })
+}
+
+/// Replay `options.run` and report on it. `Ok(false)` when the replay left
+/// the recording and stopped there.
+pub async fn replay(options: Options) -> anyhow::Result<bool> {
+    let done = run(&options).await?;
+    println!(
+        "replayed {} to {}",
+        options.run.display(),
+        done.out.display()
+    );
+    match &done.diverged {
         None => println!("every request was answered from the recording"),
-        Some(why) if carried_on => println!("left the recording and carried on live: {why}"),
+        Some(why) if done.carried_on => println!("left the recording and carried on live: {why}"),
         Some(why) => println!("left the recording and stopped: {why}"),
     }
-    if let Some(error) = &stopped {
+    if let Some(error) = &done.stopped {
         println!("{error}");
     }
     println!(
         "compare with: tether diff {} {}",
         options.run.display(),
-        out.display()
+        done.out.display()
     );
-    Ok(diverged.is_none() || carried_on)
+    Ok(done.diverged.is_none() || done.carried_on)
 }

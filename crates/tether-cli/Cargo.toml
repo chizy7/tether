@@ -23,6 +23,7 @@ tetherd = { path = "../tetherd", default-features = false }
 async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+toml = { workspace = true }
 tempfile = "3"
 clap = { workspace = true }
 tokio = { workspace = true }

@@ -7,14 +7,17 @@ you the things frameworks leave out: a sandbox, hard budgets, a permission
 layer, and a trace of every model call, tool call and policy decision that you
 can replay, diff and eval against.
 
-> Status: pre-alpha, v0.3 "it replays" in progress. `tether run` plays a
+> Status: pre-alpha. v0.3 "it replays" is released; v0.4 "it evals" is in
+> progress. `tether run` plays a
 > scripted agent under a policy file: rules allow, deny or ask at the terminal,
 > budgets halt the run, tools run in a sandbox, and every decision lands in a
 > verifiable trace that `tether inspect` and `tether verify` read. Real model
 > calls go through the Anthropic adapter, or the `openai_compat` adapter for
 > any server with an OpenAI-style chat completions endpoint. `tether replay` runs a recorded trace again with no network
 > and no cost, optionally under a changed policy or prompt, and `tether diff`
-> shows where two runs diverge. `tether resume` carries a halted or crashed
+> shows where two runs diverge. `tether eval` (on `master`, not yet in a
+> release) replays a suite of recorded tasks under a new prompt or model and
+> checks each against assertions over its trace. `tether resume` carries a halted or crashed
 > run on from its last checkpoint, and `tether pack` puts a trace and its
 > blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
 > for agents in other languages, and the Python SDK in `sdks/python` is the

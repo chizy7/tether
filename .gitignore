@@ -4,6 +4,7 @@
 *.blobs/
 *.halt
 .tether/
+.eval/
 .env
 .DS_Store
 node_modules/

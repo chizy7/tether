@@ -538,6 +538,76 @@ is fine at 100k events and heavy at a million, and an index would not change
 it. The fix, when a trace that long turns up, is for `diff` to keep only the
 fields it compares as it reads.
 
+### Eval
+
+`tether eval <suite>` replays a suite of recorded tasks and checks each new
+trace against assertions. It is replay, diff and a table: there is no eval
+state and nothing in `tether-core` knows about it.
+
+A suite is a directory:
+
+```
+suite/
+  eval.toml
+  write-hello.jsonl        a recorded task, named by its file
+  write-hello.blobs/
+  count-lines.tar          or a packed one
+```
+
+```toml
+# eval.toml
+[defaults]                 # for every task
+no_deny = true
+max_steps = 8
+
+[task.write-hello]         # for one task; a field here replaces the default
+outcome = "hello.txt"
+max_usd = 0.05
+tool_called = ["write_file"]
+tool_not_called = ["exec"]
+file_contains = [{ path = "hello.txt", text = "hello" }]
+```
+
+Each task is replayed as `tether replay` would, into `<suite>/.eval/` or
+`--out`. With `--system` or `--model` the replay runs with
+`--live-after-divergence`, so the task is asked again under the change from
+the first request that differs, with real tools in a fresh workspace. Those
+calls are billed. With neither, nothing goes live and no credentials are
+needed: the suite checks its own recordings. `--policy` holds every task to
+another policy. An ask made live goes unanswered, since nobody is attending
+twenty tasks, so it halts that task.
+
+`--model` asks a different model through the recorded provider. A request is
+matched to the recording by its messages alone, so the changed model is
+declared a divergence at the first request; `tether replay` takes the same
+flag.
+
+Assertions read the new trace and nothing else: no workspace is inspected and
+no model judges the answer.
+
+| Assertion | Passes when |
+| --- | --- |
+| (always) | the run's last state is `finished` |
+| `outcome` | the outcome in `run.finished` contains the text |
+| `max_steps` | the highest step is at most this |
+| `max_usd` | `usd_used` in the last `budget.tick` is at most this |
+| `no_deny` | no `policy.decision` is a deny and no `policy.answer` is a no |
+| `tool_called` | each named tool has a `tool.call`; `write_file` or `sandbox.write_file` |
+| `tool_not_called` | none of the named tools has one |
+| `file_contains` | the last successful `write_file` call to the path has the text in its content |
+
+`file_contains` sees only what `write_file` wrote. A file made or changed by
+a command is not in the trace as content, so it cannot be asserted on. The
+cost of a task is the whole run's: replayed calls keep their recorded price
+and live calls are priced as they happen.
+
+The output is one row per task (pass or fail, steps, cost, and where the new
+trace first diverges from the recording), then each failed assertion in
+words, then totals. The exit code is 0 when every task passes, 1 when any
+fails and 2 when the suite cannot be run. A task that cannot be replayed
+fails; the others still run. `--scripts <dir>` gives each task a scripted
+stand-in for the live model, for tests and demos.
+
 ### Timings under replay
 
 Four things in a trace come from live clock reads, so a replay that measured
