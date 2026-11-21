@@ -37,11 +37,7 @@ pub mod run;
 mod trace_task;
 
 pub use ask::{Answerer, AskOutcome, AskRequest, Unattended};
-pub use run::{Run, RunConfig, RunDeps, RunError};
-
-pub mod checkpoint {
-    //! `checkpoint` events every N steps; resume from the last one.
-}
+pub use run::{Run, RunConfig, RunDeps, RunError, SandboxRef};
 
 pub mod replay {
     //! Re-run a trace with the replay adapter and a replay sandbox.

@@ -66,7 +66,7 @@ history is never copied.
 
 | `type` | `data` |
 | --- | --- |
-| `run.created` | agent id, model config, `policy` (the full text of the policy TOML as one string, byte for byte; null when the policy did not come from a file), sandbox backend, merged tool list, schema version |
+| `run.created` | agent id, model config, `policy` (the full text of the policy TOML as one string, byte for byte; null when the policy did not come from a file), `sandbox` (`{"backend": "process"}` or the like; null when the run has no sandbox), merged tool list, schema version |
 | `run.state` | `{state, reason}`; state is one of `created`, `running`, `suspended`, `halted`, `finished` |
 | `run.child` | `{child}` run id of a spawned sub-agent process |
 | `run.finished` | outcome, totals, final budget |
@@ -80,7 +80,7 @@ history is never copied.
 | `sandbox.exec` | command, cwd, env hash |
 | `sandbox.exit` | exit code, stdout and stderr refs |
 | `budget.tick` | tokens, usd, wall seconds, tool calls: used and limit (null limit means unlimited); after a priced model call also `price` `{usd, table}`, the cost of that call and the version of the pricing table it came from |
-| `checkpoint` | `step`, optional sandbox `snapshot` id |
+| `checkpoint` | `step` (the step just completed), `snapshot` (the sandbox backend's snapshot id, null when it cannot snapshot) |
 | `nondeterminism` | clock reads, random seeds, env lookups |
 | `ext.*` | anything; ignored by replay and diff |
 
@@ -117,6 +117,11 @@ a `run.state` of `halted` whose reason is `budget exceeded: <key> (<used> of
 The kill switch is checked at the same point, and while a run is suspended
 on an ask. Its halt reason is `kill switch: SIGINT` or `kill switch: halt
 file <path>`.
+
+A `checkpoint` is the last event of its step: it follows the step's final
+`budget.tick` and the next event is the `model.request` that opens the next
+step, or the `run.state` that halts the run. The trace up to and including
+it is the checkpoint. The final step of a finished run has none.
 
 `step` is 0 for the events before the first model request. Each
 `model.request` opens the next step.

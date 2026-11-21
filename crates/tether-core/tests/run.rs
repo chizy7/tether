@@ -6,7 +6,8 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use serde_json::json;
 use tether_core::{
-    Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, Unattended,
+    Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, SandboxRef,
+    Unattended,
 };
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::fake::FakeAdapter;
@@ -136,15 +137,12 @@ async fn start_with(
     policy: Arc<dyn Policy>,
     clock: Arc<StepClock>,
 ) -> Result<Run, RunError> {
-    let config = RunConfig {
-        run: RunId("run_test".into()),
-        agent: "main".into(),
-        trace: path.to_path_buf(),
-    };
+    let config = RunConfig::new(RunId("run_test".into()), path.to_path_buf());
     let deps = RunDeps {
         model,
         tools,
         policy,
+        sandbox: None,
         answerer: Arc::new(Unattended),
         kill: KillSwitch::new(),
         clock,
@@ -205,15 +203,12 @@ async fn ask_run(
 ) -> (PathBuf, Arc<EchoTools>, Run, Result<ToolResult, RunError>) {
     let path = trace_path(test);
     let tools = Arc::new(EchoTools::default());
-    let config = RunConfig {
-        run: RunId("run_test".into()),
-        agent: "main".into(),
-        trace: path.clone(),
-    };
+    let config = RunConfig::new(RunId("run_test".into()), path.clone());
     let deps = RunDeps {
         model: Arc::new(script()),
         tools: tools.clone(),
         policy: Arc::new(RulePolicy::from_toml(policy).expect("policy")),
+        sandbox: None,
         answerer,
         kill: KillSwitch::new(),
         clock: StepClock::new(),
@@ -285,6 +280,7 @@ async fn one_step_leaves_the_events_the_spec_promises() {
             "policy.decision",
             "tool.result",
             "budget.tick",
+            "checkpoint",
             "model.request",
             "policy.decision",
             "model.response",
@@ -295,7 +291,7 @@ async fn one_step_leaves_the_events_the_spec_promises() {
     );
     // Steps: setup is 0, each model request opens a new one.
     let steps: Vec<u64> = events.iter().map(|e| e.step).collect();
-    assert_eq!(steps, [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]);
+    assert_eq!(steps, [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]);
     // Answers point at what they answer.
     assert_eq!(events[4].parent, Some(2));
     assert_eq!(events[5].parent, Some(2));
@@ -330,7 +326,7 @@ async fn one_step_leaves_the_events_the_spec_promises() {
 
     // Chain holds and every message blob is present: 2 requests + 2 responses.
     let report = verify(&path).expect("verify");
-    assert_eq!((report.events, report.blobs), (16, 4));
+    assert_eq!((report.events, report.blobs), (17, 4));
 }
 
 #[tokio::test]
@@ -832,15 +828,12 @@ async fn kill_run(
 ) -> (PathBuf, Arc<EchoTools>, Run) {
     let path = trace_path(test);
     let tools = Arc::new(EchoTools::default());
-    let config = RunConfig {
-        run: RunId("run_test".into()),
-        agent: "main".into(),
-        trace: path.clone(),
-    };
+    let config = RunConfig::new(RunId("run_test".into()), path.clone());
     let deps = RunDeps {
         model: Arc::new(script()),
         tools: tools.clone(),
         policy,
+        sandbox: None,
         answerer,
         kill,
         clock: StepClock::new(),
@@ -936,15 +929,12 @@ impl McpClient for TripsWhileRunning {
 async fn a_call_in_flight_when_the_switch_trips_is_finished_and_recorded() {
     let path = trace_path("kill_in_flight");
     let kill = KillSwitch::new();
-    let config = RunConfig {
-        run: RunId("run_test".into()),
-        agent: "main".into(),
-        trace: path.clone(),
-    };
+    let config = RunConfig::new(RunId("run_test".into()), path.clone());
     let deps = RunDeps {
         model: Arc::new(script()),
         tools: Arc::new(TripsWhileRunning { kill: kill.clone() }),
         policy: Arc::new(AllowAll),
+        sandbox: None,
         answerer: Arc::new(Unattended),
         kill,
         clock: StepClock::new(),
@@ -971,7 +961,9 @@ async fn a_call_in_flight_when_the_switch_trips_is_finished_and_recorded() {
             "policy.decision",
             "tool.result",
             "budget.tick",
-            "run.state"
+            // The step was complete, so it is checkpointed before the halt.
+            "checkpoint",
+            "run.state",
         ]
     );
     verify(&path).expect("verify");
@@ -1072,4 +1064,227 @@ async fn a_priced_call_records_its_price_and_stop_reason() {
         panic!("not a budget.tick")
     };
     assert_eq!((price.as_ref(), budget.usd_used), (None, 0.25));
+}
+
+/// A sandbox that only snapshots: `snap-1`, `snap-2`, and so on, or the
+/// given error every time.
+struct Snapshots {
+    taken: AtomicU64,
+    fail: Option<fn() -> tether_sandbox::SandboxError>,
+}
+
+impl Snapshots {
+    fn working() -> Arc<Self> {
+        Arc::new(Self {
+            taken: AtomicU64::new(0),
+            fail: None,
+        })
+    }
+
+    fn failing(fail: fn() -> tether_sandbox::SandboxError) -> Arc<Self> {
+        Arc::new(Self {
+            taken: AtomicU64::new(0),
+            fail: Some(fail),
+        })
+    }
+}
+
+#[async_trait]
+impl tether_sandbox::Sandbox for Snapshots {
+    fn backend(&self) -> &'static str {
+        "test"
+    }
+
+    async fn start(
+        &self,
+        _spec: &tether_sandbox::SandboxSpec,
+    ) -> tether_sandbox::Result<tether_sandbox::Handle> {
+        Ok(tether_sandbox::Handle("h".into()))
+    }
+
+    async fn exec(
+        &self,
+        _h: &tether_sandbox::Handle,
+        _cmd: tether_sandbox::Exec,
+    ) -> tether_sandbox::Result<tether_sandbox::ExecResult> {
+        Err(tether_sandbox::SandboxError::Unsupported("exec"))
+    }
+
+    async fn read(
+        &self,
+        _h: &tether_sandbox::Handle,
+        _path: &Path,
+    ) -> tether_sandbox::Result<Vec<u8>> {
+        Err(tether_sandbox::SandboxError::Unsupported("read"))
+    }
+
+    async fn write(
+        &self,
+        _h: &tether_sandbox::Handle,
+        _path: &Path,
+        _data: Vec<u8>,
+    ) -> tether_sandbox::Result<()> {
+        Err(tether_sandbox::SandboxError::Unsupported("write"))
+    }
+
+    async fn snapshot(
+        &self,
+        _h: &tether_sandbox::Handle,
+    ) -> tether_sandbox::Result<tether_sandbox::SnapshotId> {
+        let taken = self.taken.fetch_add(1, Ordering::SeqCst) + 1;
+        match self.fail {
+            Some(fail) => Err(fail()),
+            None => Ok(tether_sandbox::SnapshotId(format!("snap-{taken}"))),
+        }
+    }
+
+    async fn stop(&self, _h: tether_sandbox::Handle) -> tether_sandbox::Result<()> {
+        Ok(())
+    }
+}
+
+/// Run four model calls with a checkpoint every `every` steps and return
+/// the trace's events.
+async fn four_steps(test: &str, every: u64, sandbox: Option<Arc<Snapshots>>) -> Vec<Event> {
+    let path = trace_path(test);
+    let replies = ["a", "b", "c", "d"].map(Completion::text);
+    let deps = RunDeps {
+        model: Arc::new(FakeAdapter::new(replies)),
+        tools: Arc::new(EchoTools::default()),
+        policy: Arc::new(AllowAll),
+        sandbox: sandbox.map(|sandbox| SandboxRef {
+            sandbox,
+            handle: tether_sandbox::Handle("h".into()),
+        }),
+        answerer: Arc::new(Unattended),
+        kill: KillSwitch::new(),
+        clock: StepClock::new(),
+    };
+    let config = RunConfig {
+        checkpoint_every: every,
+        ..RunConfig::new(RunId("run_test".into()), &path)
+    };
+    let mut run = Run::start(config, deps).await.expect("start");
+    for turn in 0..4 {
+        run.complete(request(&format!("turn {turn}")))
+            .await
+            .expect("completion");
+    }
+    run.finish(json!("ok")).await.expect("finish");
+    verify(&path).expect("verify");
+    read(&path)
+}
+
+/// Each checkpoint as (step in the event, step on the envelope, snapshot).
+fn checkpoints(events: &[Event]) -> Vec<(u64, u64, Option<String>)> {
+    events
+        .iter()
+        .filter_map(|event| match &event.body {
+            EventType::Checkpoint { step, snapshot } => Some((*step, event.step, snapshot.clone())),
+            _ => None,
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn each_completed_step_is_checkpointed_with_a_sandbox_snapshot() {
+    let sandbox = Snapshots::working();
+    let events = four_steps("checkpoint_each", 1, Some(sandbox.clone())).await;
+
+    // Steps 1 to 3 are checkpointed as the next one begins. The last step
+    // has no next one: a finished run needs no checkpoint.
+    assert_eq!(
+        checkpoints(&events),
+        [
+            (1, 1, Some("snap-1".into())),
+            (2, 2, Some("snap-2".into())),
+            (3, 3, Some("snap-3".into())),
+        ]
+    );
+    assert_eq!(sandbox.taken.load(Ordering::SeqCst), 3);
+
+    // A checkpoint closes its step: the next event opens the next one.
+    for (at, event) in events.iter().enumerate() {
+        if matches!(event.body, EventType::Checkpoint { .. }) {
+            assert_eq!(type_of(&events[at - 1]), "budget.tick");
+            assert_eq!(type_of(&events[at + 1]), "model.request");
+            assert_eq!(events[at + 1].step, event.step + 1);
+        }
+    }
+
+    let EventType::RunCreated(created) = &events[0].body else {
+        panic!("not run.created")
+    };
+    assert_eq!(created["sandbox"], json!({"backend": "test"}));
+}
+
+#[tokio::test]
+async fn a_backend_that_cannot_snapshot_leaves_the_field_null() {
+    let unsupported = Snapshots::failing(|| tether_sandbox::SandboxError::Unsupported("snapshot"));
+    let events = four_steps("checkpoint_unsupported", 1, Some(unsupported)).await;
+    assert_eq!(
+        checkpoints(&events),
+        [(1, 1, None), (2, 2, None), (3, 3, None)]
+    );
+
+    // A snapshot that fails for another reason does not stop the run either.
+    let broken =
+        Snapshots::failing(|| tether_sandbox::SandboxError::Other("docker is down".into()));
+    let events = four_steps("checkpoint_broken", 1, Some(broken)).await;
+    assert_eq!(checkpoints(&events).len(), 3);
+    assert!(checkpoints(&events)
+        .iter()
+        .all(|(_, _, snapshot)| snapshot.is_none()));
+
+    // No sandbox at all: checkpoints still, and run.created says so.
+    let events = four_steps("checkpoint_no_sandbox", 1, None).await;
+    assert_eq!(checkpoints(&events).len(), 3);
+    let EventType::RunCreated(created) = &events[0].body else {
+        panic!("not run.created")
+    };
+    assert!(created["sandbox"].is_null());
+}
+
+#[tokio::test]
+async fn checkpoints_come_every_n_steps_and_zero_turns_them_off() {
+    let sandbox = Snapshots::working();
+    let events = four_steps("checkpoint_every_2", 2, Some(sandbox.clone())).await;
+    assert_eq!(checkpoints(&events), [(2, 2, Some("snap-1".into()))]);
+    // No snapshot is taken for a step that is not checkpointed.
+    assert_eq!(sandbox.taken.load(Ordering::SeqCst), 1);
+
+    let events = four_steps("checkpoint_every_3", 3, None).await;
+    assert_eq!(checkpoints(&events), [(3, 3, None)]);
+
+    let sandbox = Snapshots::working();
+    let events = four_steps("checkpoint_off", 0, Some(sandbox.clone())).await;
+    assert_eq!(checkpoints(&events), []);
+    assert_eq!(sandbox.taken.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn a_run_halted_between_steps_keeps_the_step_it_finished() {
+    let path = trace_path("checkpoint_before_halt");
+    let mut run = start(
+        &path,
+        Arc::new(EchoTools::default()),
+        budget("max_tokens = 15"),
+    )
+    .await
+    .expect("start");
+    // The first completion spends the whole token budget.
+    run.complete(request("one"))
+        .await
+        .expect("first completion");
+    run.complete(request("two")).await.expect_err("over budget");
+    drop(run);
+
+    // Step 1 was done, so it is checkpointed, and then the run halts.
+    let (reason, before) = halt_of(&path);
+    assert!(
+        reason.starts_with("budget exceeded: max_tokens"),
+        "{reason}"
+    );
+    assert_eq!(before, "checkpoint");
+    assert_eq!(checkpoints(&read(&path)), [(1, 1, None)]);
 }

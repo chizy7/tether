@@ -138,6 +138,7 @@ not sandbox. The sandbox enforces.
 ```rust
 #[async_trait]
 pub trait Sandbox: Send + Sync {
+    fn backend(&self) -> &'static str; // "process", "docker"
     async fn start(&self, spec: &SandboxSpec) -> Result<Handle>;
     async fn exec(&self, h: &Handle, cmd: Exec) -> Result<ExecResult>;
     async fn read(&self, h: &Handle, path: &Path) -> Result<Vec<u8>>;
@@ -294,7 +295,7 @@ sandbox tools are unaffected.
 
 All three re-run the core loop while feeding it recorded answers.
 
-- **Checkpoint:** every N steps (default 1) a `checkpoint` event with the step and, if supported, a sandbox `SnapshotId`. The trace up to that seq is the checkpoint.
+- **Checkpoint:** every N steps (default 1) a `checkpoint` event with the step and, if supported, a sandbox `SnapshotId`. The trace up to that seq is the checkpoint. See "Checkpoints" below.
 - **Resume:** read to the last checkpoint, restore the snapshot (or replay writes into a fresh sandbox), rebuild message history from `model.*` and `tool.*` events, continue live with `run.state = resumed`.
 - **Replay:** run the whole trace with the `replay` adapter and a replay sandbox; requests matched to recorded responses by content hash; no network, no cost. Policy is re-evaluated live, which is how a policy change is tested against old runs.
 - **Diff:** align two traces by step and report where model requests, tool calls or policy decisions diverge. See "Diff" below.
@@ -304,6 +305,29 @@ Where determinism breaks: a changed prompt stops replay at the divergence
 the recorded result and are never re-invoked; clock, random and env go through
 `Clock` and `Rng` traits satisfied from `nondeterminism` events; agent-side
 nondeterminism is out of scope and shows up in diff as the agent's own change.
+
+### Checkpoints
+
+A step is complete when the agent asks for its next completion, so that is
+when its checkpoint is written: after the step's last `budget.tick` and
+before the next `model.request`. It is written ahead of the kill switch and
+budget checks, so a run halted between steps still has the step it finished.
+A run halted inside a step resumes from the checkpoint before it. The last
+step of a finished run gets no checkpoint, because nothing resumes a finished
+run.
+
+`RunConfig::checkpoint_every` sets N; 0 writes none. `snapshot` is the
+sandbox's own state when the backend can capture it: an image id from
+`docker`, null from `process`, and null when a snapshot fails, which is
+logged and does not stop the run. With a null snapshot, resume rebuilds the
+sandbox by replaying the trace's writes.
+
+Each `docker` snapshot is a committed image, one per checkpoint, labelled
+`tether=snapshot`. They are not cleaned up; remove them with
+`docker image prune --all --filter label=tether=snapshot`, or raise N.
+
+The run loop reaches the sandbox through `RunDeps::sandbox`, which also puts
+the backend's name in `run.created.sandbox`.
 
 ### Diff
 

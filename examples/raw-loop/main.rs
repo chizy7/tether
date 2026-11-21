@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use tether_core::{Clock, Run, RunConfig, RunDeps, RunError, SystemClock, Unattended};
+use tether_core::{Clock, Run, RunConfig, RunDeps, RunError, SandboxRef, SystemClock, Unattended};
 use tether_mcp::sandbox_server::SandboxServer;
 use tether_models::anthropic::AnthropicAdapter;
 use tether_models::fake::FakeAdapter;
@@ -167,15 +167,12 @@ async fn run_demo(
 
     let run_id = format!("run_{}", clock.now_ms());
     let trace = dir.join(format!("{run_id}.jsonl"));
-    let config = RunConfig {
-        run: RunId(run_id),
-        agent: "main".into(),
-        trace: trace.clone(),
-    };
+    let config = RunConfig::new(RunId(run_id), trace.clone());
     let deps = RunDeps {
         model: model.adapter.clone(),
-        tools: Arc::new(SandboxServer::new(sandbox, handle)),
+        tools: Arc::new(SandboxServer::new(sandbox.clone(), handle.clone())),
         policy,
+        sandbox: Some(SandboxRef { sandbox, handle }),
         answerer: Arc::new(Unattended),
         kill: KillSwitch::new(),
         clock,

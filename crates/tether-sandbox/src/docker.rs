@@ -126,6 +126,10 @@ impl DockerSandbox {
 
 #[async_trait]
 impl Sandbox for DockerSandbox {
+    fn backend(&self) -> &'static str {
+        "docker"
+    }
+
     async fn start(&self, spec: &SandboxSpec) -> Result<Handle> {
         let network = match &spec.network {
             Network::None => "none",
@@ -301,7 +305,10 @@ impl Sandbox for DockerSandbox {
     /// [`DockerSandbox::with_image`].
     async fn snapshot(&self, h: &Handle) -> Result<SnapshotId> {
         self.time_limit(h)?;
-        let output = docker(&args(["commit", &h.0]), None).await?;
+        // Labelled, so old snapshots can be found and pruned:
+        // `docker image prune --all --filter label=tether=snapshot`.
+        let commit = args(["commit", "--change", "LABEL tether=snapshot", &h.0]);
+        let output = docker(&commit, None).await?;
         if !output.status.success() {
             return Err(failed("commit", &output));
         }

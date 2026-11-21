@@ -13,6 +13,7 @@ use serde_json::json;
 use tether_mcp::{McpClient, McpError, ToolSpec};
 use tether_models::{Block, Completion, CompletionRequest, ModelAdapter, ModelError};
 use tether_policy::{budget, KillSwitch, OnTimeout, Policy, RunCtx, Verdict};
+use tether_sandbox::{Handle, Sandbox, SandboxError};
 use tether_trace::{NewEvent, TraceError, TraceWriter};
 use tether_types::{
     BudgetSnapshot, Decision, Event, EventType, ModelRequest, ModelResponse, Payload, Price, RunId,
@@ -45,6 +46,28 @@ pub struct RunConfig {
     pub agent: String,
     /// Path of the trace to create, `<run>.jsonl`. Must not exist.
     pub trace: PathBuf,
+    /// Write a `checkpoint` after every this many steps. 0 writes none.
+    pub checkpoint_every: u64,
+}
+
+impl RunConfig {
+    /// A single-agent run with a checkpoint after every step.
+    pub fn new(run: RunId, trace: impl Into<PathBuf>) -> Self {
+        Self {
+            run,
+            agent: "main".into(),
+            trace: trace.into(),
+            checkpoint_every: 1,
+        }
+    }
+}
+
+/// The sandbox a run's tools work in, for the things the run loop itself
+/// needs from it: its name for `run.created` and a snapshot per checkpoint.
+#[derive(Clone)]
+pub struct SandboxRef {
+    pub sandbox: Arc<dyn Sandbox>,
+    pub handle: Handle,
 }
 
 /// Everything a run talks to, behind the traits that let replay swap it.
@@ -53,6 +76,9 @@ pub struct RunDeps {
     pub model: Arc<dyn ModelAdapter>,
     pub tools: Arc<dyn McpClient>,
     pub policy: Arc<dyn Policy>,
+    /// The sandbox behind `tools`, if there is one. Without it checkpoints
+    /// carry no snapshot.
+    pub sandbox: Option<SandboxRef>,
     /// Who answers a `policy.ask`. [`crate::Unattended`] if nobody can.
     pub answerer: Arc<dyn Answerer>,
     /// Stops the run from outside. `Run::start` also makes it watch the
@@ -79,6 +105,9 @@ pub struct Run {
     step: u64,
     started_ms: u64,
     budget: BudgetSnapshot,
+    checkpoint_every: u64,
+    /// The last step a checkpoint was written for.
+    checkpointed: u64,
 }
 
 impl Run {
@@ -97,12 +126,14 @@ impl Run {
             state: RunState::Created,
             step: 0,
             budget: limits.fresh(),
+            checkpoint_every: config.checkpoint_every,
+            checkpointed: 0,
         };
         let created = json!({
             "agent": run.agent,
             "model": { "provider": run.deps.model.id() },
             "policy": run.deps.policy.snapshot(),
-            "sandbox": null,
+            "sandbox": run.deps.sandbox.as_ref().map(|s| json!({"backend": s.sandbox.backend()})),
             "tools": run.tools.iter().map(|t| json!({
                 "name": t.name,
                 "server": t.server,
@@ -133,10 +164,14 @@ impl Run {
     /// Answer a model request. Starts a new step.
     ///
     /// Trace: `model.request`, `policy.decision`, `model.response`,
-    /// `budget.tick`. A denied call or a provider error halts the run, and so
-    /// does a spent budget, before anything is asked of the model.
+    /// `budget.tick`, after a `checkpoint` for the step before if one is due.
+    /// A denied call or a provider error halts the run, and so does a spent
+    /// budget, before anything is asked of the model.
     pub async fn complete(&mut self, req: CompletionRequest) -> Result<Completion, RunError> {
         self.ensure_running()?;
+        // The step before this request is complete. Checkpoint it first, so
+        // a halt on the next two lines still leaves that step resumable.
+        self.checkpoint().await?;
         self.check_kill().await?;
         self.check_budget().await?;
         self.step += 1;
@@ -341,6 +376,39 @@ impl Run {
     fn tick_wall(&mut self) {
         let elapsed_ms = self.deps.clock.now_ms().saturating_sub(self.started_ms);
         self.budget.wall_secs_used = elapsed_ms / 1000;
+    }
+
+    /// Write a `checkpoint` for the step just completed, if one is due.
+    ///
+    /// The checkpoint is the trace up to this event; `snapshot` adds the
+    /// sandbox's own state when the backend can capture it. A backend that
+    /// cannot, or a snapshot that fails, leaves it null: resume then rebuilds
+    /// the sandbox by replaying the trace's writes.
+    async fn checkpoint(&mut self) -> Result<(), RunError> {
+        let due = self.checkpoint_every > 0
+            && self.step > self.checkpointed
+            && self.step.is_multiple_of(self.checkpoint_every);
+        if !due {
+            return Ok(());
+        }
+        let snapshot = match &self.deps.sandbox {
+            Some(at) => match at.sandbox.snapshot(&at.handle).await {
+                Ok(id) => Some(id.0),
+                Err(SandboxError::Unsupported(_)) => None,
+                Err(e) => {
+                    tracing::warn!(step = self.step, "sandbox snapshot failed: {e}");
+                    None
+                }
+            },
+            None => None,
+        };
+        let body = EventType::Checkpoint {
+            step: self.step,
+            snapshot,
+        };
+        self.emit(None, body).await?;
+        self.checkpointed = self.step;
+        Ok(())
     }
 
     /// Halt if the kill switch is tripped. Like the budget check this runs

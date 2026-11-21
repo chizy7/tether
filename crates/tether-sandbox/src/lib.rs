@@ -103,6 +103,8 @@ pub(crate) fn inside(path: &Path) -> Result<&Path> {
 
 #[async_trait]
 pub trait Sandbox: Send + Sync {
+    /// The backend's name, recorded in `run.created`: `process`, `docker`.
+    fn backend(&self) -> &'static str;
     async fn start(&self, spec: &SandboxSpec) -> Result<Handle>;
     async fn exec(&self, h: &Handle, cmd: Exec) -> Result<ExecResult>;
     async fn read(&self, h: &Handle, path: &Path) -> Result<Vec<u8>>;

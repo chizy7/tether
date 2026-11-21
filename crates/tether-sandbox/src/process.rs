@@ -148,6 +148,10 @@ fn kill_group(_pid: Option<u32>) {}
 
 #[async_trait]
 impl Sandbox for ProcessSandbox {
+    fn backend(&self) -> &'static str {
+        "process"
+    }
+
     async fn start(&self, spec: &SandboxSpec) -> Result<Handle> {
         if matches!(spec.network, Network::Allowlist(_)) {
             return Err(SandboxError::Unsupported(

@@ -16,7 +16,8 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::json;
 use tether_core::{
-    Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, SystemClock,
+    Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, SandboxRef,
+    SystemClock,
 };
 use tether_mcp::sandbox_server::SandboxServer;
 use tether_models::fake::FakeAdapter;
@@ -197,17 +198,14 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
     let clock = Arc::new(SystemClock);
     let run_id = format!("run_{}", clock.now_ms());
     let trace = dir.join(format!("{run_id}.jsonl"));
-    let config = RunConfig {
-        run: RunId(run_id),
-        agent: "main".into(),
-        trace: trace.clone(),
-    };
+    let config = RunConfig::new(RunId(run_id), trace.clone());
     let deps = RunDeps {
         model: Arc::new(FakeAdapter::new(
             script.replies.into_iter().map(Completion::new),
         )),
-        tools: Arc::new(SandboxServer::new(sandbox, handle)),
+        tools: Arc::new(SandboxServer::new(sandbox.clone(), handle.clone())),
         policy: Arc::new(policy),
+        sandbox: Some(SandboxRef { sandbox, handle }),
         answerer: Arc::new(TerminalAnswerer::default()),
         kill: kill_on_sigint(),
         clock,

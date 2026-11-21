@@ -27,9 +27,10 @@ async fn wrapped_agent_leaves_a_full_trace() {
     let written = std::fs::read_to_string(dir.join("workspace/hello.txt")).expect("hello.txt");
     assert_eq!(written, "hello from a wrapped agent\n");
 
-    // 2 setup + 3 model calls of 4 events + 2 tool calls of 4 events + 2 closing.
+    // 2 setup + 3 model calls of 4 events + 2 tool calls of 4 events
+    // + a checkpoint after each of the first two steps + 2 closing.
     let report = verify(&trace).expect("verify");
-    assert_eq!(report.events, 24);
+    assert_eq!(report.events, 26);
 
     let results: Vec<_> = TraceReader::open(&trace)
         .expect("open")
