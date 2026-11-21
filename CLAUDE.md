@@ -36,7 +36,7 @@ A PR that breaks one of these needs a written reason in its description.
 
 ## Settled decisions (do not reopen without a new ADR in docs/)
 
-- Rust stable, tokio, clap, serde, rusqlite (index only), tonic for the SDK boundary.
+- Rust stable, tokio, clap, serde, tonic for the SDK boundary. No trace index: measured in v0.3 and not needed. If one is ever built it is SQLite via rusqlite, a cache and never the source of truth.
 - Trace: JSONL, one event per line, `blake3:` hash chain computed by the single writer task.
 - Blobs: payloads over 32 KB go to `<run>.blobs/blake3/ab/abcd...`, content-addressed **per message**. A `model.request` stores its history as a list of blob hashes.
 - Streaming: collapsed into one `model.response` with `stream: true` and `ttft_ms`.
