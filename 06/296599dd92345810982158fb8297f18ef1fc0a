@@ -1,0 +1,72 @@
+crates/tether-trace/examples/gen_trace.rs
+  s_830eda70c48de9::t_64fa6963ca9ba7 1-17,21-26,32-33,36-61,63-76
+  s_830eda70c48de9::t_3108549a079ad8 18-20,27-31
+crates/tether-trace/src/lib.rs
+  s_830eda70c48de9::t_af8aa34639c23d 12-14
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_af8aa34639c23d 517-540
+  s_830eda70c48de9::t_8aa439480132d1 622,646
+docs/PLAN.md
+  s_830eda70c48de9::t_1b7373b2e524ac 93
+  s_830eda70c48de9::t_a671b8588b7ace 94
+  s_830eda70c48de9::t_4119242c24f8ad 95
+  s_830eda70c48de9::t_cf59d6b97e29b4 96
+  s_830eda70c48de9::t_a463fe3ee27675 97
+  s_830eda70c48de9::t_12ddbb3127003a 98
+  s_830eda70c48de9::t_ea2abacff7312a 99
+  s_830eda70c48de9::t_7f21bd897caa5a 100
+  s_830eda70c48de9::t_2a0c6538d6994e 101
+  s_830eda70c48de9::t_c36e1449ee5397 102
+  s_830eda70c48de9::t_8aa439480132d1 103,120
+  s_830eda70c48de9::t_af8aa34639c23d 104,114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "06296599dd92345810982158fb8297f18ef1fc0a",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:08974db1911d6e109c676fb9c45478f67beaca095406cd977feae7984b46c7c7",
+      "stats": {
+        "total_additions": 110,
+        "total_deletions": 6,
+        "accepted_lines": 102,
+        "overriden_lines": 2,
+        "files": {
+          "crates/tether-trace/examples/gen_trace.rs": {
+            "total_additions": 81,
+            "total_deletions": 2,
+            "accepted_lines": 73,
+            "overriden_lines": 2
+          },
+          "crates/tether-trace/src/lib.rs": {
+            "total_additions": 3,
+            "total_deletions": 2,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 24,
+            "total_deletions": 0,
+            "accepted_lines": 24,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"06296599dd92345810982158fb8297f18ef1fc0a","tree":"36e69da77316a69a73ca5bc6a0a1f1b65ec7bd3d","files":{"crates/tether-trace/examples/gen_trace.rs":"a9c0336c08e0c1e3d62295f7dbf0d4d99debb88d","crates/tether-trace/src/lib.rs":"427b4b9b78de904969f274e986386201ebbba7ce","docs/ARCHITECTURE.md":"2bf95723040c12625911dddf6791e24dcbddf8a7","docs/PLAN.md":"41d956eb86dcb94c97765c67b8882e787279d58b"},"digest":"58261e3e736f10cb115efb93b8531efca08e952f10df8f911764071692a295d2"}
+}
