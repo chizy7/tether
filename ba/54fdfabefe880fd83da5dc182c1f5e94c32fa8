@@ -1,0 +1,133 @@
+.github/workflows/pypi.yml
+  s_830eda70c48de9::t_7820d39575fb97 1-57
+  s_830eda70c48de9::t_62bfaae445bd9c 58-60
+.github/workflows/release.yml
+  s_830eda70c48de9::t_9c139f23bb12f8 1-296
+CLAUDE.md
+  s_830eda70c48de9::t_1af1c32cbcd535 62
+Cargo.toml
+  s_830eda70c48de9::t_9c139f23bb12f8 16,59-63
+README.md
+  s_830eda70c48de9::t_7820d39575fb97 21,45-56,93
+crates/tetherd/Cargo.toml
+  s_830eda70c48de9::t_9c139f23bb12f8 42-46
+dist-workspace.toml
+  s_830eda70c48de9::t_9c139f23bb12f8 1-12,14-17
+  s_830eda70c48de9::t_3f49b8faeedba1 13
+docs/PLAN.md
+  s_830eda70c48de9::t_7820d39575fb97 103
+docs/RELEASING.md
+  s_830eda70c48de9::t_7820d39575fb97 1-49
+sdks/python/README.md
+  s_830eda70c48de9::t_c5c296069b8834 3,23
+  s_830eda70c48de9::t_1af1c32cbcd535 27-35
+sdks/python/pyproject.toml
+  s_830eda70c48de9::t_9c139f23bb12f8 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "ba54fdfabefe880fd83da5dc182c1f5e94c32fa8",
+  "branch": "release-workflow",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:9f5de2ccde00ea504e155c96aa6ca4156fa50d678e5c4925926181e168c3cddf",
+      "total_additions": 463,
+      "total_deletions": 11,
+      "accepted_lines": 461,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:9f5de2ccde00ea504e155c96aa6ca4156fa50d678e5c4925926181e168c3cddf",
+      "stats": {
+        "total_additions": 463,
+        "total_deletions": 11,
+        "accepted_lines": 461,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/pypi.yml": {
+            "total_additions": 61,
+            "total_deletions": 1,
+            "accepted_lines": 60,
+            "overriden_lines": 0
+          },
+          ".github/workflows/release.yml": {
+            "total_additions": 296,
+            "total_deletions": 0,
+            "accepted_lines": 296,
+            "overriden_lines": 0
+          },
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "Cargo.toml": {
+            "total_additions": 6,
+            "total_deletions": 1,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 14,
+            "total_deletions": 2,
+            "accepted_lines": 14,
+            "overriden_lines": 0
+          },
+          "crates/tetherd/Cargo.toml": {
+            "total_additions": 5,
+            "total_deletions": 0,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "dist-workspace.toml": {
+            "total_additions": 18,
+            "total_deletions": 1,
+            "accepted_lines": 17,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/RELEASING.md": {
+            "total_additions": 49,
+            "total_deletions": 0,
+            "accepted_lines": 49,
+            "overriden_lines": 0
+          },
+          "sdks/python/README.md": {
+            "total_additions": 11,
+            "total_deletions": 3,
+            "accepted_lines": 11,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"ba54fdfabefe880fd83da5dc182c1f5e94c32fa8","tree":"8e3538711e7163d3c7db8c21c4f5f48a1e414e0e","files":{".github/workflows/pypi.yml":"4d3267d94d1c0d4f0ebbcbcf72463ac8cc86c5bd",".github/workflows/release.yml":"921216a1d038f1ba002107adc4be73f2a311f1eb","CLAUDE.md":"49288e860a3b79307771e61ce0e7dfba0f4b575a","Cargo.toml":"da4ba421b4db99caa15ec4255db6f8e19090602e","README.md":"f0aca895518bc2f8c06862f9275ca2e6c01b27aa","crates/tetherd/Cargo.toml":"c9dfa186e3329fbdcde88223718f6fc2cc27ea49","dist-workspace.toml":"830ba0dc403399c8cdfd60172829d1e344656fe1","docs/PLAN.md":"c3a428f84a587581d1c524622cc9e4f5f6bea045","docs/RELEASING.md":"efd744dfcd57b1d88e882bf8226d60616f324a37","sdks/python/README.md":"6c2776a7e0dc7cb248d1614337740d1d1092dc44","sdks/python/pyproject.toml":"a84d0b7ff7d91a131d3f6a7ef83b661d8f091095"},"digest":"d43855b64006c200b389377b6c97b1eca1ad8fa1a75cea64210732e1e8f7d5b2"}
+}
