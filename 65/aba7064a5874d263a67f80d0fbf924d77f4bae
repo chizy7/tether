@@ -1,0 +1,210 @@
+README.md
+  s_830eda70c48de9::t_c36e1449ee5397 13-15
+  s_830eda70c48de9::t_cf59d6b97e29b4 16
+  s_830eda70c48de9::t_a463fe3ee27675 17
+  s_830eda70c48de9::t_12ddbb3127003a 18
+  s_830eda70c48de9::t_ea2abacff7312a 19
+  s_830eda70c48de9::t_7f21bd897caa5a 20-21
+  s_830eda70c48de9::t_2a0c6538d6994e 30-36
+  s_830eda70c48de9::t_0986ceae5bd907 37
+crates/tether-cli/Cargo.toml
+  s_830eda70c48de9::t_c6d48fbc498f4d 22,36-39
+crates/tether-cli/src/replay.rs
+  s_830eda70c48de9::t_c6d48fbc498f4d 70-73
+crates/tether-models/Cargo.toml
+  s_830eda70c48de9::t_d81657ddfee46f 23
+crates/tether-models/pricing.toml
+  s_830eda70c48de9::t_c6d48fbc498f4d 8-11
+crates/tether-models/src/anthropic.rs
+  s_830eda70c48de9::t_d81657ddfee46f 26,91,152-153,211-214,394,411-412
+  s_830eda70c48de9::t_c6d48fbc498f4d 71-72,86
+crates/tether-models/src/http.rs
+  s_830eda70c48de9::t_f79ec3ae26cbd6 1-166
+crates/tether-models/src/lib.rs
+  s_830eda70c48de9::t_d81657ddfee46f 17-18,189
+crates/tether-models/src/openai_compat.rs
+  s_830eda70c48de9::t_51e4d94b0fa87b 1-531,533-544
+  s_830eda70c48de9::t_8cd33d1e4b1691 532
+crates/tether-models/src/pricing.rs
+  s_830eda70c48de9::t_c6d48fbc498f4d 49-53,56-61
+  s_830eda70c48de9::t_8cd33d1e4b1691 54-55
+crates/tether-models/tests/openai_compat.rs
+  s_830eda70c48de9::t_f6502f29f17349 1-108,110-136,138-288,293-366,370-517,520-548
+  s_830eda70c48de9::t_a6ec7ad246a93c 109,137
+  s_830eda70c48de9::t_8cd33d1e4b1691 289-292,367-369,518-519
+crates/tetherd/Cargo.toml
+  s_830eda70c48de9::t_c6d48fbc498f4d 42-46
+crates/tetherd/src/service.rs
+  s_830eda70c48de9::t_c6d48fbc498f4d 187-192
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_c36e1449ee5397 232,281-309,314-317
+docs/PLAN.md
+  s_830eda70c48de9::t_1b7373b2e524ac 93
+  s_830eda70c48de9::t_a671b8588b7ace 94
+  s_830eda70c48de9::t_4119242c24f8ad 95
+  s_830eda70c48de9::t_cf59d6b97e29b4 96
+  s_830eda70c48de9::t_a463fe3ee27675 97
+  s_830eda70c48de9::t_12ddbb3127003a 98
+  s_830eda70c48de9::t_ea2abacff7312a 99
+  s_830eda70c48de9::t_7f21bd897caa5a 100
+  s_830eda70c48de9::t_2a0c6538d6994e 101
+  s_830eda70c48de9::t_c36e1449ee5397 102
+examples/raw-loop-py/README.md
+  s_830eda70c48de9::t_c36e1449ee5397 41-51
+  s_830eda70c48de9::t_a6ec7ad246a93c 52,54
+examples/raw-loop-py/agent.py
+  s_830eda70c48de9::t_c36e1449ee5397 14,60-64,66-69
+  s_830eda70c48de9::t_a6ec7ad246a93c 39-40
+proto/tether.proto
+  s_830eda70c48de9::t_c6d48fbc498f4d 40
+sdks/python/README.md
+  s_830eda70c48de9::t_8522e6eab523ee 47
+sdks/python/src/tether/_run.py
+  s_830eda70c48de9::t_f8ef5a1a8c45d1 205-207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "65aba7064a5874d263a67f80d0fbf924d77f4bae",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:2ee6f7cd3dc5ea91bf24c14fe9d712f397757593badfc8ab8dce43ffe735fe37",
+      "stats": {
+        "total_additions": 1392,
+        "total_deletions": 142,
+        "accepted_lines": 1381,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 3,
+            "total_deletions": 3,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/Cargo.toml": {
+            "total_additions": 6,
+            "total_deletions": 1,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/replay.rs": {
+            "total_additions": 4,
+            "total_deletions": 0,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/Cargo.toml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/pricing.toml": {
+            "total_additions": 4,
+            "total_deletions": 0,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/src/anthropic.rs": {
+            "total_additions": 14,
+            "total_deletions": 115,
+            "accepted_lines": 14,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/src/http.rs": {
+            "total_additions": 166,
+            "total_deletions": 0,
+            "accepted_lines": 166,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/src/lib.rs": {
+            "total_additions": 3,
+            "total_deletions": 1,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/src/openai_compat.rs": {
+            "total_additions": 546,
+            "total_deletions": 2,
+            "accepted_lines": 544,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/src/pricing.rs": {
+            "total_additions": 16,
+            "total_deletions": 3,
+            "accepted_lines": 13,
+            "overriden_lines": 0
+          },
+          "crates/tether-models/tests/openai_compat.rs": {
+            "total_additions": 552,
+            "total_deletions": 4,
+            "accepted_lines": 548,
+            "overriden_lines": 0
+          },
+          "crates/tetherd/Cargo.toml": {
+            "total_additions": 5,
+            "total_deletions": 0,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "crates/tetherd/src/service.rs": {
+            "total_additions": 6,
+            "total_deletions": 0,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 34,
+            "total_deletions": 2,
+            "accepted_lines": 34,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-py/README.md": {
+            "total_additions": 14,
+            "total_deletions": 3,
+            "accepted_lines": 13,
+            "overriden_lines": 0
+          },
+          "examples/raw-loop-py/agent.py": {
+            "total_additions": 12,
+            "total_deletions": 2,
+            "accepted_lines": 12,
+            "overriden_lines": 0
+          },
+          "proto/tether.proto": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/python/README.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/python/src/tether/_run.py": {
+            "total_additions": 3,
+            "total_deletions": 2,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"65aba7064a5874d263a67f80d0fbf924d77f4bae","tree":"8d9eda8702f87a6ddb9f8d1926669d015031e403","files":{"README.md":"d1958882c8895025388355c6a4931ce656fc535d","crates/tether-cli/Cargo.toml":"6b41a00adcb784cf92ab757336a0a1a89975609a","crates/tether-cli/src/replay.rs":"823927ae5a342c911c1dad5262fcdafa6cef6c5e","crates/tether-models/Cargo.toml":"bb34bd7cdc90e65c12123c41126e707df68b4b46","crates/tether-models/pricing.toml":"8e9a6cb95133cb90c764c5e0a651aa82bebb9fdd","crates/tether-models/src/anthropic.rs":"37ba2554862f362ad7be6c6bce767051d95254fd","crates/tether-models/src/http.rs":"b0f1eddb06e90c3f7e9f0602800c0662f74d097b","crates/tether-models/src/lib.rs":"07f50961c28488bc02fbcab1f62d2d10f3a8bcf8","crates/tether-models/src/openai_compat.rs":"56c4e8a827fe9a27ffa42a30bf28219fea8c6df5","crates/tether-models/src/pricing.rs":"26a27e295d1aa800e041f4e7c7333959d8885cdc","crates/tether-models/tests/openai_compat.rs":"54154fdea9581ad243e2bbe383b9bbcfa8f3b7e5","crates/tetherd/Cargo.toml":"98195adab8d09b1679c98eb65a944dfb310be32c","crates/tetherd/src/service.rs":"f7b24053892b33ee48b9c0f30177990ad170de94","docs/ARCHITECTURE.md":"a0b15bd3ec6c627e4413844c64788dafa00b3d7d","docs/PLAN.md":"a0fcbfcbf9bb8dc8f4684b4be7219de402a37dd3","examples/raw-loop-py/README.md":"0364fda94d3d06b2d006720902e66d289093e46c","examples/raw-loop-py/agent.py":"a3075eeb5f7e97abdc3201c035d85f8589a01681","proto/tether.proto":"8b3dc3d9a2cd22c60a2304a7e2dc8177f475b439","sdks/python/README.md":"182f0cef87147d9e41dd7ace584ce3d664cf8a16","sdks/python/src/tether/_run.py":"c14792e92d7519752e6654291b802562d3e3f1a7"},"digest":"998bdf2f9ad4cb8a2339cebaca9e23af8bbe86ff79976428c4a3f863158fb592"}
+}
