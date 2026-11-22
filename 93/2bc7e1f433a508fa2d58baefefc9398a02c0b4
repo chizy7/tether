@@ -1,0 +1,108 @@
+CHANGELOG.md
+  s_830eda70c48de9::t_8d88ae363c3536 11-15,37-38,45-46
+Cargo.toml
+  s_830eda70c48de9::t_a01183aa990ca9 16
+README.md
+  s_830eda70c48de9::t_b8a695501a6a07 5,7-9,15-18,20,22-66,78-133,137-155,157-159,161-163,167-168,172-173,175,178-221,226,233,236
+  s_830eda70c48de9::t_a5f8230f03151b 6,13-14,21
+  s_830eda70c48de9::t_d9a02c9a79bf83 10
+  s_830eda70c48de9::t_be23263d168ce3 12
+  s_830eda70c48de9::t_2be10e328c9792 19
+  s_830eda70c48de9::t_98aa5c848863e5 71-73,75-77,134-135
+  s_830eda70c48de9::t_c878c389c27569 156,160
+  s_830eda70c48de9::t_7013adee22995a 164-166,169
+  s_830eda70c48de9::t_8d88ae363c3536 174
+  s_830eda70c48de9::t_1a2c5fc2f269cf 176-177
+  s_830eda70c48de9::t_84f20c3905bb91 222-225,232,235
+  s_830eda70c48de9::t_dbee0dee9e52ad 227-231,234
+docs/PLAN.md
+  s_830eda70c48de9::t_7adff82d332be7 122
+  s_830eda70c48de9::t_9bd7d23de6f2d2 123
+  s_830eda70c48de9::t_81f50b85c91aea 124
+  s_830eda70c48de9::t_306d3632f04aa6 125
+  s_830eda70c48de9::t_5eeeb118d359c3 126
+  s_830eda70c48de9::t_2be10e328c9792 127
+  s_830eda70c48de9::t_7013adee22995a 131,159
+  s_830eda70c48de9::t_84f20c3905bb91 132
+  s_830eda70c48de9::t_c878c389c27569 133
+  s_830eda70c48de9::t_3e6906e7ee4d7b 134
+  s_830eda70c48de9::t_4d92002ad30d20 135
+  s_830eda70c48de9::t_1a2c5fc2f269cf 136
+  s_830eda70c48de9::t_8d88ae363c3536 137
+docs/RELEASING.md
+  s_830eda70c48de9::t_8d88ae363c3536 31-32
+sdks/python/pyproject.toml
+  s_830eda70c48de9::t_a01183aa990ca9 3
+  s_830eda70c48de9::t_dbee0dee9e52ad 7
+sdks/typescript/package.json
+  s_830eda70c48de9::t_a01183aa990ca9 3
+  s_830eda70c48de9::t_dbee0dee9e52ad 6-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "932bc7e1f433a508fa2d58baefefc9398a02c0b4",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:58cfec21769ee1e04d58ef6fb19d643f91abe80b83b1793bd8922af9d7e7e85f",
+      "stats": {
+        "total_additions": 17,
+        "total_deletions": 12,
+        "accepted_lines": 16,
+        "overriden_lines": 0,
+        "files": {
+          "CHANGELOG.md": {
+            "total_additions": 10,
+            "total_deletions": 2,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          },
+          "Cargo.toml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 1,
+            "total_deletions": 4,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/RELEASING.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/package.json": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"932bc7e1f433a508fa2d58baefefc9398a02c0b4","tree":"1427fed45830f576b795ea48ea590921768187e3","files":{"CHANGELOG.md":"f84019214799587f2014d50556aa2fc19ce2ba8d","Cargo.toml":"f6ddec756b646562eaa28b17ff92361ce5d7d5ca","README.md":"254a5b5ba648f94e5cb185686e45b16d7e69b7f8","docs/PLAN.md":"a9bafcd02ef384a72d366b0dc6c0bfd1759bcc48","docs/RELEASING.md":"49256d8133de92a137f1ba1a5e5480d4da9ecb54","sdks/python/pyproject.toml":"29ce295a7a247aa319884c8fd3fabc8e969cc73b","sdks/typescript/package.json":"ef552f7072dd8d8e1520a6ff791fcbdccb507396"},"digest":"ee7a1ebc0970fb53f1674f33045d7b0fa46a9ee7c594b21d29153a0c8d2b9a76"}
+}
