@@ -1,9 +1,9 @@
-# Renders docs/refuses.gif. From the repo root:
+# Renders docs/media/refuses.gif. From the repo root:
 #
 #   cargo build -p tether-cli
 #   vhs examples/refuses/demo.tape
 
-Output docs/refuses.gif
+Output docs/media/refuses.gif
 Set FontSize 14
 Set Width 1400
 Set Height 760

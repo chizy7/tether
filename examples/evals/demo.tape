@@ -1,4 +1,4 @@
-# Renders docs/evals.gif: the v0.4 demo against a real model.
+# Renders docs/media/evals.gif: the v0.4 demo against a real model.
 #
 # This makes billed API calls. From the repo root, with ANTHROPIC_API_KEY set
 # in the shell you run vhs from. It uses the SDK from sdks/python/.venv if
@@ -13,7 +13,7 @@
 # record command's `--model anthropic` with nothing and add
 # `--scripts examples/evals/scripts` to the second `tether eval`.
 
-Output docs/evals.gif
+Output docs/media/evals.gif
 Set FontSize 13
 Set Width 1300
 Set Height 900

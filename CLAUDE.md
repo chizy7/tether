@@ -44,6 +44,7 @@ A PR that breaks one of these needs a written reason in its description.
 - Unattended `ask`: 600 s timeout, then `Halted` (resumable). `on_timeout = "deny"` is per-rule opt-in.
 - MCP client: `rmcp` behind the `McpClient` trait under a cargo feature; `minimal` module is the fallback.
 - Sandbox: `process` default and explicitly not a security boundary; `docker` v0.2; `firecracker` v1.0.
+- Name: "Tether". Packages are `tether-agents`; where a name is searched for, write "Tether, a harness for agents", not the bare word.
 
 ## Layout
 

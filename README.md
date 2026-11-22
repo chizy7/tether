@@ -9,7 +9,7 @@ trace is complete enough to run the agent again from it, which is what the
 rest is built on: replay, diff and evals.
 [How replay works](docs/REPLAY.md) is the long version.
 
-![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](docs/evals.gif)
+![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](docs/media/evals.gif)
 
 Twenty tasks were recorded once against a real model. `tether eval` checks the
 recordings against assertions at no cost, then asks the same tasks again under
@@ -179,32 +179,33 @@ then, build them from source with
 The trace format is frozen at v0: a trace written today will be readable by
 later versions. The command line and the SDKs may still change between minor
 versions. [CHANGELOG.md](CHANGELOG.md) lists what changed in each release and
-[docs/PLAN.md](docs/PLAN.md) what ships when.
+[docs/PLAN.md](docs/PLAN.md) what ships when. What comes after 0.4 is on the
+[roadmap](https://github.com/users/chizy7/projects/8).
 
 ## More
 
 `tether ui` on the failed run from the GIF at the top, at the step where
 policy refused the `rm`:
 
-![The trace viewer open on the failed run, at the step where policy refused the rm](docs/evals-ui.jpg)
+![The trace viewer open on the failed run, at the step where policy refused the rm](docs/media/evals-ui.jpg)
 
 The [refuses example](examples/refuses): an agent tries `rm -rf .`, the
 `no-rm` rule denies it, and `tether inspect` shows the call, the decision and
 the failed result the agent got back.
 
-![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
+![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/media/refuses.gif)
 
 The [replays example](examples/replays): twenty small tasks recorded against
 a real model, replayed with no model call and no cost, then run again live
 under a changed system prompt, with one table of what changed.
 
-![Twenty tasks recorded against Claude Opus 5.5, replayed at no cost, then run again under a changed prompt, with one table of what changed](docs/replays.gif)
+![Twenty tasks recorded against Claude Opus 5.5, replayed at no cost, then run again under a changed prompt, with one table of what changed](docs/media/replays.gif)
 
 The [raw-loop example](examples/raw-loop): a wrapped agent with a scripted
 model and real sandboxed tools, then `tether inspect` and `tether verify` on
 the trace it left. Recorded at v0.1; traces now carry more events.
 
-![A wrapped agent runs under Tether, then tether inspect prints its trace and tether verify checks it](docs/demo.gif)
+![A wrapped agent runs under Tether, then tether inspect prints its trace and tether verify checks it](docs/media/demo.gif)
 
 ## Building from source
 
@@ -228,6 +229,12 @@ docs/       PLAN, ARCHITECTURE, TRACE_FORMAT, REPLAY, RELEASING
 [CONTRIBUTING.md](CONTRIBUTING.md) says what belongs in Tether and how to get
 a change merged. Report a vulnerability privately, as
 [SECURITY.md](SECURITY.md) describes.
+
+## The name
+
+Tether, the agent harness, has nothing to do with Tether the stablecoin
+(USDT). The packages are named `tether-agents` so that a search finds this
+one.
 
 ## License
 

@@ -4,6 +4,7 @@ version = "0.3.0"
 description = "Python client for Tether: run agents you don't trust on infrastructure you do."
 readme = "README.md"
 license = "Apache-2.0"
+keywords = ["agents", "agent-harness", "llm", "sandbox", "policy", "replay", "evals", "mcp", "tracing"]
 requires-python = ">=3.9"
 dependencies = [
     # The committed stubs in tether/_proto were generated with these versions

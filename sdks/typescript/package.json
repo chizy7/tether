@@ -3,6 +3,17 @@
   "version": "0.3.0",
   "description": "TypeScript client for Tether: run agents you don't trust on infrastructure you do.",
   "license": "Apache-2.0",
+  "keywords": [
+    "agents",
+    "agent-harness",
+    "llm",
+    "sandbox",
+    "policy",
+    "replay",
+    "evals",
+    "mcp",
+    "tracing"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/chizy7/tether.git",

@@ -3,9 +3,9 @@
 The v0.4 demo: a suite of twenty recorded tasks, a prompt change that makes
 some of them fail, and the viewer open on the step where one went wrong.
 
-![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](../../docs/evals.gif)
+![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](../../docs/media/evals.gif)
 
-![The trace viewer open on the failed run, at the step where policy refused the rm](../../docs/evals-ui.jpg)
+![The trace viewer open on the failed run, at the step where policy refused the rm](../../docs/media/evals-ui.jpg)
 
 - `tasks.json` is twenty small tasks. Three of them have the agent write a
   scratch file first.

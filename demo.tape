@@ -1,11 +1,11 @@
-# Renders docs/demo.gif. From the repo root:
+# Renders docs/media/demo.gif. From the repo root:
 #
 #   cargo build -p tether-cli
 #   cargo build -p tether-core --example raw-loop
 #   rm -rf target/raw-loop
 #   vhs demo.tape
 
-Output docs/demo.gif
+Output docs/media/demo.gif
 Set FontSize 14
 Set Width 1400
 Set Height 700
