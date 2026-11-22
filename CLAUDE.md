@@ -60,7 +60,7 @@ crates/tetherd          gRPC daemon (v0.3)
 proto/tether.proto      SDK service definition
 sdks/, examples/        Python and TypeScript clients; runnable examples
 ui/                     the trace viewer page, built into the binary
-docs/                   PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
+docs/                   PLAN, ARCHITECTURE, TRACE_FORMAT, REPLAY, RELEASING
 ```
 
 Dependencies point down only. Leaf crates never import each other or

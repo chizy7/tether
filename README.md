@@ -7,6 +7,7 @@ agent makes goes through it, so each one is checked against your rules,
 counted against your budget, run in a sandbox, and written to a trace. The
 trace is complete enough to run the agent again from it, which is what the
 rest is built on: replay, diff and evals.
+[How replay works](docs/REPLAY.md) is the long version.
 
 ![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](docs/evals.gif)
 
@@ -219,7 +220,7 @@ proto/      the gRPC service the SDKs talk to
 sdks/       Python and TypeScript clients
 examples/   runnable examples, each with its own README
 ui/         the trace viewer page, built into the binary
-docs/       PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
+docs/       PLAN, ARCHITECTURE, TRACE_FORMAT, REPLAY, RELEASING
 ```
 
 ## Contributing
