@@ -1,0 +1,134 @@
+CLAUDE.md
+  h_26f1489a78c942 47
+  s_830eda70c48de9::t_d9a02c9a79bf83 64-65
+README.md
+  s_830eda70c48de9::t_b8a695501a6a07 5,7-9,15-18,20,22-66,78-133,137-155,157-159,161-163,167-168,172-181,184-212,216-227,232,239
+  s_830eda70c48de9::t_a5f8230f03151b 6,13-14,21
+  s_830eda70c48de9::t_d9a02c9a79bf83 10
+  s_830eda70c48de9::t_be23263d168ce3 12
+  s_830eda70c48de9::t_2be10e328c9792 19
+  s_830eda70c48de9::t_98aa5c848863e5 71-73,75-77,134-135
+  s_830eda70c48de9::t_c878c389c27569 156,160
+  s_830eda70c48de9::t_7013adee22995a 164-166,169
+  s_830eda70c48de9::t_1a2c5fc2f269cf 182-183
+  s_830eda70c48de9::t_84f20c3905bb91 228-231,238
+  s_830eda70c48de9::t_dbee0dee9e52ad 233-237
+demo.tape
+  s_830eda70c48de9::t_be23263d168ce3 1,8
+docs/PLAN.md
+  s_830eda70c48de9::t_7adff82d332be7 122
+  s_830eda70c48de9::t_9bd7d23de6f2d2 123
+  s_830eda70c48de9::t_81f50b85c91aea 124
+  s_830eda70c48de9::t_306d3632f04aa6 125
+  s_830eda70c48de9::t_5eeeb118d359c3 126
+  s_830eda70c48de9::t_2be10e328c9792 127
+  s_830eda70c48de9::t_7013adee22995a 131,159
+  s_830eda70c48de9::t_84f20c3905bb91 132
+  s_830eda70c48de9::t_c878c389c27569 133,137
+  s_830eda70c48de9::t_3e6906e7ee4d7b 134
+  s_830eda70c48de9::t_4d92002ad30d20 135
+  s_830eda70c48de9::t_1a2c5fc2f269cf 136
+examples/evals/README.md
+  s_830eda70c48de9::t_be23263d168ce3 6,8
+examples/evals/demo.tape
+  s_830eda70c48de9::t_be23263d168ce3 1,16
+examples/refuses/demo.tape
+  s_830eda70c48de9::t_be23263d168ce3 1,6
+examples/replays/demo.tape
+  s_830eda70c48de9::t_be23263d168ce3 1,12
+sdks/python/pyproject.toml
+  s_830eda70c48de9::t_dbee0dee9e52ad 7
+sdks/typescript/package.json
+  s_830eda70c48de9::t_dbee0dee9e52ad 6-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "38941b7cd6d96887a689a00c70722b0e9b374cbb",
+  "prompts": {},
+  "humans": {
+    "h_26f1489a78c942": {
+      "author": "Chizy <chizy7@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:3a6695f7047e42d01a8eb75f12519736efdf9abbe24ff03a8de5bd298db64e85",
+      "stats": {
+        "total_additions": 39,
+        "total_deletions": 19,
+        "accepted_lines": 37,
+        "overriden_lines": 1,
+        "files": {
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 0,
+            "overriden_lines": 1
+          },
+          "README.md": {
+            "total_additions": 13,
+            "total_deletions": 6,
+            "accepted_lines": 13,
+            "overriden_lines": 0
+          },
+          "demo.tape": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 3,
+            "total_deletions": 3,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "examples/evals/README.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "examples/evals/demo.tape": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "examples/refuses/demo.tape": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "examples/replays/demo.tape": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/package.json": {
+            "total_additions": 11,
+            "total_deletions": 0,
+            "accepted_lines": 11,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"38941b7cd6d96887a689a00c70722b0e9b374cbb","tree":"18f69c9438dc1adb7257cbb30d3ef1d15b3a5a06","files":{"CLAUDE.md":"51ea2436190530315f5d38cc00fd5c6cd746786b","README.md":"4ae16fc51646168f3ba57fe829abff851fa8d1ba","demo.tape":"b1208ead5de3d3d616ee82b50ae8c2597289dcde","docs/PLAN.md":"8005209f303ab53987a1d2dc90a1028c8479e4da","examples/evals/README.md":"2b600ba30224efe7d4c87ab1da6883df862de947","examples/evals/demo.tape":"87916338ebfefbc956ca5274417e8d1843b8f8b0","examples/refuses/demo.tape":"387c5a066571d4b57bb4f18caf9a2dfffba107df","examples/replays/demo.tape":"7e8f5a6c5bcac0b09183e6867d6b33d74838907f","sdks/python/pyproject.toml":"cdf1a7122f73cdf982f9d483f9e5833166c67417","sdks/typescript/package.json":"66bf99e25ffd78f0934f894ac80eba0c905fdb14"},"digest":"440dd7e5400374a544da4e9f7098a4cd5922f77c212dad251dfa3d1961fb30d0"}
+}
