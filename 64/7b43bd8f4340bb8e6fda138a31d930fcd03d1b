@@ -1,0 +1,9 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "647b43bd8f4340bb8e6fda138a31d930fcd03d1b",
+  "branch": "mcp-claims",
+  "prompts": {},
+  "integrity": {"v":1,"commit":"647b43bd8f4340bb8e6fda138a31d930fcd03d1b","tree":"422cbb73bd9fd3ac7acf4746050440f87e917bb5","files":{},"digest":"262ecc459343b1e2dc17fb0c9df9bf8a1ebb2ff12360b325d76258f62053f4d5"}
+}
