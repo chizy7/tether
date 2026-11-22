@@ -10,6 +10,19 @@ test.
 
 Nothing yet.
 
+## 0.4.1, 2026-11-22
+
+Documentation and package metadata only. No code change.
+
+### Fixed
+
+- The README, `docs/ARCHITECTURE.md`, `CLAUDE.md`, and the `mcp` keyword on the
+  PyPI and npm packages said Tether connects to MCP servers. It does not: the
+  `McpClient` trait has one implementation, the built-in sandbox, in-process,
+  and nothing speaks the MCP wire protocol. The docs now say what exists and
+  mark the external-server client as planned. The work is tracked in #56 and
+  is the whole of v0.5. (#57)
+
 ## 0.4.0, 2026-11-21
 
 "It evals." The launch release.

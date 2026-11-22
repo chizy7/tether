@@ -204,16 +204,23 @@ from the trace into a fresh sandbox.
 
 ## Tool layer
 
-`tether-mcp` connects every configured MCP server at run start, calls
-`tools/list`, merges the result (collisions prefixed by server id) and records
-it in `run.created`. The built-in `sandbox` server is one of them. Routing for
-every call: `tool.call` event, `Policy::decide`, dispatch, `tool.result`. A
-deny produces a `tool.result` with `is_error = true` so the agent sees a normal
-failed call. Each release pins one MCP protocol version. Tether ships no tools
-beyond the sandbox server.
+**Status: the built-in `sandbox` server exists; connecting to external MCP
+servers is planned for v0.5 and not built.** Nothing in Tether speaks the MCP
+wire protocol today. The design below is the target.
 
-Client: `rmcp` behind the `McpClient` trait under a cargo feature; a minimal
-hand-rolled client is the fallback if `rmcp` blocks stdio or streamable HTTP.
+`tether-mcp` defines one `McpClient` trait (`list_tools`, `call`). The
+built-in `sandbox` server implements it in-process and exposes `exec`,
+`read_file`, `write_file` and `list_dir`. Routing for every call: `tool.call`
+event, `Policy::decide`, dispatch, `tool.result`. A deny produces a
+`tool.result` with `is_error = true` so the agent sees a normal failed call.
+
+Planned (v0.5): connect every configured MCP server at run start over stdio or
+streamable HTTP, call `tools/list`, merge the result (collisions prefixed by
+server id) and record it in `run.created`; the built-in `sandbox` server
+becomes one entry in that list. Each release pins one MCP protocol version.
+Tether ships no tools beyond the sandbox server. Client: `rmcp` behind the
+`McpClient` trait under a cargo feature; a minimal hand-rolled client is the
+fallback if `rmcp` blocks stdio or streamable HTTP.
 
 ## Model adapters
 

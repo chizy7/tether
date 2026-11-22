@@ -134,7 +134,47 @@ Launch:
 - [x] `docs/REPLAY.md`: the long write-up. Why the trace is the only state, per-message blobs, timings under replay, what breaks determinism and what Tether does about it. This is the launch essay; it goes on HN as the link, with the repo in the first line
 - [x] Name collision check: "Tether" is also the USDT stablecoin, which owns the search results. Decide now whether to keep the name (and lean on `tether-agents` everywhere a package name appears) or rename before launch, when it is still cheap. Record the decision in the PLAN either way **Decided 2026-11-21: keep "Tether".** The maintainer's call. 0.3.0 is already released under it, with packages on PyPI and npm. Search is handled by never using the bare word where a name is looked up: packages are `tether-agents` on PyPI and npm, the repo is `chizy7/tether`, and titles and descriptions say "Tether, a harness for agents". The README says once that it has nothing to do with the stablecoin. Revisit only if launch feedback shows people cannot find it
 - [x] Public roadmap: GitHub Project with v1.0 items (Firecracker, policy plugin API, schema v1 if ever) so the first "what's next?" issue has an answer. It is [Tether roadmap](https://github.com/users/chizy7/projects/8), with each item an issue (#40 to #47) and a Horizon field: v1.0, Candidate or Later
-- [ ] Launch: tag v0.4.0 (version, changelog and README are set for it), HN post linking `docs/REPLAY.md`, r/rust, the MCP community Discord, one thread. Then two weeks of answering issues before touching v1.0. Reassess at the end of those two weeks: stars, issues from strangers, and whether anyone besides the maintainer has wrapped an agent
+- [x] Tag v0.4.0 (released 2026-11-22) and the HN post linking `docs/REPLAY.md`. The r/rust and MCP community posts from the earlier plan do not happen at v0.4: the repo described itself as MCP-native with no MCP client built, which is the correction below, and posting to the MCP community waits until the client ships in v0.5. Two weeks of answering issues before new work. Reassess at the end: stars, issues from strangers, and whether anyone besides the maintainer has wrapped an agent
+
+v0.4 shipped 2026-11-22 as release v0.4.0.
+
+## v0.4.1: correct the MCP claims
+
+Found after launch: the README, `ARCHITECTURE.md`, `CLAUDE.md`, package
+keywords and repo topics all said MCP support exists. It does not. The
+`McpClient` trait exists and the built-in sandbox implements it in-process;
+nothing speaks the MCP wire protocol, and no external server can be connected.
+"Every tool is an MCP tool" was the design, written as if it were the state.
+
+- [x] README: the tools bullet says what exists; "What it cannot do yet" names the missing client and links the issue
+- [x] `ARCHITECTURE.md`: tool layer marked as built-in only, external servers marked planned
+- [x] `CLAUDE.md`: design rule 3 restated as the invariant that is true (one trait, one policy path) with the MCP part marked as v0.5
+- [x] Package keywords: `mcp` dropped from `pyproject.toml` and `package.json` until the client ships
+- [ ] Repo topics: `mcp` removed. Needs the maintainer: the GitHub API path for topics is not writable from this session
+- [x] Roadmap: "MCP client: connect to external servers" filed as #56, Horizon v0.5
+- [x] This section, and the launch line above
+
+Released as v0.4.1: docs and metadata, no code change.
+
+## v0.5 checklist: it connects
+
+Demo that closes the phase: `tether.toml` names one external MCP server (the
+reference filesystem server, say), `tether run` lists its tools beside the
+sandbox ones, the agent calls one, the call shows up in `inspect` with the
+server id and the policy decision, and `replay` of that trace makes no
+connection. This is the phase that makes "MCP-native" true.
+
+- [ ] Decide `rmcp` or hand-rolled, for real this time: check `rmcp`'s client support for stdio and streamable HTTP, write the finding into `ARCHITECTURE.md`, and pick. The trait stays either way
+- [ ] `[[mcp_server]]` in `tether.toml`: `id`, `transport = "stdio" | "http"`, `command` and `args` or `url`, `env` allowlist. Snapshotted into `run.created.policy` like the rules
+- [ ] Protocol client behind `McpClient`: `initialize` with the pinned protocol version and a clear refusal on mismatch, `tools/list`, `tools/call`, stdio and streamable HTTP transports, timeouts per call, server process lifecycle tied to the run
+- [ ] Registry: merge the built-in `sandbox` server with every configured server at run start; collisions prefixed by server id; merged list recorded in `run.created.tools` with the owning server on each entry; `tool.call.server` filled from it
+- [ ] Policy: `match = { server = "..." }` so a rule can allow or deny a whole server; `external = true` on every tool from an external server so replay never re-invokes it
+- [ ] Replay: an external tool call replays from the recorded `tool.result` with no connection made; `tether replay` on a trace with external calls is the test
+- [ ] `tether tools <policy>`: list what the agent would see, by server, without starting a run. Cheap and it is what people reach for first when a server does not show up
+- [ ] Python and TypeScript SDKs: `run.tools()` carries the server id; no other change
+- [ ] Demo: `examples/mcp-filesystem` against the reference filesystem server; GIF of `inspect` showing a sandbox call and an external call side by side with their decisions
+- [ ] Docs: `ARCHITECTURE.md` tool layer status flips to built; README gets `mcp` back in its keywords and the repo gets the topic back; `TRACE_FORMAT.md` unchanged, since `tool.call.server` and `external` were already in the envelope
+
 
 ## Stack decisions
 
@@ -159,7 +199,7 @@ Launch:
 - `examples/` with wrappers for the OpenAI Agents SDK and a raw loop. The Claude Agent SDK one was dropped at v0.4: it has no hook on model calls
 - Public roadmap in GitHub Projects, `good-first-issue` on real work
 - `TRACE_FORMAT.md` frozen from v0.3; the format is what other tools can adopt
-- Launch at v0.4: Hacker News, r/rust, MCP community, one long write-up on replay
+- Launch at v0.4: Hacker News and the long write-up on replay. MCP community after v0.5, once the client exists
 
 ## Risks
 
