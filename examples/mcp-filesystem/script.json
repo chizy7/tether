@@ -1,0 +1,20 @@
+{
+  "task": "Write a greeting with the sandbox, then read it back through the filesystem server, then try to overwrite it through the server.",
+  "replies": [
+    [
+      {"type": "tool_use", "id": "call_1", "name": "write_file",
+       "arguments": {"path": "hello.txt", "content": "hello from the sandbox\n"}}
+    ],
+    [
+      {"type": "tool_use", "id": "call_2", "name": "read_text_file",
+       "arguments": {"path": "hello.txt"}}
+    ],
+    [
+      {"type": "tool_use", "id": "call_3", "name": "fs.write_file",
+       "arguments": {"path": "hello.txt", "content": "overwritten\n"}}
+    ],
+    [
+      {"type": "text", "text": "Wrote hello.txt in the sandbox, read it back through the filesystem server, and was refused when I tried to write through the server."}
+    ]
+  ]
+}

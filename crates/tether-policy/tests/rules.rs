@@ -408,3 +408,84 @@ fn budget_table_becomes_the_run_limits() {
         Err(PolicyError::InvalidBudget { key: "max_usd", .. })
     ));
 }
+
+#[test]
+fn server_matcher_covers_a_whole_server() {
+    let policy = RulePolicy::from_toml(
+        r#"
+[[rule]]
+name = "no-search"
+match = { server = "search" }
+action = "deny"
+reason = "no search in this run"
+
+[[rule]]
+name = "fs-ok"
+match = { server = "fs-*" }
+action = "allow"
+
+[[rule]]
+name = "builtin"
+match = { server = "sandbox", tool = "sandbox.read_file" }
+action = "allow"
+"#,
+    )
+    .expect("parses");
+    assert_eq!(
+        outcome(&policy, &call("search", "web", json!({}))),
+        ("deny", rule("no-search"))
+    );
+    assert_eq!(
+        outcome(&policy, &call("fs-local", "list", json!({}))),
+        ("allow", rule("fs-ok"))
+    );
+    assert_eq!(
+        outcome(&policy, &call("sandbox", "read_file", json!({"path": "a"}))),
+        ("allow", rule("builtin"))
+    );
+    // Nothing matches an unknown server, so the default `ask` applies.
+    assert_eq!(outcome(&policy, &call("other", "x", json!({}))).0, "ask");
+}
+
+#[test]
+fn mcp_server_tables_parse_and_validate() {
+    use tether_policy::config::{McpTransport, PolicyConfig};
+
+    let config = PolicyConfig::from_toml(
+        r#"
+[[mcp_server]]
+id = "fs"
+transport = "stdio"
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "."]
+env = ["PATH"]
+
+[[mcp_server]]
+id = "search"
+transport = "http"
+url = "http://127.0.0.1:8931/mcp"
+headers = { Authorization = "Bearer x" }
+timeout_secs = 5
+"#,
+    )
+    .expect("parses");
+    assert_eq!(config.mcp_servers.len(), 2);
+    assert_eq!(config.mcp_servers[0].transport, McpTransport::Stdio);
+    assert_eq!(config.mcp_servers[0].timeout_secs, 60);
+    assert_eq!(config.mcp_servers[1].transport, McpTransport::Http);
+    assert_eq!(config.mcp_servers[1].timeout_secs, 5);
+
+    for (bad, expect) in [
+        ("[[mcp_server]]\nid = \"sandbox\"\ntransport = \"stdio\"\ncommand = \"x\"", "built-in"),
+        ("[[mcp_server]]\nid = \"a b\"\ntransport = \"stdio\"\ncommand = \"x\"", "letters"),
+        ("[[mcp_server]]\nid = \"a\"\ntransport = \"stdio\"", "needs `command`"),
+        ("[[mcp_server]]\nid = \"a\"\ntransport = \"http\"\nurl = \"ftp://x\"", "http://"),
+        ("[[mcp_server]]\nid = \"a\"\ntransport = \"http\"\nurl = \"http://x\"\ncommand = \"c\"", "for transport = \"stdio\""),
+        ("[[mcp_server]]\nid = \"a\"\ntransport = \"stdio\"\ncommand = \"x\"\n[[mcp_server]]\nid = \"a\"\ntransport = \"stdio\"\ncommand = \"y\"", "same id"),
+        ("[[mcp_server]]\nid = \"a\"\ntransport = \"stdio\"\ncommand = \"x\"\ntimeout_secs = 0", "at least 1"),
+        ("[[mcp_server]]\nid = \"a\"\ntransport = \"stdio\"\ncommand = \"x\"\nbogus = 1", "bogus"),
+    ] {
+        let err = PolicyConfig::from_toml(bad).expect_err(bad).to_string();
+        assert!(err.contains(expect), "{bad}\n-> {err}");
+    }
+}

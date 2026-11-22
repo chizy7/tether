@@ -18,3 +18,4 @@ dist/
 # read them. See crates/tether-trace/tests/compat.rs.
 !crates/tether-trace/tests/fixtures/*.jsonl
 !crates/tether-trace/tests/fixtures/*.blobs/
+examples/*/.tether-mcp/

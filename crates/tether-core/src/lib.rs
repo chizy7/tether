@@ -35,6 +35,7 @@ impl Clock for SystemClock {
 pub mod ask;
 pub mod replay;
 pub mod run;
+pub mod tools;
 mod trace_task;
 
 pub use ask::{Answerer, AskOutcome, AskRequest, Unattended};

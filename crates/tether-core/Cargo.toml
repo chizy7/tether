@@ -12,7 +12,7 @@ tether-types = { workspace = true }
 tether-trace = { workspace = true }
 tether-policy = { workspace = true }
 tether-sandbox = { workspace = true }
-tether-mcp = { workspace = true }
+tether-mcp = { workspace = true, default-features = false }
 tether-models = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
@@ -21,6 +21,12 @@ serde_json = { workspace = true }
 time = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+
+[features]
+# The MCP wire-protocol client for `[[mcp_server]]`. Off, a policy that
+# names a server fails at run start with a clear error.
+default = ["rmcp"]
+rmcp = ["tether-mcp/rmcp"]
 
 [[example]]
 name = "raw-loop"

@@ -8,8 +8,27 @@
 //! reason = "deleting files is off limits"
 //! ```
 //!
-//! `tool`, `argv0` and `path` each take one glob or a list of them. Unknown
-//! keys are errors, so a typo cannot silently turn a rule into a catch-all.
+//! `tool`, `argv0`, `path` and `server` each take one glob or a list of them.
+//! Unknown keys are errors, so a typo cannot silently turn a rule into a
+//! catch-all.
+//!
+//! `[[mcp_server]]` tables name the external MCP servers a run connects to:
+//!
+//! ```toml
+//! [[mcp_server]]
+//! id = "fs"
+//! transport = "stdio"
+//! command = "npx"
+//! args = ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"]
+//! env = ["HOME", "PATH"]     # the only variables the child process gets
+//! timeout_secs = 60          # per call
+//!
+//! [[mcp_server]]
+//! id = "search"
+//! transport = "http"
+//! url = "http://127.0.0.1:8931/mcp"
+//! headers = { Authorization = "Bearer ..." }
+//! ```
 
 use serde::Deserialize;
 
@@ -56,6 +75,41 @@ pub struct Match {
     pub argv0: Vec<String>,
     /// Globs over `arguments.path`.
     pub path: Vec<String>,
+    /// Globs over the id of the server that owns the tool, so one rule can
+    /// allow or deny a whole server.
+    pub server: Vec<String>,
+}
+
+/// One `[[mcp_server]]` table, as written. `tether-mcp` has its own struct
+/// of the same shape; the CLI and daemon map between them.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct McpServerConfig {
+    pub id: String,
+    pub transport: McpTransport,
+    #[serde(default)]
+    pub command: Option<String>,
+    #[serde(default)]
+    pub args: Vec<String>,
+    #[serde(default)]
+    pub env: Vec<String>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub headers: std::collections::BTreeMap<String, String>,
+    #[serde(default = "default_timeout")]
+    pub timeout_secs: u64,
+}
+
+fn default_timeout() -> u64 {
+    60
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum McpTransport {
+    Stdio,
+    Http,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +128,8 @@ pub struct PolicyConfig {
     pub budget: BudgetConfig,
     /// In file order, which is evaluation order.
     pub rules: Vec<Rule>,
+    /// External MCP servers to connect at run start, in file order.
+    pub mcp_servers: Vec<McpServerConfig>,
 }
 
 #[derive(Deserialize)]
@@ -89,6 +145,7 @@ struct RawMatch {
     tool: Option<OneOrMany>,
     argv0: Option<OneOrMany>,
     path: Option<OneOrMany>,
+    server: Option<OneOrMany>,
 }
 
 #[derive(Deserialize)]
@@ -110,6 +167,8 @@ struct RawConfig {
     budget: BudgetConfig,
     #[serde(default, rename = "rule")]
     rules: Vec<RawRule>,
+    #[serde(default, rename = "mcp_server")]
+    mcp_servers: Vec<McpServerConfig>,
 }
 
 fn invalid(rule: &str, reason: impl Into<String>) -> PolicyError {
@@ -165,6 +224,7 @@ impl PolicyConfig {
                 tool: globs(&name, "tool", rule.matcher.tool)?,
                 argv0: globs(&name, "argv0", rule.matcher.argv0)?,
                 path: globs(&name, "path", rule.matcher.path)?,
+                server: globs(&name, "server", rule.matcher.server)?,
             };
             rules.push(Rule {
                 name,
@@ -174,9 +234,65 @@ impl PolicyConfig {
                 on_timeout: rule.on_timeout,
             });
         }
+        for (index, server) in raw.mcp_servers.iter().enumerate() {
+            let at = |reason: String| PolicyError::InvalidMcpServer {
+                server: if server.id.is_empty() {
+                    format!("#{}", index + 1)
+                } else {
+                    server.id.clone()
+                },
+                reason,
+            };
+            if server.id.is_empty() {
+                return Err(at("`id` is empty".into()));
+            }
+            if server.id == "sandbox" {
+                return Err(at("`id` \"sandbox\" is the built-in server".into()));
+            }
+            if !server
+                .id
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+            {
+                return Err(at(
+                    "`id` may only contain letters, digits, `_` and `-`".into()
+                ));
+            }
+            if raw.mcp_servers[..index].iter().any(|s| s.id == server.id) {
+                return Err(at("another server has the same id".into()));
+            }
+            match server.transport {
+                McpTransport::Stdio => {
+                    if server.command.as_deref().unwrap_or("").is_empty() {
+                        return Err(at("stdio needs `command`".into()));
+                    }
+                    if server.url.is_some() || !server.headers.is_empty() {
+                        return Err(at("`url` and `headers` are for transport = \"http\"".into()));
+                    }
+                }
+                McpTransport::Http => {
+                    let url = server.url.as_deref().unwrap_or("");
+                    if !(url.starts_with("http://") || url.starts_with("https://")) {
+                        return Err(at(
+                            "http needs a `url` starting with http:// or https://".into()
+                        ));
+                    }
+                    if server.command.is_some() || !server.args.is_empty() || !server.env.is_empty()
+                    {
+                        return Err(at(
+                            "`command`, `args` and `env` are for transport = \"stdio\"".into(),
+                        ));
+                    }
+                }
+            }
+            if server.timeout_secs == 0 {
+                return Err(at("`timeout_secs` must be at least 1".into()));
+            }
+        }
         Ok(Self {
             budget: raw.budget,
             rules,
+            mcp_servers: raw.mcp_servers,
         })
     }
 }

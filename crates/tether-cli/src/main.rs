@@ -165,6 +165,17 @@ enum Cmd {
         #[command(subcommand)]
         format: ExportCmd,
     },
+    /// List the tools an agent would see under a policy, by server, without
+    /// starting a run. Connects every `[[mcp_server]]` the policy names, so
+    /// a server that cannot be reached shows up here first.
+    Tools {
+        /// Policy file. Without one, only the built-in sandbox tools.
+        #[arg(long)]
+        policy: Option<PathBuf>,
+        /// Print the full tool list as JSON instead of a table.
+        #[arg(long)]
+        json: bool,
+    },
     /// Print a trace in readable form. Takes the path of a `<run>.jsonl`.
     Inspect { run: String },
     /// Continue a halted or crashed run from its last checkpoint, appending
@@ -202,7 +213,13 @@ enum Cmd {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt().with_env_filter("info").init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,rmcp=warn")),
+        )
+        .with_writer(std::io::stderr)
+        .init();
     let cli = Cli::parse();
     let result = match cli.cmd {
         Cmd::Run {
@@ -224,6 +241,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Daemon { socket, idle_secs } => {
             tetherd::serve(&socket, std::time::Duration::from_secs(idle_secs)).await
         }
+        Cmd::Tools { policy, json } => run::tools(policy.as_deref(), json).await,
         Cmd::Inspect { run } => pack::open(&run).and_then(|trace| inspect(trace.path())),
         Cmd::Verify { run } => pack::open(&run).and_then(|trace| verify_trace(trace.path())),
         Cmd::Diff { a, b } => match diff_either(&a, &b) {

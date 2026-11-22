@@ -1,0 +1,35 @@
+# One external MCP server beside the built-in sandbox tools.
+#
+# The reference filesystem server is started over stdio and given the run's
+# workspace. Its tools show up as `fs.*` only where a name collides with a
+# sandbox tool (`read_file`, `write_file`, `list_dir`); the rest keep their
+# own names. The rules below let the agent read through the server but not
+# write through it, and let the sandbox do the writing.
+
+[budget]
+max_tool_calls = 20
+
+[[rule]]
+name = "fs-read"
+# Rules see every tool as `<server>.<tool>`, whatever name the agent used.
+match = { server = "fs", tool = ["fs.read_*", "fs.list_*", "fs.get_file_info", "fs.directory_tree", "fs.search_files"] }
+action = "allow"
+
+[[rule]]
+name = "fs-no-write"
+match = { server = "fs" }
+action = "deny"
+reason = "writes go through the sandbox, where they are jailed"
+
+[[rule]]
+name = "sandbox-ok"
+match = { server = "sandbox" }
+action = "allow"
+
+[[mcp_server]]
+id = "fs"
+transport = "stdio"
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", ".tether-mcp/workspace"]
+env = ["PATH", "HOME"]
+timeout_secs = 120

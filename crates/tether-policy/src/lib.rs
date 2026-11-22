@@ -25,6 +25,8 @@ pub enum PolicyError {
     InvalidRule { rule: String, reason: String },
     #[error("[budget] {key}: {reason}")]
     InvalidBudget { key: &'static str, reason: String },
+    #[error("[[mcp_server]] {server}: {reason}")]
+    InvalidMcpServer { server: String, reason: String },
 }
 
 /// Per-run context a rule may consult: budget so far, step, agent id.

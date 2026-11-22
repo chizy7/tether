@@ -112,6 +112,7 @@ fn rule_matches(m: &Match, tool: &str, call: &ToolCall) -> bool {
     (m.tool.is_empty() || any_glob(&m.tool, tool))
         && (m.argv0.is_empty() || argv0(call).is_some_and(|name| any_glob(&m.argv0, name)))
         && (m.path.is_empty() || path(call).is_some_and(|path| any_glob(&m.path, &path)))
+        && (m.server.is_empty() || any_glob(&m.server, &call.server))
 }
 
 /// The file name of the command, so `rm`, `/bin/rm` and `./rm` are all `rm`.

@@ -157,6 +157,9 @@ impl Run {
             "model": { "provider": run.deps.model.id() },
             "policy": run.deps.policy.snapshot(),
             "sandbox": run.deps.sandbox.as_ref().map(|s| json!({"backend": s.sandbox.backend()})),
+            // Every server behind the tool list, with the protocol version
+            // each negotiated. The built-in sandbox reports `builtin`.
+            "mcp_servers": run.deps.tools.servers(),
             "tools": run.tools.iter().map(|t| json!({
                 "name": t.name,
                 "server": t.server,
@@ -411,6 +414,8 @@ impl Run {
         });
         self.emit(None, EventType::RunFinished(finished)).await?;
         self.trace.sync().await?;
+        // Child processes of stdio servers stop with the run.
+        self.deps.tools.shutdown().await;
         Ok(())
     }
 
@@ -635,10 +640,12 @@ impl Run {
     /// Move to `Halted` and return the error to hand back. If the trace
     /// itself cannot be written, that error wins.
     async fn halt(&mut self, reason: String) -> RunError {
-        match self.transition(RunState::Halted, &reason).await {
+        let outcome = match self.transition(RunState::Halted, &reason).await {
             Ok(()) => RunError::Halted { reason },
             Err(e) => e,
-        }
+        };
+        self.deps.tools.shutdown().await;
+        outcome
     }
 
     /// Record a `policy.ask`, suspend, and wait for the answerer.

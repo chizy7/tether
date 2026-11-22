@@ -177,6 +177,17 @@ impl Recording {
             .collect()
     }
 
+    /// The servers recorded at run start, replayed as they were so the
+    /// replayed `run.created` matches without connecting to anything.
+    pub fn servers(&self) -> Vec<tether_mcp::ServerInfo> {
+        self.created()["mcp_servers"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|v| serde_json::from_value(v.clone()).ok())
+            .collect()
+    }
+
     /// How often the run wrote checkpoints: the step of its first one, or 0
     /// if it wrote none.
     pub fn checkpoint_every(&self) -> u64 {
@@ -439,6 +450,7 @@ impl Recording {
             }),
             tools: Arc::new(ReplayTools {
                 specs: self.tools(),
+                servers: self.servers(),
                 calls: Mutex::new(self.tool_calls()?),
                 caught_up: AtomicBool::new(false),
                 live: live.tools,
@@ -689,6 +701,7 @@ struct ToolCallRecord {
 /// A call the recording never ran has no result to give and is a divergence.
 struct ReplayTools {
     specs: Vec<ToolSpec>,
+    servers: Vec<tether_mcp::ServerInfo>,
     calls: Mutex<Vec<ToolCallRecord>>,
     caught_up: AtomicBool,
     live: Option<Arc<dyn McpClient>>,
@@ -719,6 +732,16 @@ impl ReplayTools {
 impl McpClient for ReplayTools {
     async fn list_tools(&self) -> Result<Vec<ToolSpec>, McpError> {
         Ok(self.specs.clone())
+    }
+
+    fn servers(&self) -> Vec<tether_mcp::ServerInfo> {
+        self.servers.clone()
+    }
+
+    async fn shutdown(&self) {
+        if let Some(live) = &self.live {
+            live.shutdown().await;
+        }
     }
 
     async fn call(&self, call: &ToolCall) -> Result<ToolResult, McpError> {

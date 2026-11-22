@@ -10,6 +10,41 @@ test.
 
 Nothing yet.
 
+## 0.5.0, 2026-11-22
+
+"It connects." Tether talks to external MCP servers.
+
+### Added
+
+- `[[mcp_server]]` tables in `tether.toml`: an MCP server over stdio (`command`,
+  `args`, an `env` allowlist for the child) or streamable HTTP (`url`,
+  `headers`), with a per-call `timeout_secs`. Validated when the policy loads.
+- `tether-mcp::client::ExternalServer`: the MCP wire-protocol client, built on
+  `rmcp` 3.x behind the `McpClient` trait. `initialize` with a check of the
+  negotiated protocol version, `tools/list`, `tools/call`, timeouts, and a
+  child process that stops with the run.
+- `tether-mcp::Registry`: merges the built-in sandbox server with every
+  configured server into the one tool list the agent sees. A name collision
+  is exposed as `<server>.<tool>`; the sandbox keeps the bare name.
+- `run.created.mcp_servers`: each server's id, transport, negotiated protocol
+  version and reported name. Inside `data`, so the frozen envelope is
+  unchanged.
+- Policy rules can match on `server`, so one rule covers a whole server.
+- `tether tools [--policy] [--json]`: the merged tool list by server without
+  starting a run.
+- `examples/mcp-filesystem`: the demo against the reference filesystem server.
+- The `rmcp` cargo feature on `tether-mcp` and `tether-core`, on by default.
+  Without it a policy naming a server fails at start with a clear error.
+
+### Changed
+
+- Every tool of an external server is `external = true`; replay returns the
+  recorded result and starts nothing. Replay also carries the recorded
+  `mcp_servers`, so a replayed `run.created` equals the original.
+- Logging defaults to `info,rmcp=warn` and goes to stderr; `RUST_LOG`
+  overrides it.
+- `mcp` is back in the PyPI and npm package keywords, this time truthfully.
+
 ## 0.4.1, 2026-11-22
 
 Documentation and package metadata only. No code change.

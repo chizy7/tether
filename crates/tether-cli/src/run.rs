@@ -15,11 +15,13 @@ use anyhow::Context;
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::json;
+use tether_core::tools;
 use tether_core::{
     Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, SandboxRef,
     SystemClock,
 };
-use tether_mcp::sandbox_server::SandboxServer;
+use tether_mcp::sandbox_server::{SandboxServer, SERVER};
+use tether_mcp::McpClient;
 use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, Role, ToolDef};
 use tether_policy::{KillSwitch, RulePolicy};
@@ -211,11 +213,16 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
     let run_id = format!("run_{}", clock.now_ms());
     let trace = dir.join(format!("{run_id}.jsonl"));
     let config = RunConfig::new(RunId(run_id), trace.clone());
+    let builtin: Arc<dyn McpClient> = Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
+    let servers = tools::server_configs(&policy.config().mcp_servers);
+    let tools = tools::connect(Some((SERVER.to_owned(), builtin)), &servers)
+        .await
+        .context("connecting MCP servers")?;
     let deps = RunDeps {
         model: Arc::new(FakeAdapter::new(
             script.replies.into_iter().map(Completion::new),
         )),
-        tools: Arc::new(SandboxServer::new(sandbox.clone(), handle.clone())),
+        tools: Arc::new(tools),
         policy: Arc::new(policy),
         sandbox: Some(SandboxRef { sandbox, handle }),
         answerer: Arc::new(TerminalAnswerer::default()),
@@ -231,6 +238,60 @@ pub async fn run(script: &Path, policy: Option<&Path>, dir: &Path) -> anyhow::Re
     let answer = outcome?;
     run.finish(json!(answer)).await?;
     println!("finished: {answer}");
+    Ok(())
+}
+
+/// `tether tools`: connect what the policy names and print the merged list.
+pub async fn tools(policy: Option<&Path>, as_json: bool) -> anyhow::Result<()> {
+    let policy = match policy {
+        Some(path) => read_policy(path)?,
+        None => RulePolicy::default(),
+    };
+    // The built-in tools need a sandbox to exist, so start a throwaway one.
+    let dir = std::env::temp_dir().join(format!("tether-tools-{}", std::process::id()));
+    let sandbox: Arc<dyn Sandbox> = Arc::new(ProcessSandbox::new());
+    let handle = sandbox.start(&SandboxSpec::new(dir.clone())).await?;
+    let builtin: Arc<dyn McpClient> = Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
+    let servers = tools::server_configs(&policy.config().mcp_servers);
+    let outcome = tools::connect(Some((SERVER.to_owned(), builtin)), &servers).await;
+    sandbox.stop(handle).await.ok();
+    std::fs::remove_dir_all(&dir).ok();
+    let registry = outcome.context("connecting MCP servers")?;
+
+    let list = registry.list_tools().await?;
+    let servers = registry.servers();
+    registry.shutdown().await;
+
+    if as_json {
+        let out = json!({
+            "servers": servers,
+            "tools": list.iter().map(|t| json!({
+                "name": t.name,
+                "server": t.server,
+                "description": t.description,
+                "input_schema": t.input_schema,
+                "external": t.external,
+            })).collect::<Vec<_>>(),
+        });
+        println!("{}", serde_json::to_string_pretty(&out)?);
+        return Ok(());
+    }
+    for server in &servers {
+        let version = server.protocol_version.as_deref().unwrap_or("-");
+        let name = match (&server.server_name, &server.server_version) {
+            (Some(n), Some(v)) => format!("{n} {v}"),
+            (Some(n), None) => n.clone(),
+            _ => String::new(),
+        };
+        println!(
+            "{:<12} {:<8} {:<12} {}",
+            server.id, server.transport, version, name
+        );
+        for tool in list.iter().filter(|t| t.server == server.id) {
+            let first_line = tool.description.lines().next().unwrap_or("");
+            println!("    {:<28} {}", tool.name, first_line);
+        }
+    }
     Ok(())
 }
 

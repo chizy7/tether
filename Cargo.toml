@@ -13,7 +13,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/chizy7/tether"
@@ -44,7 +44,7 @@ tether-types = { path = "crates/tether-types" }
 tether-trace = { path = "crates/tether-trace" }
 tether-policy = { path = "crates/tether-policy" }
 tether-sandbox = { path = "crates/tether-sandbox" }
-tether-mcp = { path = "crates/tether-mcp" }
+tether-mcp = { path = "crates/tether-mcp", default-features = false }
 tether-models = { path = "crates/tether-models" }
 tether-core = { path = "crates/tether-core" }
 

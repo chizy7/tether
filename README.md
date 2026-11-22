@@ -139,9 +139,10 @@ run safe to leave unattended:
 
 - **Policy**: allow, deny and ask rules in TOML; budgets for tokens, dollars,
   wall clock and tool calls; a kill switch.
-- **Sandboxed tools**: the built-in `exec`, `read_file`, `write_file` and
-  `list_dir` run in the sandbox, and every tool call goes through the same
-  policy and trace path.
+- **Tools**: the built-in `exec`, `read_file`, `write_file` and `list_dir`
+  run in the sandbox, and any MCP server named in the policy is connected over
+  stdio or HTTP and merged into the same list. One policy, one trace path,
+  whichever server a tool belongs to; a rule can allow or deny a whole server.
 - **Trace**: one append-only JSONL file per run, with a BLAKE3 hash chain.
   Every model call, tool call and decision is in it, whatever the decision
   was.
@@ -161,14 +162,9 @@ And what a trace then lets you do:
 | `tether resume` | Carry a halted or crashed run on from its last checkpoint |
 | `tether pack` | Put a trace and its blobs in one file to share |
 | `tether export otlp` | Send a trace to an OpenTelemetry collector as spans |
+| `tether tools` | List the tools an agent would see under a policy, by server, without a run |
 
-What it cannot do yet: connect to an external MCP server. The tool layer is
-shaped for it, with one `McpClient` trait that the sandbox implements, but
-the protocol client that would speak to a server over stdio or HTTP is not
-built, so today the only tools are the built-in ones. That is the next
-release ([#56](https://github.com/chizy7/tether/issues/56)).
-
-What it also cannot wrap yet is a framework that makes its model calls itself.
+What it cannot wrap yet is a framework that makes its model calls itself.
 The Claude Agent SDK is one: its loop runs inside its own bundled program,
 with hooks on tool calls but none on model calls, so a trace of it would have
 no model requests to replay. That needs Tether to stand in as the model

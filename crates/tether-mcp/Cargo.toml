@@ -1,6 +1,6 @@
 [package]
 name = "tether-mcp"
-description = "MCP client, tool registry and the built-in sandbox MCP server."
+description = "McpClient trait, the built-in sandbox server, and the rmcp-backed client for external MCP servers."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,12 +15,22 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-# rmcp = { version = "*", optional = true }   # enable once the client API is checked (week 1)
+tracing = { workspace = true }
+reqwest = { workspace = true, optional = true }
+rmcp = { version = "3.11", default-features = false, features = [
+    "client",
+    "transport-child-process",
+    "transport-streamable-http-client-reqwest",
+], optional = true }
 
 [features]
-default = []
-# rmcp = ["dep:rmcp"]
-minimal = []
+# The protocol client for external servers. On by default; a build without it
+# has only the built-in sandbox server and refuses any `[[mcp_server]]`.
+default = ["rmcp"]
+rmcp = ["dep:rmcp", "dep:reqwest"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true

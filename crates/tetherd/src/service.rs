@@ -9,11 +9,13 @@ use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use serde_json::Value;
+use tether_core::tools;
 use tether_core::{
     Answerer, AskOutcome, AskRequest, Clock, Run, RunConfig, RunDeps, RunError, SandboxRef,
     SystemClock,
 };
-use tether_mcp::sandbox_server::SandboxServer;
+use tether_mcp::sandbox_server::{SandboxServer, SERVER};
+use tether_mcp::McpClient;
 use tether_models::anthropic::AnthropicAdapter;
 use tether_models::fake::FakeAdapter;
 use tether_models::{Block, Completion, CompletionRequest, Message, ModelAdapter, ToolDef};
@@ -261,9 +263,15 @@ impl Tether for Daemon {
             .map_err(|e| Status::failed_precondition(format!("starting the sandbox: {e}")))?;
         let asks = Arc::new(Asks::default());
         let kill = KillSwitch::new();
+        let builtin: Arc<dyn McpClient> =
+            Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
+        let servers = tools::server_configs(&policy.config().mcp_servers);
+        let registry = tools::connect(Some((SERVER.to_owned(), builtin)), &servers)
+            .await
+            .map_err(|e| Status::failed_precondition(format!("connecting MCP servers: {e}")))?;
         let deps = RunDeps {
             model,
-            tools: Arc::new(SandboxServer::new(sandbox.clone(), handle.clone())),
+            tools: Arc::new(registry),
             policy: Arc::new(policy),
             sandbox: Some(SandboxRef { sandbox, handle }),
             answerer: asks.clone(),

@@ -193,4 +193,14 @@ impl McpClient for SandboxServer {
             duration_ms: 0,
         })
     }
+
+    fn servers(&self) -> Vec<crate::ServerInfo> {
+        vec![crate::ServerInfo {
+            id: SERVER.into(),
+            transport: "builtin".into(),
+            protocol_version: None,
+            server_name: None,
+            server_version: None,
+        }]
+    }
 }

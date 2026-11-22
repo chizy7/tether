@@ -23,10 +23,11 @@ structure are out of scope, permanently.
 2. **Every side effect passes through policy.** Model calls, tool calls, file
    and network access go through `tether-policy` first; the decision is
    recorded whether it was allow, deny or ask.
-3. **Every tool goes through one trait and one policy path.** The built-in
-   sandbox implements `McpClient` in-process as the server named `sandbox`.
-   The MCP wire-protocol client for external servers is v0.5 work and is not
-   built; until it ships, nothing in docs or metadata claims MCP support.
+3. **Every tool is an MCP tool, through one trait and one policy path.** The
+   built-in sandbox implements `McpClient` in-process as the server named
+   `sandbox`; external servers are connected over stdio or HTTP by `rmcp`
+   behind the same trait and merged by the `Registry`. Rules see
+   `<server>.<tool>` and can match a whole server.
 4. **Nondeterminism is captured at the boundary.** Model responses, tool
    outputs, clock reads and random seeds are recorded on the way in so replay
    substitutes them. Core code reads time and randomness through `Clock` and
@@ -44,7 +45,7 @@ A PR that breaks one of these needs a written reason in its description.
 - Streaming: collapsed into one `model.response` with `stream: true` and `ttft_ms`.
 - Multi-agent: one trace per run, `agent` field on every event, one writer.
 - Unattended `ask`: 600 s timeout, then `Halted` (resumable). `on_timeout = "deny"` is per-rule opt-in.
-- MCP client (v0.5, not built): `rmcp` behind the `McpClient` trait under a cargo feature; `minimal` module is the fallback. Check `rmcp` for real before choosing; the v0.1 note to do so was never acted on.
+- MCP client: `rmcp` 3.x behind the `McpClient` trait, `rmcp` cargo feature on by default. Checked against the real crate in v0.5. No hand-rolled fallback; if `rmcp` ever blocks, the trait is the seam.
 - Sandbox: `process` default and explicitly not a security boundary; `docker` v0.2; `firecracker` v1.0.
 - Name: "Tether". Packages are `tether-agents`; where a name is searched for, write "Tether, a harness for agents", not the bare word.
 
@@ -55,7 +56,7 @@ crates/tether-types     shared types, serde only, no logic
 crates/tether-trace     writer, reader, hash chain, blob store, diff
 crates/tether-policy    rules, budgets, Decision, kill switch
 crates/tether-sandbox   Sandbox trait + backends
-crates/tether-mcp       McpClient trait and the built-in sandbox server; protocol client is v0.5
+crates/tether-mcp       McpClient trait, sandbox server, rmcp-backed ExternalServer, Registry
 crates/tether-models    ModelAdapter trait + adapters
 crates/tether-core      run loop, state machine, checkpoint, resume, replay
 crates/tether-cli       `tether` binary
@@ -81,10 +82,7 @@ Dependencies point down only. Leaf crates never import each other or
 
 ## Current phase
 
-**v0.5 "it connects"**. v0.4.0 launched 2026-11-22; v0.4.1 corrected the MCP
-claims. Goal: an external MCP server named in `tether.toml` shows its tools
-beside the sandbox ones, the agent calls one, the call is in the trace with
-its server id and decision, and replay makes no connection. Item one is the
-`rmcp` or hand-rolled decision, checked against the crate for real. The
-ordered checklist is in `docs/PLAN.md`; top to bottom, one PR per item. The
-trace schema stays frozen; `tool.call.server` and `external` already exist.
+**v0.5 "it connects"** shipped 2026-11-22 as release v0.5.0. Next phase is
+not yet planned; see `docs/PLAN.md` for the v1.0 roadmap items. Until a new
+phase is written, work is issues only, and the launch items that waited on
+MCP (the MCP community post, `mcp` back in topics and keywords) can go.

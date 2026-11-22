@@ -204,23 +204,39 @@ from the trace into a fresh sandbox.
 
 ## Tool layer
 
-**Status: the built-in `sandbox` server exists; connecting to external MCP
-servers is planned for v0.5 and not built.** Nothing in Tether speaks the MCP
-wire protocol today. The design below is the target.
+`tether-mcp` defines one `McpClient` trait (`list_tools`, `call`, `servers`,
+`shutdown`) and three implementations: the built-in `sandbox` server
+(in-process, `exec`, `read_file`, `write_file`, `list_dir`), `ExternalServer`
+(an MCP server over stdio or streamable HTTP, through `rmcp`), and `Registry`,
+which holds any number of the other two and is what the run talks to.
 
-`tether-mcp` defines one `McpClient` trait (`list_tools`, `call`). The
-built-in `sandbox` server implements it in-process and exposes `exec`,
-`read_file`, `write_file` and `list_dir`. Routing for every call: `tool.call`
-event, `Policy::decide`, dispatch, `tool.result`. A deny produces a
-`tool.result` with `is_error = true` so the agent sees a normal failed call.
+At run start every `[[mcp_server]]` in the policy is connected: `initialize`,
+a check that the negotiated protocol version is one this build supports,
+`tools/list`. The registry merges the lists, built-in server first; a name
+that collides is exposed as `<server>.<tool>` for the later server, so the
+sandbox keeps its bare names. The merged list goes into `run.created.tools`
+with the owning server on each entry, and `run.created.mcp_servers` records
+each server's transport, negotiated protocol version and reported name.
 
-Planned (v0.5): connect every configured MCP server at run start over stdio or
-streamable HTTP, call `tools/list`, merge the result (collisions prefixed by
-server id) and record it in `run.created`; the built-in `sandbox` server
-becomes one entry in that list. Each release pins one MCP protocol version.
-Tether ships no tools beyond the sandbox server. Client: `rmcp` behind the
-`McpClient` trait under a cargo feature; a minimal hand-rolled client is the
-fallback if `rmcp` blocks stdio or streamable HTTP.
+Routing for every call: `tool.call` event (with `server` filled in), policy
+decision, dispatch to the owning server under its own name for the tool,
+`tool.result`. A deny produces a `tool.result` with `is_error = true`. A call
+past the server's `timeout_secs`, a JSON-RPC error, and a tool the server
+does not have all come back the same way; none of them halts the run. Rules
+see every tool as `<server>.<tool>` and may match on `server` alone.
+
+Stdio servers are child processes with a scrubbed environment: only the
+variables the policy's `env` list names reach them (plus `PATH` when the list
+is empty). They stop when the run finishes or halts. Every external tool is
+`external = true`, so replay returns the recorded result and connects to
+nothing; `tether replay` of a trace with external calls starts no server.
+
+`rmcp` was checked against its actual client API before this was built
+(3.11: `client`, `transport-child-process`,
+`transport-streamable-http-client-reqwest`), which is what the v0.1 note said
+to do and nobody did until v0.5. It sits behind the `rmcp` cargo feature,
+on by default; a build without it refuses any `[[mcp_server]]` with a clear
+error. Tether ships no tools beyond the sandbox server.
 
 ## Model adapters
 

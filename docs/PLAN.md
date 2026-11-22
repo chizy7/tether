@@ -159,22 +159,24 @@ Released as v0.4.1: docs and metadata, no code change.
 ## v0.5 checklist: it connects
 
 Demo that closes the phase: `tether.toml` names one external MCP server (the
-reference filesystem server, say), `tether run` lists its tools beside the
-sandbox ones, the agent calls one, the call shows up in `inspect` with the
-server id and the policy decision, and `replay` of that trace makes no
-connection. This is the phase that makes "MCP-native" true.
+reference filesystem server), `tether run` lists its tools beside the sandbox
+ones, the agent calls one, the call shows up in `inspect` with the server id
+and the policy decision, and `replay` of that trace makes no connection. This
+is the phase that makes "MCP-native" true.
 
-- [ ] Decide `rmcp` or hand-rolled, for real this time: check `rmcp`'s client support for stdio and streamable HTTP, write the finding into `ARCHITECTURE.md`, and pick. The trait stays either way
-- [ ] `[[mcp_server]]` in `tether.toml`: `id`, `transport = "stdio" | "http"`, `command` and `args` or `url`, `env` allowlist. Snapshotted into `run.created.policy` like the rules
-- [ ] Protocol client behind `McpClient`: `initialize` with the pinned protocol version and a clear refusal on mismatch, `tools/list`, `tools/call`, stdio and streamable HTTP transports, timeouts per call, server process lifecycle tied to the run
-- [ ] Registry: merge the built-in `sandbox` server with every configured server at run start; collisions prefixed by server id; merged list recorded in `run.created.tools` with the owning server on each entry; `tool.call.server` filled from it
-- [ ] Policy: `match = { server = "..." }` so a rule can allow or deny a whole server; `external = true` on every tool from an external server so replay never re-invokes it
-- [ ] Replay: an external tool call replays from the recorded `tool.result` with no connection made; `tether replay` on a trace with external calls is the test
-- [ ] `tether tools <policy>`: list what the agent would see, by server, without starting a run. Cheap and it is what people reach for first when a server does not show up
-- [ ] Python and TypeScript SDKs: `run.tools()` carries the server id; no other change
-- [ ] Demo: `examples/mcp-filesystem` against the reference filesystem server; GIF of `inspect` showing a sandbox call and an external call side by side with their decisions
-- [ ] Docs: `ARCHITECTURE.md` tool layer status flips to built; README gets `mcp` back in its keywords and the repo gets the topic back; `TRACE_FORMAT.md` unchanged, since `tool.call.server` and `external` were already in the envelope
+- [x] Decide `rmcp` or hand-rolled, for real this time. Checked `rmcp` 3.11 against a stdio server: `client` + `transport-child-process` + `transport-streamable-http-client-reqwest` cover both transports, `initialize`, `tools/list`, `tools/call` and cancellation. Decision: `rmcp`, behind the trait, feature on by default. No hand-rolled fallback written; the trait is the seam if one is ever needed. Written into `ARCHITECTURE.md`
+- [x] `[[mcp_server]]` in `tether.toml`: `id`, `transport = "stdio" | "http"`, `command` and `args` or `url` and `headers`, `env` allowlist, `timeout_secs`. Validated at parse time (id charset, no `sandbox`, no duplicates, transport-specific keys). Snapshotted into `run.created.policy` with the rules, since it is the same file
+- [x] Protocol client behind `McpClient`: `ExternalServer` in `tether-mcp::client`. `initialize` with the negotiated version checked against `SUPPORTED_PROTOCOL_VERSIONS`, `tools/list`, `tools/call`, stdio and streamable HTTP, per-call timeout, child env scrubbed to the `env` list, child stopped with the run
+- [x] Registry: `tether-mcp::Registry` merges the built-in `sandbox` server (first, so it keeps bare names) with every configured server; collisions become `<server>.<tool>`; merged list in `run.created.tools` with `server` on each entry; `run.created.mcp_servers` records transport, negotiated protocol version and server name; `tool.call.server` filled from it and the server is called under its own name for the tool
+- [x] Policy: `match = { server = "..." }` (globs); every external tool is `external = true`
+- [x] Replay: external calls replay from the recorded `tool.result`; `ReplayTools` carries the recorded `mcp_servers` so the replayed `run.created` is byte-equal; `tether replay` on a trace with external calls starts no server (`crates/tether-core/tests/external_server.rs`)
+- [x] `tether tools [--policy] [--json]`: connects what the policy names and prints the merged list by server with each server's transport, protocol version and name
+- [x] Python and TypeScript SDKs: no change needed; `run.tools()` already carried `server`
+- [x] Demo: `examples/mcp-filesystem` against the reference filesystem server: sandbox write, external read allowed by rule, external write denied by a server-level rule, replay with no divergence and no server started
+- [x] Docs: `ARCHITECTURE.md` tool layer rewritten as built; README tools bullet and "cannot do yet" updated; `mcp` back in PyPI and npm keywords; `TRACE_FORMAT.md` notes `mcp_servers` inside `run.created.data` (no envelope change, compat test passes)
+- [ ] Repo topic `mcp` back on GitHub, and the MCP community post. Maintainer
 
+v0.5 shipped 2026-11-22 as release v0.5.0.
 
 ## Stack decisions
 

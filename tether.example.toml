@@ -31,3 +31,21 @@ name = "no-network"
 match = { tool = "net.*" }
 action = "deny"
 reason = "no network in this run"
+
+# External MCP servers. Each one's tools join the list beside the sandbox's;
+# rules see them as `<id>.<tool>` and `match = { server = "<id>" }` covers a
+# whole server. The child gets only the environment variables named in `env`.
+#
+# [[mcp_server]]
+# id = "fs"
+# transport = "stdio"
+# command = "npx"
+# args = ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"]
+# env = ["PATH", "HOME"]
+# timeout_secs = 60
+#
+# [[mcp_server]]
+# id = "search"
+# transport = "http"
+# url = "http://127.0.0.1:8931/mcp"
+# headers = { Authorization = "Bearer ..." }
