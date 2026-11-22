@@ -1,0 +1,107 @@
+.github/workflows/ci.yml
+  s_830eda70c48de9::t_7013adee22995a 52-54
+README.md
+  s_830eda70c48de9::t_7013adee22995a 78-83,92-96
+docs/PLAN.md
+  s_830eda70c48de9::t_7013adee22995a 131,159
+examples/openai-agents-sdk/README.md
+  s_830eda70c48de9::t_7013adee22995a 3-68
+examples/openai-agents-sdk/agent.py
+  s_830eda70c48de9::t_94d1fd05d1d496 1-100,106-114
+  s_830eda70c48de9::t_385db9118c27b5 101-105
+examples/openai-agents-sdk/requirements.txt
+  s_830eda70c48de9::t_94d1fd05d1d496 1
+examples/openai-agents-sdk/script.json
+  s_830eda70c48de9::t_94d1fd05d1d496 1-9
+examples/openai-agents-sdk/tether.toml
+  s_830eda70c48de9::t_94d1fd05d1d496 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "7d955a28269c013770c1e46228a5c45c36d599f3",
+  "branch": "framework-examples",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:74888b1c15c7eec567dad9e150a417e04a50e596e47639d6b8734546a6aed742",
+      "total_additions": 228,
+      "total_deletions": 7,
+      "accepted_lines": 226,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:74888b1c15c7eec567dad9e150a417e04a50e596e47639d6b8734546a6aed742",
+      "stats": {
+        "total_additions": 228,
+        "total_deletions": 7,
+        "accepted_lines": 226,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/ci.yml": {
+            "total_additions": 3,
+            "total_deletions": 0,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 12,
+            "total_deletions": 3,
+            "accepted_lines": 11,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "examples/openai-agents-sdk/README.md": {
+            "total_additions": 66,
+            "total_deletions": 1,
+            "accepted_lines": 66,
+            "overriden_lines": 0
+          },
+          "examples/openai-agents-sdk/agent.py": {
+            "total_additions": 115,
+            "total_deletions": 1,
+            "accepted_lines": 114,
+            "overriden_lines": 0
+          },
+          "examples/openai-agents-sdk/requirements.txt": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/openai-agents-sdk/script.json": {
+            "total_additions": 9,
+            "total_deletions": 0,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          },
+          "examples/openai-agents-sdk/tether.toml": {
+            "total_additions": 20,
+            "total_deletions": 0,
+            "accepted_lines": 20,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"7d955a28269c013770c1e46228a5c45c36d599f3","tree":"fdde2721d55178a182a00b42056bf3c88e70bc6e","files":{".github/workflows/ci.yml":"cfe5c7082dd795a042c0e136db17ad414a2a7675","README.md":"91ee17d5a05d4c3f8d1b498438fe064d9685057d","docs/PLAN.md":"2772dd53263d9d19d472e2cad9d2ec470f6b9857","examples/openai-agents-sdk/README.md":"a8b9f825ede0f9f989da20c524a789a306ed70d3","examples/openai-agents-sdk/agent.py":"5042ea55b15dd26ec617e715465f01b8a46a4a18","examples/openai-agents-sdk/requirements.txt":"851e4912bb7644aeee1ce863620030351c444afa","examples/openai-agents-sdk/script.json":"64d00b12483214b5efb292b6bb164eb3b1db50f9","examples/openai-agents-sdk/tether.toml":"a639bfc3c93f57b8b3bef05e2b006cd8c032c072"},"digest":"ff4fcc26a67d2de3c9314d5f87ebe31472c0caabecb6ebf7e6cbff737688860e"}
+}
