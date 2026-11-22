@@ -1,0 +1,105 @@
+README.md
+  s_830eda70c48de9::t_d639782358f857 192-198
+crates/tether-core/src/run.rs
+  s_830eda70c48de9::t_ee1df0aa4e9e84 320-325
+docs/PLAN.md
+  s_830eda70c48de9::t_d639782358f857 174
+examples/mcp-filesystem/README.md
+  s_830eda70c48de9::t_d639782358f857 5-9
+  s_830eda70c48de9::t_543ca47d5029a7 37-54
+examples/mcp-filesystem/agent.py
+  s_830eda70c48de9::t_d0d428dfcbbb50 1-95
+examples/mcp-filesystem/demo.tape
+  s_830eda70c48de9::t_50dbdecb9929cc 1-16,19-25,27-44,46-55
+  s_830eda70c48de9::t_ee1df0aa4e9e84 17-18,26,45
+examples/mcp-filesystem/tether.toml
+  s_830eda70c48de9::t_d0d428dfcbbb50 10,12-14,28-29,31-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "75c052a7e6eead083df84f6607cb7c6c70ef389b",
+  "branch": "v0.5-review-fixes",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:bdd16ce6435f10a6c21030ed10947cc9050e13f3da43617ad7448f2b871c865e",
+      "total_additions": 198,
+      "total_deletions": 8,
+      "accepted_lines": 195,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_26f1489a78c942": {
+      "author": "Chizy <chizy7@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:bdd16ce6435f10a6c21030ed10947cc9050e13f3da43617ad7448f2b871c865e",
+      "stats": {
+        "total_additions": 198,
+        "total_deletions": 8,
+        "accepted_lines": 195,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 7,
+            "total_deletions": 0,
+            "accepted_lines": 7,
+            "overriden_lines": 0
+          },
+          "crates/tether-core/src/run.rs": {
+            "total_additions": 6,
+            "total_deletions": 2,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/mcp-filesystem/README.md": {
+            "total_additions": 23,
+            "total_deletions": 0,
+            "accepted_lines": 23,
+            "overriden_lines": 0
+          },
+          "examples/mcp-filesystem/agent.py": {
+            "total_additions": 95,
+            "total_deletions": 0,
+            "accepted_lines": 95,
+            "overriden_lines": 0
+          },
+          "examples/mcp-filesystem/demo.tape": {
+            "total_additions": 58,
+            "total_deletions": 3,
+            "accepted_lines": 55,
+            "overriden_lines": 0
+          },
+          "examples/mcp-filesystem/tether.toml": {
+            "total_additions": 8,
+            "total_deletions": 2,
+            "accepted_lines": 8,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"75c052a7e6eead083df84f6607cb7c6c70ef389b","tree":"daf2246df0fc7494fd222a1ba6ce984f9845eb12","files":{"README.md":"8acef04995f1e8462e90874275c9816eec529b6d","crates/tether-core/src/run.rs":"0eebcabd73ecd36439f99418ab893b418802bcaf","docs/PLAN.md":"2d8b83ae7bb9d9df8f7e7d37a40758ab41478764","examples/mcp-filesystem/README.md":"df0d6567a982e953b221d070f126bd9285474680","examples/mcp-filesystem/agent.py":"08bcdb9b118be8b4c5dbfa9c0c910ec0ecd1b22c","examples/mcp-filesystem/demo.tape":"b9d8d8375cf205c2df582ac2d12e2da1f4ba036a","examples/mcp-filesystem/tether.toml":"75bf516ded08a35bce70f3d2493337ee3da5a35f"},"digest":"a98e5a720e4e15dae7a5172bb292b06ae8b3904684787587cb137cd9c42168f1"}
+}
