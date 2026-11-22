@@ -1,0 +1,58 @@
+.github/workflows/npm.yml
+  s_830eda70c48de9::t_5918b2bc7d6c24 8-12,19-24,34-37,43-45,50,53-54,69,85-88
+docs/RELEASING.md
+  s_830eda70c48de9::t_5918b2bc7d6c24 36-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "b78a7324d7ad0bdfd02906b9c7dfe1be42b293eb",
+  "branch": "fix-npm-publish",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:23af50d278ef2c3af5ddc45a750d9d3ab95d9e8957683f4c7c2b6c738084d7b4",
+      "total_additions": 31,
+      "total_deletions": 8,
+      "accepted_lines": 31,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:23af50d278ef2c3af5ddc45a750d9d3ab95d9e8957683f4c7c2b6c738084d7b4",
+      "stats": {
+        "total_additions": 31,
+        "total_deletions": 8,
+        "accepted_lines": 31,
+        "overriden_lines": 0,
+        "files": {
+          ".github/workflows/npm.yml": {
+            "total_additions": 26,
+            "total_deletions": 6,
+            "accepted_lines": 26,
+            "overriden_lines": 0
+          },
+          "docs/RELEASING.md": {
+            "total_additions": 5,
+            "total_deletions": 2,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"b78a7324d7ad0bdfd02906b9c7dfe1be42b293eb","tree":"9bf0322c40077e499c675a70d2d88f2788b327df","files":{".github/workflows/npm.yml":"0d018b1b2d96c44b6a1a9e29be39c7da8fdebcb2","docs/RELEASING.md":"f6c8cedc27a5c7e33ef02b4b457387b5d3d7b3bf"},"digest":"fb0ecd4934befc6b4c8b16e1cde12bcbc7090c7c2e4bcb19ec96d046be58643a"}
+}
