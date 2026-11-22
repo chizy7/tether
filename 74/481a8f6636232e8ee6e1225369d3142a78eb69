@@ -2,8 +2,7 @@
 {
   "schema_version": "authorship/3.0.0",
   "autter_version": "3.16.0",
-  "base_commit_sha": "647b43bd8f4340bb8e6fda138a31d930fcd03d1b",
-  "branch": "mcp-claims",
+  "base_commit_sha": "74481a8f6636232e8ee6e1225369d3142a78eb69",
   "prompts": {},
-  "integrity": {"v":1,"commit":"647b43bd8f4340bb8e6fda138a31d930fcd03d1b","tree":"422cbb73bd9fd3ac7acf4746050440f87e917bb5","files":{},"digest":"262ecc459343b1e2dc17fb0c9df9bf8a1ebb2ff12360b325d76258f62053f4d5"}
+  "integrity": {"v":1,"commit":"74481a8f6636232e8ee6e1225369d3142a78eb69","tree":"422cbb73bd9fd3ac7acf4746050440f87e917bb5","files":{},"digest":"13875f509e1b32815b6ea96e1b02c7538e6aa228ec0e112a9853b2ca9d321ef0"}
 }
