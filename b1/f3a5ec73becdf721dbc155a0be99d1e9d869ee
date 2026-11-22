@@ -1,0 +1,76 @@
+CLAUDE.md
+  s_830eda70c48de9::t_d9a02c9a79bf83 63
+README.md
+  s_830eda70c48de9::t_b8a695501a6a07 5,7-9,15-18,20,22-66,78-133,137-155,157-159,161-163,167-168,172-210,215-225,231
+  s_830eda70c48de9::t_a5f8230f03151b 6,12-14,21
+  s_830eda70c48de9::t_d9a02c9a79bf83 10
+  s_830eda70c48de9::t_2be10e328c9792 19
+  s_830eda70c48de9::t_98aa5c848863e5 71-73,75-77,134-135
+  s_830eda70c48de9::t_c878c389c27569 156,160
+  s_830eda70c48de9::t_7013adee22995a 164-166,169
+  s_830eda70c48de9::t_84f20c3905bb91 226-230,232
+docs/PLAN.md
+  s_830eda70c48de9::t_7adff82d332be7 122
+  s_830eda70c48de9::t_9bd7d23de6f2d2 123
+  s_830eda70c48de9::t_81f50b85c91aea 124
+  s_830eda70c48de9::t_306d3632f04aa6 125
+  s_830eda70c48de9::t_5eeeb118d359c3 126
+  s_830eda70c48de9::t_2be10e328c9792 127
+  s_830eda70c48de9::t_7013adee22995a 131,159
+  s_830eda70c48de9::t_84f20c3905bb91 132
+  s_830eda70c48de9::t_c878c389c27569 133,137
+  s_830eda70c48de9::t_3e6906e7ee4d7b 134
+docs/REPLAY.md
+  s_830eda70c48de9::t_0ecf2e190ad6cc 1-63,66-78,80-138,140-155,158-167,169-212,214-292
+  s_830eda70c48de9::t_3e6906e7ee4d7b 64-65,79,139,156-157,168,213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "b1f3a5ec73becdf721dbc155a0be99d1e9d869ee",
+  "prompts": {},
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:633567068af3f60ea10eacf5fc7c9aa19584feeae8088253575900b6fa36b66c",
+      "stats": {
+        "total_additions": 304,
+        "total_deletions": 11,
+        "accepted_lines": 296,
+        "overriden_lines": 0,
+        "files": {
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 1,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/REPLAY.md": {
+            "total_additions": 300,
+            "total_deletions": 8,
+            "accepted_lines": 292,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"b1f3a5ec73becdf721dbc155a0be99d1e9d869ee","tree":"1082c9b1cb3270188a77e1d4c8c3eacfd855acd7","files":{"CLAUDE.md":"32add8fe569e3485e0158d503e4b91527863617d","README.md":"a6302a89423b22ed8b9a40d1fb60b935bbfc5ffe","docs/PLAN.md":"40b6b6c987be93056ed942151c56841d9404b9a4","docs/REPLAY.md":"d30ab1cf2c86cd8ef50287c30b9992bbe17fd3e9"},"digest":"b149998bb811672e65472f96b15caedb08df5c5061af6e0d9396b98dcb895144"}
+}
