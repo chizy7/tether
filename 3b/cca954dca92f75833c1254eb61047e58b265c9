@@ -2,7 +2,7 @@
 {
   "schema_version": "authorship/3.0.0",
   "autter_version": "3.16.0",
-  "base_commit_sha": "8ec2452a5355cf56e02f2ee8dcc17ef9a04c764d",
+  "base_commit_sha": "3bcca954dca92f75833c1254eb61047e58b265c9",
   "prompts": {},
-  "integrity": {"v":1,"commit":"8ec2452a5355cf56e02f2ee8dcc17ef9a04c764d","tree":"8a14ddda0e302337eee98cd3d2270aab123dcbc0","files":{},"digest":"5e54b6d5b37183819e77a276b966e83e449bbfdce99672438bf759d2a863b968"}
+  "integrity": {"v":1,"commit":"3bcca954dca92f75833c1254eb61047e58b265c9","tree":"8a14ddda0e302337eee98cd3d2270aab123dcbc0","files":{},"digest":"77a86243bf4dc320c90f4c224695c0f610f04f090ede78b688f2b2190856dae1"}
 }
