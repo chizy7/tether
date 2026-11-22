@@ -8,7 +8,7 @@ and checkpoint are all built on that trace. Tether is a **harness**, not a
 framework: it runs agents, it does not build them.
 
 Read `docs/ARCHITECTURE.md` before touching `tether-core`, `tether-trace` or
-`tether-types`. Read `docs/PLAN.md` to see which phase a feature belongs to.
+`tether-types`. Read `docs/PLAN.md` for the phases and what is next.
 
 ## The one PR question
 
@@ -60,7 +60,7 @@ crates/tether-mcp       McpClient trait, sandbox server, rmcp-backed ExternalSer
 crates/tether-models    ModelAdapter trait + adapters
 crates/tether-core      run loop, state machine, checkpoint, resume, replay
 crates/tether-cli       `tether` binary
-crates/tetherd          gRPC daemon (v0.3)
+crates/tetherd          gRPC daemon
 proto/tether.proto      SDK service definition
 sdks/, examples/        Python and TypeScript clients; runnable examples
 ui/                     the trace viewer page, built into the binary

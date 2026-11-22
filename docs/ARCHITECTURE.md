@@ -265,11 +265,9 @@ connects to first. Otherwise `resume` refuses, and a live replay or eval
 carries on without them: a call to one of their tools comes back as a
 failed call that says why.
 
-`rmcp` was checked against its actual client API before this was built
-(3.11: `client`, `transport-child-process`,
-`transport-streamable-http-client-reqwest`), which is what the v0.1 note said
-to do and nobody did until v0.5. It sits behind the `rmcp` cargo feature,
-on by default; a build without it refuses any `[[mcp_server]]` with a clear
+The client is `rmcp` 3.11 (`client`, `transport-child-process`,
+`transport-streamable-http-client-reqwest`). It sits behind the `rmcp` cargo
+feature, on by default; a build without it refuses any `[[mcp_server]]` with a clear
 error. Tether ships no tools beyond the sandbox server.
 
 ## Model adapters
@@ -287,7 +285,6 @@ pub trait ModelAdapter: Send + Sync {
 | --- | --- | --- |
 | `anthropic` | v0.3 | Messages API over HTTP, tool use; streaming collapsed to one event with `ttft_ms`; key from `ANTHROPIC_API_KEY` |
 | `openai_compat` | v0.3 | Chat Completions shape over HTTP, for OpenAI and the servers that copy its endpoint; server from `OPENAI_BASE_URL`, key from `OPENAI_API_KEY`; cargo feature `openai_compat` |
-| `ollama` | after v0.4 | Local; `price` returns `None` |
 | replay | v0.3 | Not in `tether-models`: the stand-in built by `tether-core::replay`, which returns recorded `model.response` events |
 | `fake` | v0.1 | Scripted responses for tests; no API key |
 
@@ -900,9 +897,9 @@ Dependencies point down only. Leaf crates never import each other or
 
 | Question | Decision | Escape hatch |
 | --- | --- | --- |
-| Streaming | One collapsed `model.response` with `stream: true`, `ttft_ms` | `--record-deltas` writes raw deltas to a blob |
+| Streaming | One collapsed `model.response` with `stream: true`, `ttft_ms` | None built. Writing the raw deltas to a blob is the way, if they are ever wanted |
 | Blob storage | Hybrid: inline under 32 KB, content-addressed sidecar per message | `tether pack` for one-file portability |
 | Multi-agent | One trace per run, `agent` field, single writer task | Separate process gets its own run id plus `run.child` |
 | Unattended `ask` | 600 s timeout, then Halted (resumable) | `on_timeout = "deny"` per rule |
-| MCP client | `rmcp` behind the trait, cargo feature | `minimal` hand-rolled client |
-| Hash chain | Keep; BLAKE3 in the writer task | `--no-chain` for throwaway runs; `tether verify` reports it |
+| MCP client | `rmcp` behind the trait, cargo feature | The trait: another client can go behind it |
+| Hash chain | Keep; BLAKE3 in the writer task | None: every trace is chained |

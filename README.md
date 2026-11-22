@@ -174,13 +174,13 @@ Not in scope, ever: prompt templates, RAG, memory, agent-builder UIs.
 
 ## Status
 
-Pre-alpha, with one maintainer. The latest release is 0.4.0.
+Pre-alpha. The latest release is 0.5.0.
 
 The trace format is frozen at v0: a trace written today will be readable by
 later versions. The command line and the SDKs may still change between minor
 versions. [CHANGELOG.md](CHANGELOG.md) lists what changed in each release and
-[docs/PLAN.md](docs/PLAN.md) what ships when. What comes after 0.4 is on the
-[roadmap](https://github.com/users/chizy7/projects/8).
+[docs/PLAN.md](docs/PLAN.md) the phases it was built in. What comes next is
+on the [roadmap](https://github.com/users/chizy7/projects/8).
 
 ## More
 

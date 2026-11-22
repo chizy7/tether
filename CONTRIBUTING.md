@@ -44,7 +44,7 @@ proves ("it records", "it refuses", "it replays", "it evals") and is defined
 by a demo: when the demo runs, the phase is done. If time runs short, features
 are cut and the demo is kept.
 
-`docs/PLAN.md` has the phases and an ordered checklist for the current one.
+`docs/PLAN.md` has the phases, and an ordered checklist when one is under way.
 Work lands as one PR per checklist item. A feature that belongs to a later
 phase waits for that phase, so check the plan before starting something large.
 
