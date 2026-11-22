@@ -2,62 +2,66 @@
 
 **Run agents you don't trust on infrastructure you do.**
 
-Tether is a model-agnostic, MCP-native runtime that wraps any agent and gives
-you the things frameworks leave out: a sandbox, hard budgets, a permission
-layer, and a trace of every model call, tool call and policy decision that you
-can replay, diff and eval against.
-
-> Status: pre-alpha. v0.3 "it replays" is released; v0.4 "it evals" is in
-> progress. `tether run` plays a
-> scripted agent under a policy file: rules allow, deny or ask at the terminal,
-> budgets halt the run, tools run in a sandbox, and every decision lands in a
-> verifiable trace that `tether inspect` and `tether verify` read. Real model
-> calls go through the Anthropic adapter, or the `openai_compat` adapter for
-> any server with an OpenAI-style chat completions endpoint. `tether replay` runs a recorded trace again with no network
-> and no cost, optionally under a changed policy or prompt, and `tether diff`
-> shows where two runs diverge. `tether eval` (on `master`, not yet in a
-> release) replays a suite of recorded tasks under a new prompt or model and
-> checks each against assertions over its trace, and `tether export otlp`
-> (also on `master`) sends a trace to an OpenTelemetry collector as spans. `tether resume` carries a halted or crashed
-> run on from its last checkpoint, and `tether pack` puts a trace and its
-> blobs in one tar. `tetherd` serves all of this over gRPC on a Unix socket
-> for agents in other languages, with a Python SDK in `sdks/python` and a
-> TypeScript one in `sdks/typescript`, both published as `tether-agents`.
-> `tether ui` (on `master`) shows a trace in the browser.
-> Read [docs/PLAN.md](docs/PLAN.md) for what ships when.
+Tether wraps an agent you already have. Every model call and tool call the
+agent makes goes through it, so each one is checked against your rules,
+counted against your budget, run in a sandbox, and written to a trace. The
+trace is complete enough to run the agent again from it, which is what the
+rest is built on: replay, diff and evals.
 
 ![tether eval replays twenty recorded tasks, then asks them again under a changed prompt and reports which fail and why](docs/evals.gif)
 
-The [evals example](examples/evals): twenty tasks recorded against Claude
-Opus 5.5 become a suite, with assertions over each trace. `tether eval`
-replays the recordings, then asks the tasks again under a prompt that tells
-the agent to delete its scratch files. All twenty recordings pass. Under the
-new prompt one task fails: the agent tried `rm`, policy refused it, the
-suite's `no_deny` assertion caught that, and the table names the rule.
-`tether ui` then opens the failed run at the step that went wrong:
+Twenty tasks were recorded once against a real model. `tether eval` checks the
+recordings against assertions at no cost, then asks the same tasks again under
+a changed prompt. One now fails: the agent tried `rm`, policy refused it, and
+the table names the rule. This is the [evals example](examples/evals).
 
-![The trace viewer open on the failed run, at the step where policy refused the rm](docs/evals-ui.jpg)
+## Integration is two call sites
 
-![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
+Tether does not care how your agent is written. It needs the two places where
+the agent touches the world: where it asks the model, and where it runs a
+tool.
 
-The [refuses example](examples/refuses): a scripted agent tries `rm -rf .`,
-the `no-rm` rule denies it, and `tether inspect` shows the call, the decision
-with the rule that matched, and the failed result the agent got back.
+```python
+import tether
 
-![Twenty tasks recorded against Claude Opus 5.5, replayed at no cost, then run again under a changed prompt, with one table of what changed](docs/replays.gif)
+with tether.Run(policy="tether.toml") as run:
+    messages = [tether.user("Fix the failing test.")]
+    while True:
+        reply = run.complete(model="claude-opus-5-5", messages=messages)  # the model call
+        messages.append(reply.message)
+        results = [run.call_tool(call) for call in reply.tool_calls]      # the tool calls
+        if not results:
+            break
+        messages.append(tether.tool_results(results))
+    run.finish(reply.text)
+```
 
-The [replays example](examples/replays) records twenty small tasks against a
-real model, replays each with no model call and no cost, then changes the
-system prompt, replays again live, and prints what changed in one table. All
-twenty replays match their recordings; under the new prompt all twenty make
-more tool calls.
+The loop is yours. The rules are in `tether.toml`:
 
-![A wrapped agent runs under Tether, then tether inspect prints its trace and tether verify checks it](docs/demo.gif)
+```toml
+[budget]
+max_usd = 5.00
+max_tool_calls = 400
 
-The [raw-loop example](examples/raw-loop) running under Tether with a scripted
-model and real sandboxed tools, then `tether inspect` and `tether verify` on
-the trace it left. Recorded at v0.1; traces now also carry `budget.tick`
-events.
+[[rule]]
+name = "write-src"
+match = { tool = "sandbox.write_file", path = "src/**" }
+action = "allow"
+
+[[rule]]
+name = "no-rm"
+match = { tool = "sandbox.exec", argv0 = "rm" }
+action = "deny"
+reason = "deleting files is off limits in this run"
+```
+
+A rule allows, denies, or asks a person. Anything no rule matches asks. A
+budget that runs out halts the run, and a halted run can be resumed.
+
+The same loop is in the repo as a runnable example in
+[Python](examples/raw-loop-py), [TypeScript](examples/raw-loop-ts) and
+[Rust](examples/raw-loop), and wrapped around a framework in the
+[OpenAI Agents SDK example](examples/openai-agents-sdk).
 
 ## Install
 
@@ -69,93 +73,160 @@ npm install tether-agents     # or TypeScript
 
 The first line installs the `tether` binary for macOS or Linux, on arm64 or
 x86-64, into `~/.cargo/bin`. The others install an SDK, which starts the
-daemon built into that binary when it needs one. There is no Windows
-build.
+daemon built into that binary when it needs one. There is no Windows build.
 
-## What it is, and is not
+### Try it without an API key
 
-Tether is a **harness**. It runs agents; it does not build them. Bring your
-own loop, your own framework, your own prompts. Tether sits beside a 50-line
-`while True` ([Rust](examples/raw-loop), [Python](examples/raw-loop-py),
-[TypeScript](examples/raw-loop-ts)) or a framework that lets you supply the
-model and the tools, such as the
-[OpenAI Agents SDK](examples/openai-agents-sdk), and owns everything that
-makes the run safe to leave unattended:
-
-- **Sandboxed tool execution**: `process` (default), `docker`, `firecracker`
-- **Policy**: allow / deny / ask rules in TOML, budgets for tokens, dollars, wall clock and tool calls, a kill switch
-- **Trace**: one append-only JSONL per run, BLAKE3 hash chain, every decision recorded
-- **Replay, diff, eval**: re-run a trace with no network and no cost, diff two runs, score a suite
-- **Checkpoint and resume**: a 40-minute task survives a crash
-- **OpenTelemetry** out of the box
-
-What it cannot wrap yet is a framework that makes its model calls itself.
-The Claude Agent SDK is one: its loop runs inside its own bundled program,
-with hooks on tool calls but none on model calls, so a trace of it would
-have no model requests to replay. That needs Tether to stand in as the model
-endpoint, which is not built.
-
-Not in scope, ever: prompt templates, RAG, memory, agent-builder UIs.
-
-## Integration is two call sites
-
-```python
-from tether import Run
-
-with Run(agent="my-agent", policy="tether.toml") as run:
-    msgs = [{"role": "user", "content": task}]
-    while True:
-        resp = run.complete(model="claude-sonnet-4-5", messages=msgs, tools=run.tools())
-        if not resp.tool_calls:
-            break
-        for call in resp.tool_calls:
-            msgs.append(run.call_tool(call))   # policy, sandbox, trace all happen here
-```
-
-## Layout
-
-```
-crates/   nine Rust crates; see CLAUDE.md
-proto/    gRPC service for the SDKs
-docs/     PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
-```
+The examples come with a scripted model, so they run with no key and no cost.
+The tools are real and run in the sandbox.
 
 ```sh
-cargo check --workspace --all-targets
-cargo test --workspace
+git clone https://github.com/chizy7/tether
+cd tether/examples/refuses
+tether run --script script.json --policy tether.toml
+tether inspect .tether/run_*.jsonl
+tether verify .tether/run_*.jsonl
+```
+
+The agent in that script tries `rm -rf .`. In the trace you will see the
+call, the decision with the rule that made it, and the error the agent got
+back:
+
+```
+tool.call        exec {"argv":["rm","-rf","."]}
+policy.decision  deny: deleting files is off limits in this run (seq 15, rule no-rm)
+tool.result      error, 0 ms, "denied by policy: deleting files is off limits in this run"
+```
+
+To see the Python loop above run the same way:
+
+```sh
+cd ../raw-loop-py
+python agent.py
 ```
 
 ## Honest note on sandboxing
 
 The default `process` backend runs commands as plain child processes, as the
-user running Tether. It is not a security boundary and we will never describe
-it as one. What it does is limit the damage of an ordinary mistake:
+user running Tether. **It is not a security boundary** and we will never
+describe it as one. It limits the damage of an ordinary mistake:
 
-- Every command starts in the workspace with a cleared environment, and file
-  reads and writes are refused outside the workspace.
+- Every command starts in the workspace with only `PATH` in its environment,
+  and the file tools refuse a path that leaves the workspace.
 - A command past its time limit is killed, along with anything it started.
-- CPU time and open files are capped with rlimits (Linux and macOS).
-- On Linux only: a memory cap, a seccomp filter that refuses a list of system
-  calls (tracing other processes, mounting, kernel modules, namespaces,
-  setting the clock), no privilege gain through setuid programs, and no
-  internet sockets when the run has no network.
+- CPU time and open files are capped (Linux and macOS).
+- On Linux only: a memory cap, a filter that refuses a list of system calls,
+  no privilege gain through setuid programs, and no internet sockets when the
+  run has no network.
 
-On either platform a command can still read and write files outside the
-workspace by absolute path. On macOS there is also no memory cap and no
-network block. A limit
-the platform cannot enforce is refused when the sandbox starts, not ignored;
-the exception is the network block on macOS, which is silently absent. Use
-the `docker` backend for filesystem and network namespaces (it mounts only
-the workspace, and is behind the `docker` cargo feature) and `firecracker`
-(v1.0) for a separate kernel.
+What it does not stop: a command can read and write any file you can, by
+absolute path or through a symlink. On macOS there is also no memory cap and
+no network block, and the missing network block is not reported.
+
+If the agent can run commands you would not run yourself, use the `docker`
+backend. It mounts only the workspace, drops every capability and can cut the
+network off, but shares the host's kernel, and it is behind the `docker`
+cargo feature, so it needs a build from source. `firecracker`, with a
+separate kernel, is planned for v1.0. [SECURITY.md](SECURITY.md) has the full
+account.
+
+## What it is, and is not
+
+Tether is a **harness**. It runs agents; it does not build them. Bring your
+own loop, your own framework and your own prompts. Tether owns what makes a
+run safe to leave unattended:
+
+- **Policy**: allow, deny and ask rules in TOML; budgets for tokens, dollars,
+  wall clock and tool calls; a kill switch.
+- **Sandboxed tools**: every tool is an MCP tool, and the built-in ones run
+  in the sandbox.
+- **Trace**: one append-only JSONL file per run, with a BLAKE3 hash chain.
+  Every model call, tool call and decision is in it, whatever the decision
+  was.
+- **Models**: Anthropic, or any server with an OpenAI-style chat completions
+  endpoint.
+
+And what a trace then lets you do:
+
+| Command | What it does |
+| --- | --- |
+| `tether inspect` | Print a trace in readable form |
+| `tether verify` | Check a trace's hash chain and that every stored payload is present |
+| `tether replay` | Run a trace again from the recording: no network, no cost. Under a changed policy, it shows what that policy would have decided |
+| `tether diff` | Show where two runs diverge |
+| `tether eval` | Replay a suite of recorded tasks under a new prompt or model and check each against assertions |
+| `tether ui` | Look at a trace in the browser, with refusals, asks and halts marked |
+| `tether resume` | Carry a halted or crashed run on from its last checkpoint |
+| `tether pack` | Put a trace and its blobs in one file to share |
+| `tether export otlp` | Send a trace to an OpenTelemetry collector as spans |
+
+What it cannot wrap yet is a framework that makes its model calls itself.
+The Claude Agent SDK is one: its loop runs inside its own bundled program,
+with hooks on tool calls but none on model calls, so a trace of it would have
+no model requests to replay. That needs Tether to stand in as the model
+endpoint, which is not built.
+
+Not in scope, ever: prompt templates, RAG, memory, agent-builder UIs.
+
+## Status
+
+Pre-alpha, with one maintainer. The latest release is 0.3.0. `tether eval`,
+`tether ui` and `tether export` are on `master` and ship in 0.4.0; until
+then, build them from source with
+`cargo install --git https://github.com/chizy7/tether tether-cli`.
+
+The trace format is frozen at v0: a trace written today will be readable by
+later versions. The command line and the SDKs may still change between minor
+versions. [CHANGELOG.md](CHANGELOG.md) lists what changed in each release and
+[docs/PLAN.md](docs/PLAN.md) what ships when.
+
+## More
+
+`tether ui` on the failed run from the GIF at the top, at the step where
+policy refused the `rm`:
+
+![The trace viewer open on the failed run, at the step where policy refused the rm](docs/evals-ui.jpg)
+
+The [refuses example](examples/refuses): an agent tries `rm -rf .`, the
+`no-rm` rule denies it, and `tether inspect` shows the call, the decision and
+the failed result the agent got back.
+
+![An agent under Tether tries rm -rf, the policy denies it, and tether inspect shows the decision and the rule that made it](docs/refuses.gif)
+
+The [replays example](examples/replays): twenty small tasks recorded against
+a real model, replayed with no model call and no cost, then run again live
+under a changed system prompt, with one table of what changed.
+
+![Twenty tasks recorded against Claude Opus 5.5, replayed at no cost, then run again under a changed prompt, with one table of what changed](docs/replays.gif)
+
+The [raw-loop example](examples/raw-loop): a wrapped agent with a scripted
+model and real sandboxed tools, then `tether inspect` and `tether verify` on
+the trace it left. Recorded at v0.1; traces now carry more events.
+
+![A wrapped agent runs under Tether, then tether inspect prints its trace and tether verify checks it](docs/demo.gif)
+
+## Building from source
+
+```sh
+cargo test --workspace
+```
+
+Rust stable, 1.89 or newer. Tests need no API key.
+
+```
+crates/     nine Rust crates; docs/ARCHITECTURE.md has the crate graph
+proto/      the gRPC service the SDKs talk to
+sdks/       Python and TypeScript clients
+examples/   runnable examples, each with its own README
+ui/         the trace viewer page, built into the binary
+docs/       PLAN, ARCHITECTURE, TRACE_FORMAT, RELEASING
+```
 
 ## Contributing
 
 [CONTRIBUTING.md](CONTRIBUTING.md) says what belongs in Tether and how to get
 a change merged. Report a vulnerability privately, as
-[SECURITY.md](SECURITY.md) describes; it also has the full account of what
-each sandbox backend isolates. [CHANGELOG.md](CHANGELOG.md) lists what
-changed in each release.
+[SECURITY.md](SECURITY.md) describes.
 
 ## License
 
