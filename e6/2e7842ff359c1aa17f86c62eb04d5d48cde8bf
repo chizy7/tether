@@ -1,0 +1,9 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "e62e7842ff359c1aa17f86c62eb04d5d48cde8bf",
+  "branch": "mcp-client",
+  "prompts": {},
+  "integrity": {"v":1,"commit":"e62e7842ff359c1aa17f86c62eb04d5d48cde8bf","tree":"8a14ddda0e302337eee98cd3d2270aab123dcbc0","files":{},"digest":"806f18ed3655ce630c7a80bd9bc55fa3e36c30d3ae7dda3f52650452b3fc1108"}
+}
