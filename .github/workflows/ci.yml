@@ -49,6 +49,9 @@ jobs:
       # The v0.3 demo with the scripted model: record, replay, re-prompt, diff.
       - run: cargo build -p tether-cli
       - run: PATH="$PWD/target/debug:$PATH" python examples/replays/demo.py
+      # A framework's own loop through the SDK, with the scripted model.
+      - run: pip install -r examples/openai-agents-sdk/requirements.txt
+      - run: PATH="$PWD/target/debug:$PATH" python examples/openai-agents-sdk/agent.py
       # The v0.4 demo with the scripted model: record the suite, check that
       # the recordings pass, and that the worse prompt fails exactly three.
       - name: examples/evals

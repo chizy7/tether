@@ -128,7 +128,7 @@ Product:
 
 Launch:
 
-- [ ] Framework examples: `examples/claude-agent-sdk` and `examples/openai-agents-sdk` are README placeholders today and the README promises them. Each wraps the framework's own loop through the Python SDK in under 60 lines, or the README promise comes out
+- [x] Framework examples: `examples/claude-agent-sdk` and `examples/openai-agents-sdk` are README placeholders today and the README promises them. Each wraps the framework's own loop through the Python SDK in under 60 lines, or the README promise comes out Done for the OpenAI Agents SDK: its `Model` interface and function tools take both call sites in about forty lines. The Claude Agent SDK promise came out: version 0.2 makes its model calls inside its bundled CLI and has hooks on tool calls only, so only half a run could be traced. Wrapping it needs Tether to stand in as the model endpoint, a v1.0 roadmap candidate
 - [ ] Repo hygiene: `CONTRIBUTING.md` (the PR question, design rules, how a phase works), `SECURITY.md` (what the sandbox does and does not isolate, how to report), `CHANGELOG.md` back-filled from v0.1.0, issue and PR templates, `good-first-issue` on five real items
 - [ ] README rewrite for a stranger: lead with the `evals` GIF, then the two-call-site code block, then install, then the honest sandbox note. Three GIFs is two too many above the fold; move `refuses` and `replays` into a "More" section
 - [ ] `docs/REPLAY.md`: the long write-up. Why the trace is the only state, per-message blobs, timings under replay, what breaks determinism and what Tether does about it. This is the launch essay; it goes on HN as the link, with the repo in the first line
@@ -156,7 +156,7 @@ Launch:
 
 - README opens with a GIF: agent misbehaves, Tether blocks it, trace shows the decision
 - One-line install by v0.3
-- `examples/` with wrappers for Claude Agent SDK, OpenAI Agents SDK and a raw loop
+- `examples/` with wrappers for the OpenAI Agents SDK and a raw loop. The Claude Agent SDK one was dropped at v0.4: it has no hook on model calls
 - Public roadmap in GitHub Projects, `good-first-issue` on real work
 - `TRACE_FORMAT.md` frozen from v0.3; the format is what other tools can adopt
 - Launch at v0.4: Hacker News, r/rust, MCP community, one long write-up on replay

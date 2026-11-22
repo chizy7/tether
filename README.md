@@ -75,9 +75,12 @@ build.
 ## What it is, and is not
 
 Tether is a **harness**. It runs agents; it does not build them. Bring your
-own loop, your own framework, your own prompts. Tether sits beside LangGraph,
-the Claude Agent SDK, the OpenAI Agents SDK or a 50-line `while True`, and
-owns everything that makes the run safe to leave unattended:
+own loop, your own framework, your own prompts. Tether sits beside a 50-line
+`while True` ([Rust](examples/raw-loop), [Python](examples/raw-loop-py),
+[TypeScript](examples/raw-loop-ts)) or a framework that lets you supply the
+model and the tools, such as the
+[OpenAI Agents SDK](examples/openai-agents-sdk), and owns everything that
+makes the run safe to leave unattended:
 
 - **Sandboxed tool execution**: `process` (default), `docker`, `firecracker`
 - **Policy**: allow / deny / ask rules in TOML, budgets for tokens, dollars, wall clock and tool calls, a kill switch
@@ -85,6 +88,12 @@ owns everything that makes the run safe to leave unattended:
 - **Replay, diff, eval**: re-run a trace with no network and no cost, diff two runs, score a suite
 - **Checkpoint and resume**: a 40-minute task survives a crash
 - **OpenTelemetry** out of the box
+
+What it cannot wrap yet is a framework that makes its model calls itself.
+The Claude Agent SDK is one: its loop runs inside its own bundled program,
+with hooks on tool calls but none on model calls, so a trace of it would
+have no model requests to replay. That needs Tether to stand in as the model
+endpoint, which is not built.
 
 Not in scope, ever: prompt templates, RAG, memory, agent-builder UIs.
 
