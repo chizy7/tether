@@ -171,10 +171,7 @@ Not in scope, ever: prompt templates, RAG, memory, agent-builder UIs.
 
 ## Status
 
-Pre-alpha, with one maintainer. The latest release is 0.3.0. `tether eval`,
-`tether ui` and `tether export` are on `master` and ship in 0.4.0; until
-then, build them from source with
-`cargo install --git https://github.com/chizy7/tether tether-cli`.
+Pre-alpha, with one maintainer. The latest release is 0.4.0.
 
 The trace format is frozen at v0: a trace written today will be readable by
 later versions. The command line and the SDKs may still change between minor

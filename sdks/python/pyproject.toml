@@ -1,6 +1,6 @@
 [project]
 name = "tether-agents"
-version = "0.3.0"
+version = "0.4.0"
 description = "Python client for Tether: run agents you don't trust on infrastructure you do."
 readme = "README.md"
 license = "Apache-2.0"

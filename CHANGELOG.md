@@ -8,7 +8,11 @@ test.
 
 ## Unreleased
 
-This will be 0.4.0, "it evals".
+Nothing yet.
+
+## 0.4.0, 2026-11-21
+
+"It evals." The launch release.
 
 ### Added
 
@@ -30,12 +34,16 @@ This will be 0.4.0, "it evals".
 - `examples/openai-agents-sdk`: the OpenAI Agents SDK loop with its model and
   tool calls routed through Tether. (#36)
 - `CONTRIBUTING.md`, `SECURITY.md`, this file, and issue and PR templates.
+  (#37)
+- `docs/REPLAY.md`: how replay works and where it stops working. (#39)
 
 ### Changed
 
 - The trace schema is frozen at v0. A test reads traces written by 0.3.0, and
   a change to the format on disk now needs a version bump and a reader for
   the old version. (#30)
+- The README is rewritten for a first-time reader, and its images moved to
+  `docs/media`. (#38, #53)
 
 ### Removed
 

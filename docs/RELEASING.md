@@ -28,8 +28,8 @@ the daemon as `tether daemon`, and the SDKs start it that way when no
 3. Tag the merge commit and push the tag:
 
    ```sh
-   git tag v0.3.0
-   git push origin v0.3.0
+   git tag v0.4.0
+   git push origin v0.4.0
    ```
 
 4. Watch the three workflows. A version on PyPI or npm cannot be published
