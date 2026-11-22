@@ -1,0 +1,131 @@
+.github/ISSUE_TEMPLATE/bug.md
+  s_830eda70c48de9::t_a9fd60103d2a55 1-30
+.github/ISSUE_TEMPLATE/config.yml
+  s_830eda70c48de9::t_a9fd60103d2a55 1-5
+.github/ISSUE_TEMPLATE/feature.md
+  s_830eda70c48de9::t_a9fd60103d2a55 1-24
+.github/PULL_REQUEST_TEMPLATE.md
+  s_830eda70c48de9::t_a9fd60103d2a55 1-20
+CHANGELOG.md
+  s_830eda70c48de9::t_e6aecb076474da 1-115
+CONTRIBUTING.md
+  s_830eda70c48de9::t_2ea656bc109ad4 1-124
+README.md
+  s_830eda70c48de9::t_84f20c3905bb91 152-159
+SECURITY.md
+  s_830eda70c48de9::t_c91e6ee9640597 1-41,44-53,56-94,97-100,102-111,114-119,122-123
+  s_830eda70c48de9::t_f05c6c5d0eb4d3 42-43,54-55,95-96,101,112-113,120-121
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_146555f00d7d83 810-813
+docs/PLAN.md
+  s_830eda70c48de9::t_84f20c3905bb91 132
+docs/RELEASING.md
+  s_830eda70c48de9::t_84f20c3905bb91 24-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "6a8416829d76bf2f4a9e0fd9082a6a27f9908d95",
+  "branch": "repo-hygiene",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:9a09c3be89f27c802a6dcb89e6b7d86bee9cf04bac8103e10e6237bf1d2ac391",
+      "total_additions": 466,
+      "total_deletions": 15,
+      "accepted_lines": 457,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:9a09c3be89f27c802a6dcb89e6b7d86bee9cf04bac8103e10e6237bf1d2ac391",
+      "stats": {
+        "total_additions": 466,
+        "total_deletions": 15,
+        "accepted_lines": 457,
+        "overriden_lines": 0,
+        "files": {
+          ".github/ISSUE_TEMPLATE/bug.md": {
+            "total_additions": 30,
+            "total_deletions": 0,
+            "accepted_lines": 30,
+            "overriden_lines": 0
+          },
+          ".github/ISSUE_TEMPLATE/config.yml": {
+            "total_additions": 5,
+            "total_deletions": 0,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          ".github/ISSUE_TEMPLATE/feature.md": {
+            "total_additions": 24,
+            "total_deletions": 0,
+            "accepted_lines": 24,
+            "overriden_lines": 0
+          },
+          ".github/PULL_REQUEST_TEMPLATE.md": {
+            "total_additions": 20,
+            "total_deletions": 0,
+            "accepted_lines": 20,
+            "overriden_lines": 0
+          },
+          "CHANGELOG.md": {
+            "total_additions": 115,
+            "total_deletions": 0,
+            "accepted_lines": 115,
+            "overriden_lines": 0
+          },
+          "CONTRIBUTING.md": {
+            "total_additions": 124,
+            "total_deletions": 0,
+            "accepted_lines": 124,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 8,
+            "total_deletions": 0,
+            "accepted_lines": 8,
+            "overriden_lines": 0
+          },
+          "SECURITY.md": {
+            "total_additions": 131,
+            "total_deletions": 8,
+            "accepted_lines": 123,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 5,
+            "total_deletions": 5,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/RELEASING.md": {
+            "total_additions": 3,
+            "total_deletions": 1,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"6a8416829d76bf2f4a9e0fd9082a6a27f9908d95","tree":"36b7ac4f0b188fb6c24b61343c4ae0a611e842bb","files":{".github/ISSUE_TEMPLATE/bug.md":"8dac743fd56edd5629a7a82b092cdcb92f85ced5",".github/ISSUE_TEMPLATE/config.yml":"d66f7426b8a5d6082c905a1df8aa47d27fd08ff4",".github/ISSUE_TEMPLATE/feature.md":"28ed809e775ff77ba9b2b982dc938cd9aa74cd94",".github/PULL_REQUEST_TEMPLATE.md":"a238407fa71c6a1366cf8ce673a1aac1fc9a70e8","CHANGELOG.md":"304f91a18c00652bd5c8d35b5f588589a7cceda4","CONTRIBUTING.md":"6bd2a4dba92c636030a31388f0311aa37188a87c","README.md":"ffe38452d099a56278e26e0debfcc18fdaa4f6b5","SECURITY.md":"dd0e18251f50eb857864c28bc5243785cd9b3caf","docs/ARCHITECTURE.md":"c150c6804207aea2659547a0d2ae2731a10eccc3","docs/PLAN.md":"c79af397a988d3087da54b9fc2a6b7a06b099249","docs/RELEASING.md":"3d8c11258d2f4bcb0800609664f27ed94376c19f"},"digest":"37a73a30c3d8afbb174c30cc065aa675d2f44e93be62b32f4223391872fc7063"}
+}
