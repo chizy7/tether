@@ -1,0 +1,137 @@
+CHANGELOG.md
+  s_830eda70c48de9::t_911671feff7617 93-98
+crates/tether-cli/src/run.rs
+  s_830eda70c48de9::t_c16295993b6303 141-144
+crates/tether-policy/src/config.rs
+  s_830eda70c48de9::t_c16295993b6303 48-66
+crates/tether-policy/tests/rules.rs
+  s_830eda70c48de9::t_12aa2631536cb1 644-660
+crates/tether-sandbox/src/process.rs
+  s_830eda70c48de9::t_c16295993b6303 194-237,332-333
+crates/tether-sandbox/tests/kill_running.rs
+  s_830eda70c48de9::t_3cd738799337ea 1-49
+crates/tetherd/src/service.rs
+  s_830eda70c48de9::t_c16295993b6303 102-122,163-204,225,392-393
+  s_830eda70c48de9::t_10ae28436c18b7 352,411-412,483-484,523-524,584-585
+crates/tetherd/tests/daemon.rs
+  s_830eda70c48de9::t_12aa2631536cb1 511-553
+docs/ARCHITECTURE.md
+  s_830eda70c48de9::t_911671feff7617 868-879
+docs/PLAN.md
+  s_830eda70c48de9::t_911671feff7617 177
+tether.example.toml
+  s_830eda70c48de9::t_911671feff7617 13-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "f2eeac9a6bb4027878ae1ffa1e0181bb3a07e464",
+  "branch": "v0.5-review-fixes",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:c25e29304442856d7e6e43e8626929e7d6d181e062a93a3d130ef4b0c165578f",
+      "total_additions": 298,
+      "total_deletions": 26,
+      "accepted_lines": 277,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:c25e29304442856d7e6e43e8626929e7d6d181e062a93a3d130ef4b0c165578f",
+      "stats": {
+        "total_additions": 298,
+        "total_deletions": 26,
+        "accepted_lines": 277,
+        "overriden_lines": 0,
+        "files": {
+          "CHANGELOG.md": {
+            "total_additions": 6,
+            "total_deletions": 0,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "crates/tether-cli/src/run.rs": {
+            "total_additions": 4,
+            "total_deletions": 0,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "crates/tether-policy/src/config.rs": {
+            "total_additions": 19,
+            "total_deletions": 0,
+            "accepted_lines": 19,
+            "overriden_lines": 0
+          },
+          "crates/tether-policy/tests/rules.rs": {
+            "total_additions": 17,
+            "total_deletions": 0,
+            "accepted_lines": 17,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/src/process.rs": {
+            "total_additions": 46,
+            "total_deletions": 0,
+            "accepted_lines": 46,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/tests/kill_running.rs": {
+            "total_additions": 49,
+            "total_deletions": 0,
+            "accepted_lines": 49,
+            "overriden_lines": 0
+          },
+          "crates/tether-sandbox/tests/process.rs": {
+            "total_additions": 21,
+            "total_deletions": 21,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          },
+          "crates/tetherd/src/service.rs": {
+            "total_additions": 75,
+            "total_deletions": 0,
+            "accepted_lines": 75,
+            "overriden_lines": 0
+          },
+          "crates/tetherd/tests/daemon.rs": {
+            "total_additions": 43,
+            "total_deletions": 0,
+            "accepted_lines": 43,
+            "overriden_lines": 0
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 12,
+            "total_deletions": 4,
+            "accepted_lines": 12,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "tether.example.toml": {
+            "total_additions": 5,
+            "total_deletions": 0,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"f2eeac9a6bb4027878ae1ffa1e0181bb3a07e464","tree":"c1296c23c59d7d1ef3d152feb35a477f0d57955c","files":{"CHANGELOG.md":"a99bf4df2a450840d79d980f7f904b6f829412ed","crates/tether-cli/src/run.rs":"f43c3502b56118443ab9a602cd786b97559c7091","crates/tether-policy/src/config.rs":"9888a5fda6f1e239fe7f190c9a298cd8ebfa766d","crates/tether-policy/tests/rules.rs":"599d574df1e038a3c4919a52a23f43f9d3b00f4b","crates/tether-sandbox/src/process.rs":"c8008c9df9ff5476956d88a4bbacb9a2a2864278","crates/tether-sandbox/tests/kill_running.rs":"7a6c1da6b09f120ee16da414db958f8c12a8f399","crates/tetherd/src/service.rs":"438e022a8c5786bcad0101f86dbefd321fdacfa7","crates/tetherd/tests/daemon.rs":"3af4b298914df843edb8a2786383f2b65fafda72","docs/ARCHITECTURE.md":"2d270cb827531704d6b2f58d567ed6f4bd8bebc8","docs/PLAN.md":"ebc93a003f1015a8b468b27935cf2de9dbc19679","tether.example.toml":"d86409b32066bc9115db1c1cef1e6fcf22683342"},"digest":"a176e3f255f4df891926cc32930c5f7cf033b1550131d9b8fadb63f09303b807"}
+}
