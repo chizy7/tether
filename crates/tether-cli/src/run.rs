@@ -138,6 +138,10 @@ pub(crate) fn trip_on_sigint(kill: &KillSwitch) {
             eprintln!("\nhalting at the next event boundary; Ctrl-C again to exit now");
         }
         if tokio::signal::ctrl_c().await.is_ok() {
+            // Exiting here unwinds nothing, and a sandbox command is in its
+            // own process group where the terminal's Ctrl-C does not reach
+            // it. Left alone it would carry on with nobody watching.
+            tether_sandbox::process::kill_running();
             std::process::exit(130);
         }
     });

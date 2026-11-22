@@ -10,6 +10,11 @@ max_tool_calls = 400
 # Seconds to wait for a human on "ask" before the run moves to Halted.
 ask_timeout_secs = 600
 
+# Under the daemon (an agent using an SDK): seconds a run may go without a
+# call from its agent before it is halted as abandoned. An agent that crashed
+# makes no more calls. 0 turns this off.
+idle_timeout_secs = 600
+
 # A rule matches when every key in its `match` does. `tool` is the qualified
 # name, <server>.<tool>; `argv0` is the command's file name; `path` is the
 # call's `path` argument. Each takes a glob or a list of globs. `name` is what

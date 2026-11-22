@@ -191,6 +191,50 @@ impl Capture {
     }
 }
 
+/// The process groups of commands that are running right now, across every
+/// session in this process.
+static RUNNING: Mutex<Vec<u32>> = Mutex::new(Vec::new());
+
+/// One running command's place in [`RUNNING`], given up when it is dropped.
+struct Running(Option<u32>);
+
+impl Running {
+    fn new(pid: Option<u32>) -> Self {
+        if let Some(pid) = pid {
+            RUNNING
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push(pid);
+        }
+        Self(pid)
+    }
+}
+
+impl Drop for Running {
+    fn drop(&mut self) {
+        if let Some(pid) = self.0 {
+            let mut running = RUNNING.lock().unwrap_or_else(PoisonError::into_inner);
+            if let Some(at) = running.iter().position(|p| *p == pid) {
+                running.swap_remove(at);
+            }
+        }
+    }
+}
+
+/// Kill every command the process sandbox has running, and what each
+/// started. For a program about to exit without unwinding, such as on a
+/// second Ctrl-C: a command is in its own process group, so the terminal's
+/// signal never reaches it, and nothing else would stop it.
+pub fn kill_running() {
+    let running: Vec<u32> = RUNNING
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
+    for pid in running {
+        kill_group(Some(pid));
+    }
+}
+
 /// Kill every process in the command's group. The group id is the pid of
 /// the command. When the command has just been reaped the id is free again,
 /// but the kernel hands pids out in order and will not come round to this
@@ -285,6 +329,8 @@ impl Sandbox for ProcessSandbox {
         let started = Instant::now();
         let mut child = command.spawn()?;
         let pid = child.id();
+        // Listed as running until this call returns, however it returns.
+        let _running = Running::new(pid);
 
         // Input and output move at the same time as the command runs, and
         // the time limit covers all of it. Writing the input first would

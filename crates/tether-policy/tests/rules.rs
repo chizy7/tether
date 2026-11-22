@@ -641,3 +641,20 @@ fn the_ask_prompt_shows_the_path_first_and_says_what_it_left_out() {
     };
     assert_eq!(prompt, "Allow sandbox.exec {\"argv\":[\"ls\"]}?");
 }
+
+#[test]
+fn the_idle_timeout_has_a_default_and_can_be_set_or_turned_off() {
+    use std::time::Duration;
+    let idle = |toml: &str| {
+        PolicyConfig::from_toml(toml)
+            .expect("policy")
+            .budget
+            .idle_timeout()
+    };
+    assert_eq!(idle(""), Some(Duration::from_secs(600)));
+    assert_eq!(
+        idle("[budget]\nidle_timeout_secs = 30\n"),
+        Some(Duration::from_secs(30))
+    );
+    assert_eq!(idle("[budget]\nidle_timeout_secs = 0\n"), None);
+}

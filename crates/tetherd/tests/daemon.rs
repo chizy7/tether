@@ -508,3 +508,46 @@ async fn the_binary_starts_on_a_socket_exits_when_idle_and_yields_to_one_already
     assert!(exited.success());
     assert!(!socket.exists());
 }
+
+#[tokio::test]
+async fn a_run_whose_agent_goes_quiet_is_halted_and_the_daemon_can_leave() {
+    let (served, mut client) = serve(Duration::from_millis(400)).await;
+    // One second without a call is enough to call a run abandoned here.
+    std::fs::write(
+        served.path("tether.toml"),
+        format!("[budget]\nidle_timeout_secs = 1\n{POLICY}"),
+    )
+    .expect("write policy");
+
+    let run = client
+        .create_run(create(&served))
+        .await
+        .expect("create")
+        .into_inner();
+    // The agent asks the model once, then is never heard from again: it
+    // crashed, or was killed. No Finish, no Halt.
+    client
+        .complete(ask(&run, json!([user("go")])))
+        .await
+        .expect("complete");
+
+    // The daemon notices, records why, and with nothing left in progress
+    // goes away by itself.
+    tokio::time::timeout(Duration::from_secs(20), served.daemon)
+        .await
+        .expect("the daemon never became idle")
+        .expect("join")
+        .expect("serve");
+
+    let trace = std::fs::read_to_string(&run.trace_path).expect("read trace");
+    let last: Value = serde_json::from_str(trace.lines().last().expect("events")).expect("event");
+    assert_eq!(last["type"], "run.state");
+    assert_eq!(last["data"]["state"], "halted");
+    assert!(
+        last["data"]["reason"]
+            .as_str()
+            .expect("reason")
+            .contains("no call from the agent for 1 s"),
+        "{last}"
+    );
+}

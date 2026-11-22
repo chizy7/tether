@@ -865,10 +865,18 @@ One thing every client over a Unix socket must do: name an HTTP/2 authority.
 gRPC clients default to sending the socket's path, which the daemon's HTTP
 stack rejects. The SDK sets `localhost`.
 
-Limits today: the daemon has only the `process` sandbox; a run whose client
-disappears without `Finish` or `Halt` stays in progress and keeps the daemon
-up; and an ask from a run with no rules waits its full timeout unless
-something calls `Answer`.
+An agent that crashes or is killed never says so; it just stops calling. The
+daemon halts a run that has had no call from its agent for
+`idle_timeout_secs` (in `[budget]`, default 600, 0 for never), with the
+reason `kill switch: no call from the agent for N s`. The halt is in the
+trace, the run's MCP servers are stopped, the run can be resumed, and with
+nothing left in progress the daemon goes on to exit when idle. A call in
+flight is not idleness, however long the model or the tool takes: the clock
+runs only between calls. An agent that works by itself for longer than the
+limit between calls needs a larger one.
+
+Limits today: the daemon has only the `process` sandbox, and an ask from a
+run with no rules waits its full timeout unless something calls `Answer`.
 
 ## Crate graph
 

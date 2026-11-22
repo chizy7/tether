@@ -90,6 +90,12 @@ Found in a review of the whole codebase before this release.
   the end.
 - The daemon could shut down as idle while a run was being created, and
   its halt did nothing for a run left waiting on an ask.
+- A run under the daemon whose agent crashed, or was killed, stayed in
+  progress for ever and kept the daemon and its MCP servers alive. The
+  daemon now halts a run with no call from its agent for `idle_timeout_secs`
+  (`[budget]`, default 600, 0 for never); the run can be resumed. (#45)
+- A second Ctrl-C exited `tether` but left the sandbox command it was
+  running. The command and what it started are now killed first.
 - A socket path too long for the system gets an error that says so.
 - A dollar budget on a model with no price now warns that it cannot apply.
 
