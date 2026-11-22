@@ -1265,3 +1265,35 @@ fn run_needs_a_script_or_a_command_and_not_both() {
         "{out:?}"
     );
 }
+
+#[test]
+fn inspect_shows_control_characters_and_does_not_obey_them() {
+    // A reason that would erase the line and write another in its place.
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("inspect_escapes");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("create test dir");
+    let path = dir.join("run.jsonl");
+    let mut w = TraceWriter::create(&path, RunId("run_test".into())).expect("create");
+    w.append(NewEvent {
+        ts: OffsetDateTime::UNIX_EPOCH,
+        step: 1,
+        agent: "main".into(),
+        parent: None,
+        body: EventType::RunStateChanged {
+            state: RunState::Halted,
+            reason: "stopped\u{1b}[2K\rforged line".into(),
+        },
+    })
+    .expect("append");
+    drop(w);
+
+    let out = tether(&["inspect", &path.to_string_lossy()]);
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        !out.stdout.contains(&0x1b),
+        "an escape byte reached the terminal"
+    );
+    assert!(!out.stdout.contains(&b'\r'));
+    let shown = String::from_utf8_lossy(&out.stdout);
+    assert!(shown.contains("\\u{1b}[2k\\rforged line"), "{shown}");
+}

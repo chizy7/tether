@@ -111,6 +111,12 @@ enum Cmd {
         /// A script to stand in for the live model, as in `tether run`.
         #[arg(long, requires = "live_after_divergence")]
         script: Option<PathBuf>,
+        /// When carrying on live, start the MCP servers named by the policy
+        /// recorded in the trace. Without this only the servers in a
+        /// `--policy` file are started, because a trace can come from
+        /// anyone and a stdio server is a command to run.
+        #[arg(long, requires = "live_after_divergence")]
+        trust_recorded_servers: bool,
     },
     /// Align two traces by step and report where they diverge. Takes the
     /// paths of two `<run>.jsonl`. Exits 0 if they agree, 1 if they diverge
@@ -143,6 +149,11 @@ enum Cmd {
         /// live model, as in `tether run --script`. For tests and demos.
         #[arg(long)]
         scripts: Option<PathBuf>,
+        /// For tasks asked again live, start the MCP servers named by each
+        /// recording's own policy. Without this only the servers in a
+        /// `--policy` file are started.
+        #[arg(long)]
+        trust_recorded_servers: bool,
     },
     /// Look at a trace in the browser: steps down the side, the events of
     /// each, and any stored message or result on a click. Policy refusals,
@@ -188,6 +199,11 @@ enum Cmd {
         /// replies are the ones still to come.
         #[arg(long)]
         script: Option<PathBuf>,
+        /// Start the MCP servers the run's recorded policy names. Needed to
+        /// resume a run that used any, and only right for a trace you made:
+        /// a stdio server is a command to run.
+        #[arg(long)]
+        trust_recorded_servers: bool,
     },
     /// Verify the BLAKE3 hash chain and blob completeness. Takes the path of a `<run>.jsonl`.
     Verify { run: String },
@@ -261,6 +277,7 @@ async fn main() -> anyhow::Result<()> {
             model,
             live_after_divergence,
             script,
+            trust_recorded_servers,
         } => {
             let options = replay::Options {
                 run,
@@ -271,6 +288,7 @@ async fn main() -> anyhow::Result<()> {
                 live: live_after_divergence,
                 script,
                 attended: true,
+                trust_recorded_servers,
             };
             match replay::replay(options).await {
                 // The replay left the recording and had nothing to carry on with.
@@ -309,7 +327,11 @@ async fn main() -> anyhow::Result<()> {
             };
             ui::ui(options).await
         }
-        Cmd::Resume { run, script } => resume::resume(&run, script.as_deref()).await,
+        Cmd::Resume {
+            run,
+            script,
+            trust_recorded_servers,
+        } => resume::resume(&run, script.as_deref(), trust_recorded_servers).await,
         Cmd::Pack { run, out } => pack::pack(&run, out.as_deref()),
         Cmd::Unpack { tar, dir } => pack::unpack(&tar, dir.as_deref()),
         Cmd::Eval {
@@ -319,6 +341,7 @@ async fn main() -> anyhow::Result<()> {
             policy,
             out,
             scripts,
+            trust_recorded_servers,
         } => {
             let options = eval::Options {
                 suite,
@@ -327,6 +350,7 @@ async fn main() -> anyhow::Result<()> {
                 policy,
                 out,
                 scripts,
+                trust_recorded_servers,
             };
             match eval::eval(options).await {
                 Ok(true) => Ok(()),
@@ -377,7 +401,11 @@ fn inspect(path: &str) -> anyhow::Result<()> {
         writeln!(
             out,
             "{:>5}  step {:<3}  {:<8}  {:<16} {}",
-            event.seq, event.step, event.agent, kind, summary
+            event.seq,
+            event.step,
+            printable(&event.agent),
+            printable(kind),
+            printable(&summary)
         )?;
     }
     Ok(())
@@ -417,10 +445,19 @@ pub(crate) fn describe(event: &Event) -> (&str, String) {
             }
             ("model.response", line)
         }
-        EventType::ToolCall(call) => (
-            "tool.call",
-            format!("{} {}", call.name, clip(&call.arguments.to_string())),
-        ),
+        EventType::ToolCall(call) => {
+            // A call to an external server is shown as rules see it,
+            // `<server>.<tool>`, so the server is on the line.
+            let name = if call.external {
+                tether_policy::rules::qualified_name(call)
+            } else {
+                call.name.clone()
+            };
+            (
+                "tool.call",
+                format!("{name} {}", clip(&call.arguments.to_string())),
+            )
+        }
         EventType::ToolResult(result) => {
             let status = if result.is_error { "error" } else { "ok" };
             let content = match &result.content {
@@ -505,6 +542,25 @@ fn of<U: std::fmt::Display, L: std::fmt::Display>(used: U, limit: Option<L>) -> 
 }
 
 /// Keep a summary on one line.
+/// `text` made safe to print to a terminal. What is printed often comes out
+/// of a trace or from an MCP server, which is to say from anyone, and a
+/// control character there could move the cursor, erase a line or forge
+/// one. Each is shown as its escape instead.
+pub(crate) fn printable(text: &str) -> String {
+    if !text.chars().any(char::is_control) {
+        return text.to_owned();
+    }
+    text.chars()
+        .flat_map(|c| {
+            if c.is_control() {
+                c.escape_default().collect::<Vec<char>>()
+            } else {
+                vec![c]
+            }
+        })
+        .collect()
+}
+
 pub(crate) fn clip(text: &str) -> String {
     const MAX: usize = 80;
     if text.chars().count() <= MAX {

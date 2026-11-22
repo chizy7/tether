@@ -293,9 +293,9 @@ fn tool_patterns_match_the_qualified_name() {
         outcome(&policy, &call("github", "create_issue", json!({}))),
         ("allow", rule("github"))
     );
-    // A name the registry prefixed on a collision is not prefixed twice.
+    // A name the registry prefixed on a collision reads the same to a rule.
     assert_eq!(
-        outcome(&policy, &call("github", "github.create_issue", json!({}))),
+        outcome(&policy, &call("github", "github__create_issue", json!({}))),
         ("allow", rule("github"))
     );
     // The server is part of the name, so a bare pattern does not match.
@@ -488,4 +488,156 @@ timeout_secs = 5
         let err = PolicyConfig::from_toml(bad).expect_err(bad).to_string();
         assert!(err.contains(expect), "{bad}\n-> {err}");
     }
+}
+
+/// A policy that denies a secret directory and `rm`, then allows the rest.
+fn guarded() -> RulePolicy {
+    RulePolicy::from_toml(
+        r#"
+        [[rule]]
+        name = "no-secrets"
+        match = { path = ["secrets", "secrets/**"] }
+        action = "deny"
+
+        [[rule]]
+        name = "no-rm"
+        match = { tool = "sandbox.exec", argv0 = "rm" }
+        action = "deny"
+
+        [[rule]]
+        name = "src-only"
+        match = { tool = "sandbox.write_file", path = "src/**" }
+        action = "allow"
+
+        [[rule]]
+        name = "rest"
+        match = { server = "*" }
+        action = "allow"
+        "#,
+    )
+    .expect("policy")
+}
+
+#[test]
+fn a_deny_ignores_letter_case_and_an_allow_does_not() {
+    let policy = guarded();
+    // On a filesystem that ignores case these name the denied things.
+    assert_eq!(
+        outcome(&policy, &write("SECRETS/key.txt")),
+        ("deny", rule("no-secrets"))
+    );
+    assert_eq!(
+        outcome(&policy, &exec(&["RM", "-rf", "."])),
+        ("deny", rule("no-rm"))
+    );
+    assert_eq!(
+        outcome(&policy, &exec(&["/bin/Rm", "x"])),
+        ("deny", rule("no-rm"))
+    );
+    // An allow matches as written: `SRC/` is not `src/`, so the narrow
+    // allow is not what lets it through.
+    assert_eq!(
+        outcome(&policy, &write("src/a.rs")),
+        ("allow", rule("src-only"))
+    );
+    assert_eq!(
+        outcome(&policy, &write("SRC/a.rs")),
+        ("allow", rule("rest"))
+    );
+}
+
+#[test]
+fn a_path_that_climbs_out_cannot_skip_a_deny() {
+    let policy = guarded();
+    // Nobody can say what `../workspace/secrets` names, so the deny on a
+    // path takes it; before, no path rule matched and the last allow did.
+    assert_eq!(
+        outcome(&policy, &write("../workspace/secrets/key.txt")),
+        ("deny", rule("no-secrets"))
+    );
+    assert_eq!(
+        outcome(
+            &policy,
+            &call("sandbox", "list_dir", json!({"path": "../.."}))
+        ),
+        ("deny", rule("no-secrets"))
+    );
+    // A path that goes down and back up without leaving is just a path.
+    assert_eq!(
+        outcome(&policy, &write("src/../src/a.rs")),
+        ("allow", rule("src-only"))
+    );
+    assert_eq!(
+        outcome(&policy, &write("src/../secrets/key.txt")),
+        ("deny", rule("no-secrets"))
+    );
+}
+
+#[test]
+fn a_tool_pattern_covers_any_name_a_server_gives_a_tool() {
+    let policy = RulePolicy::from_toml(
+        r#"
+        [[rule]]
+        name = "no-evil"
+        match = { tool = "evil.*" }
+        action = "deny"
+
+        [[rule]]
+        name = "rest"
+        match = { tool = "**" }
+        action = "allow"
+        "#,
+    )
+    .expect("policy");
+    assert_eq!(
+        outcome(&policy, &call("evil", "read_note", json!({}))),
+        ("deny", rule("no-evil"))
+    );
+    // A `/` in a tool name is not a directory.
+    assert_eq!(
+        outcome(&policy, &call("evil", "admin/delete_all", json!({}))),
+        ("deny", rule("no-evil"))
+    );
+    assert_eq!(
+        outcome(&policy, &call("fine", "admin/delete_all", json!({}))),
+        ("allow", rule("rest"))
+    );
+}
+
+#[test]
+fn a_pattern_too_long_to_match_quickly_is_refused() {
+    let long = "a".repeat(2000);
+    let error = PolicyConfig::from_toml(&format!(
+        "[[rule]]\nmatch = {{ path = \"{long}\" }}\naction = \"deny\"\n"
+    ))
+    .expect_err("too long");
+    assert!(error.to_string().contains("longer than"), "{error}");
+}
+
+#[test]
+fn the_ask_prompt_shows_the_path_first_and_says_what_it_left_out() {
+    let policy = RulePolicy::from_toml(
+        "[[rule]]\nname = \"ask-all\"\nmatch = { server = \"*\" }\naction = \"ask\"\n",
+    )
+    .expect("policy");
+    let hidden = call(
+        "sandbox",
+        "write_file",
+        json!({"content": "x".repeat(5000), "path": "secrets/key.txt"}),
+    );
+    let Decision::Ask { prompt } = decide(&policy, &hidden).decision else {
+        panic!("expected an ask");
+    };
+    // `content` sorts before `path`; the prompt must not let it hide the path.
+    assert!(
+        prompt.starts_with("Allow sandbox.write_file {\"path\":\"secrets/key.txt\""),
+        "{prompt}"
+    );
+    assert!(prompt.contains("more characters not shown"), "{prompt}");
+
+    let short = call("sandbox", "exec", json!({"argv": ["ls"]}));
+    let Decision::Ask { prompt } = decide(&policy, &short).decision else {
+        panic!("expected an ask");
+    };
+    assert_eq!(prompt, "Allow sandbox.exec {\"argv\":[\"ls\"]}?");
 }

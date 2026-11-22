@@ -97,3 +97,46 @@ async fn failures_come_back_as_error_results() {
         assert!(is_error && content.is_string(), "{name}: {content}");
     }
 }
+
+#[tokio::test]
+async fn arguments_given_as_a_list_are_refused() {
+    // serde would fill the argument struct from a list, position by
+    // position, and a rule looking for `argv` or `path` by name would have
+    // seen nothing: the call would run past every rule.
+    let server = server("server_positional").await;
+    let (_, is_error) = call(
+        &server,
+        "write_file",
+        json!({"path": "victim.txt", "content": "keep"}),
+    )
+    .await;
+    assert!(!is_error);
+
+    for (tool, arguments) in [
+        ("exec", json!([["rm", "victim.txt"], null, null])),
+        ("read_file", json!(["victim.txt"])),
+        ("write_file", json!(["victim.txt", "overwritten"])),
+        ("list_dir", json!(["."])),
+    ] {
+        let (content, is_error) = call(&server, tool, arguments).await;
+        assert!(is_error, "{tool} took a list: {content}");
+        assert!(content.to_string().contains("JSON object"), "{content}");
+    }
+    let (content, _) = call(&server, "read_file", json!({"path": "victim.txt"})).await;
+    assert_eq!(content, "keep");
+}
+
+#[tokio::test]
+async fn list_dir_stays_in_the_workspace() {
+    let server = server("server_list_dir").await;
+    for outside in ["/etc", "..", "a/../..", "/"] {
+        let (content, is_error) = call(&server, "list_dir", json!({"path": outside})).await;
+        assert!(is_error, "listed {outside}: {content}");
+        assert!(
+            content.to_string().contains("leaves the workspace"),
+            "{content}"
+        );
+    }
+    let (_, is_error) = call(&server, "list_dir", json!({})).await;
+    assert!(!is_error);
+}

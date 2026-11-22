@@ -16,7 +16,10 @@ pub(crate) fn env(name: &str) -> Option<String> {
 }
 
 pub(crate) fn client() -> reqwest::Client {
+    // Never follow a redirect: the request carries an API key in a header,
+    // and a redirect could take it, and the prompt, to another host.
     reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
         .user_agent(concat!("tether/", env!("CARGO_PKG_VERSION")))
         .connect_timeout(Duration::from_secs(30))
         // Between chunks, not for the whole response: a long answer

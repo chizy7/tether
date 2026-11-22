@@ -76,7 +76,7 @@ history is never copied.
 
 | `type` | `data` |
 | --- | --- |
-| `run.created` | agent id, model config, `policy` (the full text of the policy TOML as one string, byte for byte; null when the policy did not come from a file), `sandbox` (`{"backend": "process"}` or the like; null when the run has no sandbox), merged tool list, schema version |
+| `run.created` | agent id, model config, `policy` (the full text of the policy TOML as one string, byte for byte; null when the policy did not come from a file), `sandbox` (`{"backend": "process"}` or the like; null when the run has no sandbox), merged tool list (each entry with its `server` and `external`), `mcp_servers` (from 0.5: one entry per server behind the tool list, `{id, transport, protocol_version, server_name, server_version}`, where `transport` is `builtin`, `stdio` or `http`; absent in traces written before 0.5 and in their replays), schema version |
 | `run.state` | `{state, reason}`; state is one of `created`, `running`, `suspended`, `halted`, `finished` |
 | `run.child` | `{child}` run id of a spawned sub-agent process |
 | `run.finished` | outcome, totals, final budget |

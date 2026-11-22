@@ -41,11 +41,14 @@ reason = "no network in this run"
 # transport = "stdio"
 # command = "npx"
 # args = ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"]
-# env = ["PATH", "HOME"]
-# timeout_secs = 60
+# env = ["HOME"]          # passed to the server beside PATH; nothing else is
+# timeout_secs = 60       # for the handshake and for each call
+#
+# This file is recorded whole in every trace, so never write a token in it.
+# A header value takes ${NAME}, filled in from the environment at run start.
 #
 # [[mcp_server]]
 # id = "search"
 # transport = "http"
 # url = "http://127.0.0.1:8931/mcp"
-# headers = { Authorization = "Bearer ..." }
+# headers = { Authorization = "Bearer ${SEARCH_TOKEN}" }

@@ -25,6 +25,8 @@ pub struct Options {
     pub policy: Option<PathBuf>,
     pub out: Option<PathBuf>,
     pub scripts: Option<PathBuf>,
+    /// As `tether replay --trust-recorded-servers`, for every task.
+    pub trust_recorded_servers: bool,
 }
 
 /// The assertions on one task. Every field is optional; one left out is
@@ -306,6 +308,7 @@ async fn run_task(
         live: options.system.is_some() || options.model.is_some(),
         script,
         attended: false,
+        trust_recorded_servers: options.trust_recorded_servers,
     })
     .await?;
 

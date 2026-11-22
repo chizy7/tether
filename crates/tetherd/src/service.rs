@@ -41,6 +41,18 @@ struct Activity {
     idle_since: Mutex<Instant>,
 }
 
+/// The activity `create_run` begins, ended again if the call returns
+/// without having made a run.
+struct Starting<'a>(&'a Activity, bool);
+
+impl Drop for Starting<'_> {
+    fn drop(&mut self) {
+        if self.1 {
+            self.0.end();
+        }
+    }
+}
+
 impl Activity {
     fn begin(&self) {
         self.busy.fetch_add(1, Ordering::SeqCst);
@@ -170,7 +182,9 @@ impl Daemon {
 
     /// Turn a failed call into a status, noting the run's end if it halted.
     fn failed(&self, entry: &Entry, run: &Run, e: RunError) -> Status {
-        if run.state() != RunState::Running {
+        // A run whose trace cannot be written is over as well: nothing more
+        // can be recorded, so nothing more will be done.
+        if run.state() != RunState::Running || matches!(e, RunError::Trace(_)) {
             self.ended(entry);
         }
         run_error(e)
@@ -216,6 +230,11 @@ impl Tether for Daemon {
         request: Request<proto::CreateRunRequest>,
     ) -> Result<Response<proto::Run>, Status> {
         let req = request.into_inner();
+        // Starting a run is activity from its first moment. Connecting an
+        // MCP server can take longer than the idle time, and the daemon must
+        // not decide it is idle and leave while a run is being made.
+        self.inner.activity.begin();
+        let mut starting = Starting(&self.inner.activity, true);
         match req.sandbox.as_str() {
             "" | "process" => {}
             other => {
@@ -306,7 +325,8 @@ impl Tether for Daemon {
             asks,
             in_progress: AtomicBool::new(true),
         });
-        self.inner.activity.begin();
+        // The run now holds the activity this call began.
+        starting.1 = false;
         lock(&self.inner.runs).insert(run_id.clone(), entry);
         Ok(Response::new(proto::Run {
             run_id,
@@ -515,14 +535,18 @@ impl Tether for Daemon {
         entry.kill.trip(REASON);
         // With no call in flight there is no boundary coming: halt now.
         if let Ok(mut guard) = entry.run.try_lock() {
+            // A run left waiting on an ask counts: its caller went away
+            // mid-question, and without this it would wait for ever.
             if let Some(run) = guard
                 .as_mut()
-                .filter(|run| run.state() == RunState::Running)
+                .filter(|run| matches!(run.state(), RunState::Running | RunState::Suspended))
             {
-                run.halt_as_recorded(&format!("kill switch: {REASON}"), false)
-                    .await
-                    .map_err(run_error)?;
+                let halted = run
+                    .halt_as_recorded(&format!("kill switch: {REASON}"), false)
+                    .await;
+                // Over either way, also when the halt could not be written.
                 self.ended(&entry);
+                halted.map_err(run_error)?;
             }
         }
         Ok(Response::new(proto::Empty {}))

@@ -17,15 +17,20 @@ Nothing yet.
 ### Added
 
 - `[[mcp_server]]` tables in `tether.toml`: an MCP server over stdio (`command`,
-  `args`, an `env` allowlist for the child) or streamable HTTP (`url`,
-  `headers`), with a per-call `timeout_secs`. Validated when the policy loads.
+  `args`, an `env` allowlist for the child beside `PATH`) or streamable HTTP
+  (`url`, `headers`), with a `timeout_secs` for the handshake and for each
+  call. Validated when the policy loads. A header value takes `${NAME}` from
+  the environment, so a token is never written in the policy file, which
+  every trace records.
 - `tether-mcp::client::ExternalServer`: the MCP wire-protocol client, built on
   `rmcp` 3.x behind the `McpClient` trait. `initialize` with a check of the
   negotiated protocol version, `tools/list`, `tools/call`, timeouts, and a
-  child process that stops with the run.
+  child process that stops with the run. A server that never answers
+  `initialize` fails the run at start.
 - `tether-mcp::Registry`: merges the built-in sandbox server with every
   configured server into the one tool list the agent sees. A name collision
-  is exposed as `<server>.<tool>`; the sandbox keeps the bare name.
+  is exposed as `<server>__<tool>`; the sandbox keeps the bare name. Rules
+  see every tool as `<server>.<tool>`.
 - `run.created.mcp_servers`: each server's id, transport, negotiated protocol
   version and reported name. Inside `data`, so the frozen envelope is
   unchanged.
@@ -35,12 +40,65 @@ Nothing yet.
 - `examples/mcp-filesystem`: the demo against the reference filesystem server.
 - The `rmcp` cargo feature on `tether-mcp` and `tether-core`, on by default.
   Without it a policy naming a server fails at start with a clear error.
+- `tether resume`, and a replay or eval that goes live after leaving the
+  recording, connect the servers the policy names, so the external tools
+  work there too. A replay that stays on the recording connects nothing.
+- `--trust-recorded-servers` on `replay`, `eval` and `resume`. A trace's
+  recorded policy could name any command, so those commands start a server
+  only from a `--policy` file or with this flag, and print what it runs
+  first.
+- `tether inspect` shows a call to an external server as `<server>.<tool>`.
+- `SECURITY.md` says what an external MCP server can do: it is not
+  sandboxed, and policy is the only check on it.
+
+### Security
+
+Found in a review of the whole codebase before this release.
+
+- Tool arguments sent as a JSON list were run by the built-in tools but had
+  no `argv` or `path` for a rule to match, so they passed every such rule.
+  The built-in tools now take a JSON object only.
+- `list_dir` checked no path and listed any directory on the machine. It is
+  held to the workspace like the other file tools.
+- A `deny` or `ask` on a `path` or command name now ignores letter case, and
+  matches a path that climbs out with `..`. Both used to slip past.
+- A `tool` pattern such as `fs.*` now covers a tool whose name has a `/`.
+- A blob is checked against its hash and must be a plain file on every
+  read. A trace directory could carry a blob that was a link to a local
+  file, and `tether replay` would copy that file into its output.
+- A crafted trace could crash `replay` and `eval`, or hang them for minutes
+  through the pattern matcher. Both are fixed; matching no longer backtracks.
+- Requests carrying credentials (model providers, HTTP MCP servers, OTLP
+  export) no longer follow redirects.
+- `tether inspect`, `tether tools` and the ask prompt show control
+  characters as escapes, so a trace or a server cannot rewrite the terminal.
+- The ask prompt shows `path` and `argv` first and says how much it cut, so
+  a long `content` cannot hide what is being approved.
+- The daemon removes only a socket at its socket path, never another file.
+
+### Fixed
+
+- `exec` with large input could hang for ever, past the time limit: input,
+  output and the limit now run together.
+- A command's process group is killed when it returns, not only when it
+  times out, so background jobs do not outlive it.
+- Output is capped at 4 MiB per stream and `read_file` at 16 MiB, so a
+  command that prints without end cannot exhaust memory or disk.
+- A trace is locked by its writer. `tether resume` on a run that was still
+  alive wrote a second run into the same file and broke it for good.
+- The trace is synced to disk at each checkpoint and on a halt, not only at
+  the end.
+- The daemon could shut down as idle while a run was being created, and
+  its halt did nothing for a run left waiting on an ask.
+- A socket path too long for the system gets an error that says so.
+- A dollar budget on a model with no price now warns that it cannot apply.
 
 ### Changed
 
 - Every tool of an external server is `external = true`; replay returns the
   recorded result and starts nothing. Replay also carries the recorded
-  `mcp_servers`, so a replayed `run.created` equals the original.
+  `mcp_servers`, so a replayed `run.created` equals the original, including
+  for a trace written before 0.5, which has none.
 - Logging defaults to `info,rmcp=warn` and goes to stderr; `RUST_LOG`
   overrides it.
 - `mcp` is back in the PyPI and npm package keywords, this time truthfully.
@@ -71,7 +129,8 @@ Documentation and package metadata only. No code change.
   pass, fail and cost per task. (#31)
 - `tether replay --model`: replay a recording against a different model. (#31)
 - `tether export otlp`: a trace as OpenTelemetry spans over OTLP/HTTP JSON,
-  once or following a live run. Message content is not exported. (#32)
+  once or following a live run. Messages, tool arguments and tool results
+  are not exported. (#32)
 - TypeScript SDK, published to npm as `tether-agents`, and the `raw-loop-ts`
   example. (#33)
 - `tether ui`: a trace viewer in the browser, served on this machine only.

@@ -25,7 +25,7 @@ pub mod sandbox_server;
 pub mod client;
 
 pub use config::{ServerConfig, Transport};
-pub use registry::Registry;
+pub use registry::{Registry, NAME_SEPARATOR};
 
 /// MCP protocol versions this build will talk to. The negotiated version is
 /// recorded per server in `run.created.mcp_servers`.

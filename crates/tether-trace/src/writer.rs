@@ -36,6 +36,22 @@ pub struct TraceWriter {
     failed: bool,
 }
 
+/// Take the trace for this writer, for as long as the file stays open.
+///
+/// A trace has one writer. Two would each number and chain their events
+/// from the same point, and the file would never verify again. The lock is
+/// advisory and held on the open file, so it goes when the writer is dropped
+/// or its process dies, however it dies. Readers do not take it.
+fn hold(file: &std::fs::File, path: &Path) -> Result<()> {
+    match file.try_lock() {
+        Ok(()) => Ok(()),
+        Err(std::fs::TryLockError::WouldBlock) => Err(TraceError::InUse(path.to_owned())),
+        // A filesystem with no locks at all is not a reason to refuse to
+        // write a trace.
+        Err(std::fs::TryLockError::Error(_)) => Ok(()),
+    }
+}
+
 impl TraceWriter {
     /// Start a new trace at `path`. Fails if the file already exists: a trace
     /// is never overwritten.
@@ -45,6 +61,7 @@ impl TraceWriter {
             .append(true)
             .create_new(true)
             .open(path)?;
+        hold(&file, path)?;
         Ok(Self {
             file,
             run,
@@ -61,6 +78,10 @@ impl TraceWriter {
     /// never a complete event.
     pub fn open_append(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
+        // Taken first, before anything is read or repaired: if the run that
+        // wrote this trace is still alive, nothing here may touch the file.
+        let file = OpenOptions::new().append(true).open(path)?;
+        hold(&file, path)?;
         drop_partial_line(path)?;
         let mut reader = crate::TraceReader::open(path)?;
         let mut last = None;
@@ -72,7 +93,7 @@ impl TraceWriter {
             reason: "an empty trace has no run to resume".into(),
         })?;
         Ok(Self {
-            file: OpenOptions::new().append(true).open(path)?,
+            file,
             run: last.run,
             next_seq: last.seq + 1,
             prev_hash: reader.head().to_owned(),

@@ -2,7 +2,11 @@
 //!
 //! The built-in `sandbox` server goes first, so its tool names (`exec`,
 //! `read_file`, ...) are the ones that stay bare when an external server
-//! offers the same name; the external one becomes `<server>.<tool>`.
+//! offers the same name; the external one becomes `<server>__<tool>`.
+//!
+//! The separator is two underscores and not a dot because the name goes to
+//! the model as it is, and model APIs take only letters, digits, `_` and `-`
+//! in a tool name. Policy rules still see `<server>.<tool>`.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -11,6 +15,9 @@ use async_trait::async_trait;
 use tether_types::{ToolCall, ToolResult};
 
 use crate::{McpClient, McpError, ServerInfo, ToolSpec};
+
+/// Between the server id and the tool name where a name had to be prefixed.
+pub const NAME_SEPARATOR: &str = "__";
 
 struct Entry {
     /// Index into `servers`.
@@ -49,8 +56,22 @@ impl Registry {
             let server_id = &ids[index];
             for mut spec in client.list_tools().await? {
                 let original = spec.name.clone();
+                // Rules know a tool as `<server>.<tool>`, and the prefix a
+                // collision gets is taken off to arrive at that. A server
+                // that names a tool with its own id in front would have two
+                // tools a rule cannot tell apart.
+                if original.starts_with(&format!("{server_id}{NAME_SEPARATOR}"))
+                    || original.starts_with(&format!("{server_id}."))
+                {
+                    return Err(McpError::Server {
+                        server: server_id.clone(),
+                        reason: format!(
+                            "tool {original:?} starts with the server's own id; a rule could not tell it from the tool without it"
+                        ),
+                    });
+                }
                 let exposed = if tools.contains_key(&original) {
-                    format!("{server_id}.{original}")
+                    format!("{server_id}{NAME_SEPARATOR}{original}")
                 } else {
                     original.clone()
                 };

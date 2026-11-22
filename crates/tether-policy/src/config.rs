@@ -20,14 +20,14 @@
 //! transport = "stdio"
 //! command = "npx"
 //! args = ["-y", "@modelcontextprotocol/server-filesystem", "./workspace"]
-//! env = ["HOME", "PATH"]     # the only variables the child process gets
-//! timeout_secs = 60          # per call
+//! env = ["HOME"]             # what the child process gets, beside PATH
+//! timeout_secs = 60          # for the handshake and per call
 //!
 //! [[mcp_server]]
 //! id = "search"
 //! transport = "http"
 //! url = "http://127.0.0.1:8931/mcp"
-//! headers = { Authorization = "Bearer ..." }
+//! headers = { Authorization = "Bearer ${SEARCH_TOKEN}" }   # from the environment
 //! ```
 
 use serde::Deserialize;
@@ -178,6 +178,9 @@ fn invalid(rule: &str, reason: impl Into<String>) -> PolicyError {
     }
 }
 
+/// The longest pattern a rule may have.
+pub const MAX_PATTERN: usize = 1024;
+
 fn globs(rule: &str, key: &str, value: Option<OneOrMany>) -> Result<Vec<String>, PolicyError> {
     let globs = match value {
         None => return Ok(Vec::new()),
@@ -188,6 +191,14 @@ fn globs(rule: &str, key: &str, value: Option<OneOrMany>) -> Result<Vec<String>,
     // meant to match nothing.
     if globs.is_empty() || globs.iter().any(String::is_empty) {
         return Err(invalid(rule, format!("`{key}` has an empty pattern")));
+    }
+    // Matching costs pattern length times text length, and the text is the
+    // agent's to choose. No real pattern is anywhere near this long.
+    if globs.iter().any(|glob| glob.chars().count() > MAX_PATTERN) {
+        return Err(invalid(
+            rule,
+            format!("a `{key}` pattern is longer than {MAX_PATTERN} characters"),
+        ));
     }
     Ok(globs)
 }

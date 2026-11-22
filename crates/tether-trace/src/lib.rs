@@ -43,10 +43,14 @@ pub enum TraceError {
     MissingBlob(String),
     #[error("blob {expected} is corrupt: content hashes to {found}")]
     BlobCorrupt { expected: String, found: String },
+    #[error("blob {0} is not a regular file")]
+    BlobNotAFile(String),
     #[error("not a blob hash: {0:?}")]
     InvalidBlobHash(String),
     #[error("pack: {0}")]
     Pack(String),
+    #[error("{0} is being written by another process; a trace has one writer")]
+    InUse(std::path::PathBuf),
     #[error("event {seq} is {bytes} bytes, over the {limit} byte cap")]
     EventTooLarge {
         seq: u64,

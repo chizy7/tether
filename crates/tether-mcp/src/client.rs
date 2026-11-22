@@ -3,8 +3,10 @@
 //! `connect` runs `initialize`, checks the negotiated protocol version
 //! against [`SUPPORTED_PROTOCOL_VERSIONS`] and keeps the connection for the
 //! run. Stdio servers are child processes that live as long as the run and
-//! get only the environment variables the policy names. Every call has the
-//! server's `timeout_secs`; a call past it fails as a normal tool error.
+//! get `PATH` and the environment variables the policy names, nothing else.
+//! `timeout_secs` bounds `initialize` and every call: a server that does not
+//! answer `initialize` fails the connect, and a call past the limit fails as
+//! a normal tool error.
 
 use std::time::Duration;
 
@@ -40,35 +42,52 @@ impl ExternalServer {
             reason: e.to_string(),
         };
 
+        // A server that never answers `initialize` must not hang the run.
+        // Dropping the pending handshake drops the transport, which stops a
+        // stdio child.
+        let limit = Duration::from_secs(config.timeout_secs);
+        let no_answer = || McpError::Connect {
+            server: config.id.clone(),
+            reason: format!("no answer to `initialize` within {} s", config.timeout_secs),
+        };
+
         let service = match &config.transport {
             Transport::Stdio { command, args, env } => {
                 let mut cmd = tokio::process::Command::new(command);
                 cmd.args(args);
                 cmd.env_clear();
-                for name in env {
+                // `PATH` always: without it the server cannot find its own
+                // interpreter, and it is not a secret. Everything else only
+                // if the policy names it.
+                for name in std::iter::once("PATH").chain(env.iter().map(String::as_str)) {
                     if let Ok(value) = std::env::var(name) {
                         cmd.env(name, value);
                     }
                 }
-                // A server with no PATH cannot find anything; pass it unless
-                // the policy deliberately scrubbed it by naming an empty list.
-                if env.is_empty() {
-                    if let Ok(path) = std::env::var("PATH") {
-                        cmd.env("PATH", path);
-                    }
-                }
                 let transport = TokioChildProcess::new(cmd).map_err(|e| connect_err(&e))?;
-                ().serve(transport).await.map_err(|e| connect_err(&e))?
+                tokio::time::timeout(limit, ().serve(transport))
+                    .await
+                    .map_err(|_| no_answer())?
+                    .map_err(|e| connect_err(&e))?
             }
             Transport::Http { url, headers } => {
-                let mut builder = reqwest::Client::builder();
+                // No redirects: the headers may hold a token, and it goes to
+                // the URL the policy names and nowhere else.
+                let mut builder =
+                    reqwest::Client::builder().redirect(reqwest::redirect::Policy::none());
                 if !headers.is_empty() {
                     let mut map = reqwest::header::HeaderMap::new();
                     for (k, v) in headers {
+                        // `${NAME}` is filled in from the environment here, so
+                        // a token never has to be written in the policy file,
+                        // which every trace records in full.
+                        let v = crate::config::expand_env(v, |name| std::env::var(name).ok())
+                            .map_err(|e| connect_err(&format!("header {k:?}: {e}")))?;
                         let name = reqwest::header::HeaderName::from_bytes(k.as_bytes())
                             .map_err(|e| connect_err(&format!("header {k:?}: {e}")))?;
-                        let value = reqwest::header::HeaderValue::from_str(v)
+                        let mut value = reqwest::header::HeaderValue::from_str(&v)
                             .map_err(|e| connect_err(&format!("header {k:?}: {e}")))?;
+                        value.set_sensitive(true);
                         map.insert(name, value);
                     }
                     builder = builder.default_headers(map);
@@ -78,7 +97,10 @@ impl ExternalServer {
                     client,
                     StreamableHttpClientTransportConfig::with_uri(url.as_str()),
                 );
-                ().serve(transport).await.map_err(|e| connect_err(&e))?
+                tokio::time::timeout(limit, ().serve(transport))
+                    .await
+                    .map_err(|_| no_answer())?
+                    .map_err(|e| connect_err(&e))?
             }
         };
 

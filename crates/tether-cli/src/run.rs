@@ -88,8 +88,10 @@ impl Answerer for TerminalAnswerer {
             .unwrap_or("none matched, default is ask");
         loop {
             eprint!(
-                "\n{}\n  rule: {rule}\n  allow? [y/n] (unanswered after {} s) ",
-                ask.prompt, ask.timeout_secs
+                "\n{}\n  rule: {}\n  allow? [y/n] (unanswered after {} s) ",
+                crate::printable(&ask.prompt),
+                crate::printable(rule),
+                ask.timeout_secs
             );
             let _ = io::stderr().flush();
             let line = match tokio::time::timeout_at(deadline, lines.recv()).await {
@@ -283,13 +285,24 @@ pub async fn tools(policy: Option<&Path>, as_json: bool) -> anyhow::Result<()> {
             (Some(n), None) => n.clone(),
             _ => String::new(),
         };
+        // Names and descriptions are the server's own words: print them
+        // with any control characters shown, not obeyed.
         println!(
             "{:<12} {:<8} {:<12} {}",
-            server.id, server.transport, version, name
+            server.id,
+            server.transport,
+            crate::printable(version),
+            crate::printable(&name)
         );
         for tool in list.iter().filter(|t| t.server == server.id) {
             let first_line = tool.description.lines().next().unwrap_or("");
-            println!("    {:<28} {}", tool.name, first_line);
+            println!(
+                "    {:<28} {}",
+                crate::printable(&tool.name),
+                // One line of a table: the start of the description, not
+                // the paragraph some servers write. `--json` has it whole.
+                crate::printable(&crate::clip(first_line))
+            );
         }
     }
     Ok(())
@@ -317,7 +330,12 @@ pub async fn run_command(
     let socket = dir.join("tetherd.sock");
 
     if tetherd::connect(&socket).await.is_err() {
-        let log = std::fs::File::create(dir.join("tetherd.log"))?;
+        // Appended to, as the SDKs do: the log of the daemon before this one
+        // is what says why that one went away.
+        let log = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(dir.join("tetherd.log"))?;
         let idle = std::env::var("TETHER_IDLE_SECS")
             .unwrap_or_else(|_| tetherd::DEFAULT_IDLE.as_secs().to_string());
         let mut daemon = std::process::Command::new(std::env::current_exe()?);

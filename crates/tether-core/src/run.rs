@@ -128,6 +128,9 @@ pub struct Run {
     /// Set once a replay has left its recording and the wall clock has been
     /// moved to carry on from the recorded elapsed time.
     rebased: bool,
+    /// Whether the warning about a dollar limit on an unpriced model has
+    /// been given.
+    warned_unpriced: bool,
 }
 
 impl Run {
@@ -151,8 +154,9 @@ impl Run {
             cursor: 0,
             recorded_ts: None,
             rebased: false,
+            warned_unpriced: false,
         };
-        let created = json!({
+        let mut created = json!({
             "agent": run.agent,
             "model": { "provider": run.deps.model.id() },
             "policy": run.deps.policy.snapshot(),
@@ -169,6 +173,13 @@ impl Run {
             })).collect::<Vec<_>>(),
             "schema_version": SCHEMA_VERSION,
         });
+        // A trace from before 0.5 has no `mcp_servers`, and its replay must
+        // not grow one: a replay is equal to its recording.
+        if created["mcp_servers"].as_array().is_some_and(Vec::is_empty) {
+            if let Some(fields) = created.as_object_mut() {
+                fields.remove("mcp_servers");
+            }
+        }
         run.emit(None, EventType::RunCreated(created)).await?;
         run.transition(RunState::Running, "start").await?;
         Ok(run)
@@ -215,6 +226,7 @@ impl Run {
             cursor: 0,
             recorded_ts: None,
             rebased: false,
+            warned_unpriced: false,
         };
         run.transition(RunState::Running, tether_trace::resumed::RESUMED)
             .await?;
@@ -291,16 +303,28 @@ impl Run {
 
         // Cached tokens are tokens the model read or wrote too.
         let usage = completion.usage;
-        self.budget.tokens_used += usage.input_tokens
-            + usage.output_tokens
-            + usage.cache_read_tokens
-            + usage.cache_write_tokens;
+        self.budget.tokens_used = [
+            usage.input_tokens,
+            usage.output_tokens,
+            usage.cache_read_tokens,
+            usage.cache_write_tokens,
+        ]
+        .iter()
+        .fold(self.budget.tokens_used, |total, n| total.saturating_add(*n));
         // Priced as the model that answered, which a provider-side fallback
         // can make different from the one asked for.
         let answered_by = completion.model.as_deref().unwrap_or(&asked_model);
         let price = self.deps.model.price(answered_by, &usage);
         if let Some(price) = &price {
             self.budget.usd_used += price.usd;
+        } else if !self.warned_unpriced && self.deps.policy.limits().max_usd.is_some() {
+            // A dollar limit on calls with no price never trips. Say so once.
+            self.warned_unpriced = true;
+            tracing::warn!(
+                model = answered_by,
+                "max_usd is set but this model has no price, so its calls count as $0; \
+                 give a price table with TETHER_PRICING or limit max_tokens instead"
+            );
         }
 
         let message = self.put_json(&completion.message).await?;
@@ -474,7 +498,7 @@ impl Run {
         let now = self.deps.clock.now_ms();
         if self.deps.replay.is_some() && !self.rebased {
             // Just diverged: carry on from the recorded elapsed time.
-            self.started_ms = now.saturating_sub(self.budget.wall_secs_used * 1000);
+            self.started_ms = now.saturating_sub(self.budget.wall_secs_used.saturating_mul(1000));
             self.rebased = true;
         }
         self.budget.wall_secs_used = now.saturating_sub(self.started_ms) / 1000;
@@ -488,8 +512,13 @@ impl Run {
         reason: &str,
         checkpoint: bool,
     ) -> Result<(), RunError> {
-        self.ensure_running()?;
-        if checkpoint {
+        // A run waiting on an ask can be halted too. That is where a run is
+        // left when the caller that was waiting for the answer goes away.
+        match self.state {
+            RunState::Running | RunState::Suspended => {}
+            other => return Err(RunError::NotRunning(other)),
+        }
+        if checkpoint && self.state == RunState::Running {
             self.checkpoint().await?;
         }
         self.halt(reason.to_owned()).await;
@@ -526,6 +555,9 @@ impl Run {
         };
         self.emit(None, body).await?;
         self.checkpointed = self.step;
+        // A checkpoint is where a run is picked up after a crash, the
+        // machine's included, so it has to be on disk and not just written.
+        self.trace.sync().await?;
         Ok(())
     }
 
@@ -644,6 +676,8 @@ impl Run {
             Ok(()) => RunError::Halted { reason },
             Err(e) => e,
         };
+        // A halted run is waiting to be resumed: what it did must be on disk.
+        let _ = self.trace.sync().await;
         self.deps.tools.shutdown().await;
         outcome
     }

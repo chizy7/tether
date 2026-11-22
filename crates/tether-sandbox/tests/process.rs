@@ -299,3 +299,80 @@ mod linux {
         );
     }
 }
+
+#[tokio::test]
+async fn input_the_command_never_reads_does_not_outlast_the_time_limit() {
+    // More than a pipe holds, to a command that never reads it. Writing it
+    // before starting the clock used to block for good.
+    let (sandbox, h, _) = start("process_stdin_limit", Some(1)).await;
+    let cmd = Exec {
+        stdin: Some(vec![b'x'; 1024 * 1024]),
+        ..sh("sleep 30")
+    };
+    let started = std::time::Instant::now();
+    let err = sandbox.exec(&h, cmd).await.expect_err("must time out");
+    assert!(err.to_string().contains("timed out"), "{err}");
+    assert!(started.elapsed() < std::time::Duration::from_secs(10));
+}
+
+#[tokio::test]
+async fn large_input_and_output_at_once_do_not_deadlock() {
+    // `cat` fills its output before it has read all its input.
+    let (sandbox, h, _) = start("process_stdin_echo", Some(20)).await;
+    let cmd = Exec {
+        argv: vec!["cat".into()],
+        cwd: None,
+        env: vec![],
+        stdin: Some(vec![b'y'; 1024 * 1024]),
+    };
+    let out = sandbox.exec(&h, cmd).await.expect("cat");
+    assert_eq!(out.exit_code, 0);
+    assert_eq!(out.stdout.len(), 1024 * 1024);
+}
+
+#[tokio::test]
+async fn what_a_command_leaves_running_is_stopped_when_it_returns() {
+    let (sandbox, h, workspace) = start("process_background", Some(20)).await;
+    // The background job would write the file two seconds from now.
+    let out = sandbox
+        .exec(
+            &h,
+            sh("(sleep 2; echo late > late.txt) >/dev/null 2>&1 & echo started"),
+        )
+        .await
+        .expect("exec");
+    assert_eq!(out.exit_code, 0);
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "started");
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    assert!(
+        !workspace.join("late.txt").exists(),
+        "a background job outlived the command that started it"
+    );
+}
+
+#[tokio::test]
+async fn output_past_the_cap_is_cut_and_says_so() {
+    let (sandbox, h, _) = start("process_output_cap", Some(30)).await;
+    // About 16 MB, four times what is kept.
+    let out = sandbox
+        .exec(&h, sh("head -c 16000000 /dev/zero | tr '\\0' 'a'"))
+        .await
+        .expect("exec");
+    assert!(
+        out.stdout.len() < 5 * 1024 * 1024,
+        "{} bytes kept",
+        out.stdout.len()
+    );
+    assert!(String::from_utf8_lossy(&out.stdout[out.stdout.len() - 80..]).contains("output cut"));
+}
+
+#[tokio::test]
+async fn read_refuses_what_is_not_a_plain_file() {
+    let (sandbox, h, workspace) = start("process_read_kinds", Some(10)).await;
+    std::fs::create_dir_all(workspace.join("dir")).expect("mkdir");
+    let err = sandbox
+        .read(&h, Path::new("dir"))
+        .await
+        .expect_err("a directory is not a file");
+    assert!(err.to_string().contains("regular file"), "{err}");
+}

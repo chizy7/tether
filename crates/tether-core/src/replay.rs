@@ -250,7 +250,9 @@ impl Recording {
 
     /// The event that answers `seq`, picked out by `pick`.
     fn answer_to<'a, T>(&'a self, seq: u64, pick: impl Fn(&'a Event) -> Option<T>) -> Option<T> {
-        self.events[seq as usize + 1..].iter().find_map(pick)
+        // `seq` is read from the trace. One past the end answers nothing.
+        let after = usize::try_from(seq).ok()?.checked_add(1)?;
+        self.events.get(after..)?.iter().find_map(pick)
     }
 
     /// A recorded `model.response` as the completion the agent got.

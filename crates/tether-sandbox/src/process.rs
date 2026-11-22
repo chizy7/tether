@@ -27,7 +27,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 
 use crate::{
@@ -130,8 +130,75 @@ fn confine(command: &mut Command, session: &Arc<Session>) {
 #[cfg(not(unix))]
 fn confine(_command: &mut Command, _session: &Arc<Session>) {}
 
+/// The most `read_file` will read.
+const MAX_READ: u64 = 16 * 1024 * 1024;
+
+/// The most kept of a command's standard output, and of its standard error.
+/// The rest is read and thrown away, so the command is never blocked on a
+/// full pipe, and neither memory nor the trace grows with what it prints.
+const MAX_OUTPUT: usize = 4 * 1024 * 1024;
+
+/// How long to wait for output still in the pipe after the command is gone.
+const DRAIN: Duration = Duration::from_secs(2);
+
+/// One of a command's output streams, read as it is written.
+struct Capture {
+    kept: Arc<Mutex<(Vec<u8>, bool)>>,
+    task: Option<tokio::task::JoinHandle<()>>,
+}
+
+impl Capture {
+    fn start<R: AsyncRead + Unpin + Send + 'static>(stream: Option<R>) -> Self {
+        let kept = Arc::new(Mutex::new((Vec::new(), false)));
+        let task = stream.map(|mut stream| {
+            let kept = Arc::clone(&kept);
+            tokio::spawn(async move {
+                let mut chunk = vec![0u8; 64 * 1024];
+                loop {
+                    match stream.read(&mut chunk).await {
+                        Ok(0) | Err(_) => return,
+                        Ok(n) => {
+                            let mut kept = kept.lock().unwrap_or_else(PoisonError::into_inner);
+                            let room = MAX_OUTPUT.saturating_sub(kept.0.len());
+                            kept.0.extend_from_slice(&chunk[..n.min(room)]);
+                            kept.1 |= n > room;
+                        }
+                    }
+                }
+            })
+        });
+        Self { kept, task }
+    }
+
+    /// What was captured. By now the command and its group are gone, so the
+    /// stream ends as soon as what is left in the pipe is read; a process
+    /// that slipped the group and still holds it open is not waited for.
+    async fn finish(mut self) -> Vec<u8> {
+        if let Some(task) = self.task.take() {
+            let abort = task.abort_handle();
+            if tokio::time::timeout(DRAIN, task).await.is_err() {
+                abort.abort();
+            }
+        }
+        let mut kept = self.kept.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut out = std::mem::take(&mut kept.0);
+        if kept.1 {
+            out.extend_from_slice(
+                format!("\n[output cut: only the first {MAX_OUTPUT} bytes are kept]\n").as_bytes(),
+            );
+        }
+        out
+    }
+}
+
 /// Kill every process in the command's group. The group id is the pid of
-/// the command, which has not been reaped yet, so it cannot have been reused.
+/// the command. When the command has just been reaped the id is free again,
+/// but the kernel hands pids out in order and will not come round to this
+/// one for a long while; the call is made at once.
+///
+/// A process that moved itself to another group or session is not reached.
+/// The `process` backend does not claim to hold a program that is trying to
+/// get away.
 #[cfg(unix)]
 fn kill_group(pid: Option<u32>) {
     if let Some(pid) = pid.and_then(|pid| libc::pid_t::try_from(pid).ok()) {
@@ -218,37 +285,68 @@ impl Sandbox for ProcessSandbox {
         let started = Instant::now();
         let mut child = command.spawn()?;
         let pid = child.id();
-        if let (Some(input), Some(mut stdin)) = (cmd.stdin, child.stdin.take()) {
-            // A command that exits without reading its input is not an error.
-            let _ = stdin.write_all(&input).await;
-        }
-        let output = match session.time_limit {
-            Some(limit) => match tokio::time::timeout(limit, child.wait_with_output()).await {
-                Ok(output) => output?,
-                Err(_) => {
-                    // Dropping the wait killed the command; this gets the
-                    // processes it left behind.
-                    kill_group(pid);
-                    return Err(SandboxError::Other(format!(
-                        "timed out after {} s",
-                        limit.as_secs()
-                    )));
-                }
-            },
-            None => child.wait_with_output().await?,
+
+        // Input and output move at the same time as the command runs, and
+        // the time limit covers all of it. Writing the input first would
+        // block for good on a command that fills its output before it reads,
+        // or never reads at all, and the limit would never start.
+        let feed = match (cmd.stdin, child.stdin.take()) {
+            (Some(input), Some(mut stdin)) => Some(tokio::spawn(async move {
+                // A command that exits without reading its input is not an
+                // error. Dropping `stdin` after the write closes it.
+                let _ = stdin.write_all(&input).await;
+            })),
+            _ => None,
         };
+        let stdout = Capture::start(child.stdout.take());
+        let stderr = Capture::start(child.stderr.take());
+
+        let waited = match session.time_limit {
+            Some(limit) => tokio::time::timeout(limit, child.wait()).await.ok(),
+            None => Some(child.wait().await),
+        };
+        // Whether it finished or ran out of time, nothing it started stays
+        // behind: a process still holding the output open would also keep
+        // the capture below from ever finishing.
+        if waited.is_none() {
+            let _ = child.start_kill();
+        }
+        kill_group(pid);
+        if let Some(feed) = feed {
+            feed.abort();
+        }
+        let Some(status) = waited else {
+            return Err(SandboxError::Other(format!(
+                "timed out after {} s",
+                session.time_limit.map_or(0, |limit| limit.as_secs())
+            )));
+        };
+        let status = status?;
         Ok(ExecResult {
             // No code means the command was killed by a signal, which is how
             // a CPU limit ends it.
-            exit_code: output.status.code().unwrap_or(-1),
-            stdout: output.stdout,
-            stderr: output.stderr,
+            exit_code: status.code().unwrap_or(-1),
+            stdout: stdout.finish().await,
+            stderr: stderr.finish().await,
             duration_ms: started.elapsed().as_millis() as u64,
         })
     }
 
     async fn read(&self, h: &Handle, path: &Path) -> Result<Vec<u8>> {
-        Ok(tokio::fs::read(self.resolve(h, path)?).await?)
+        let path = self.resolve(h, path)?;
+        // A pipe or a device would block or never end, and a file too large
+        // to hand to a model is no use read whole.
+        let meta = tokio::fs::metadata(&path).await?;
+        if !meta.is_file() {
+            return Err(SandboxError::Other("not a regular file".into()));
+        }
+        if meta.len() > MAX_READ {
+            return Err(SandboxError::Other(format!(
+                "file is {} bytes; read_file takes at most {MAX_READ}",
+                meta.len()
+            )));
+        }
+        Ok(tokio::fs::read(path).await?)
     }
 
     async fn write(&self, h: &Handle, path: &Path, data: Vec<u8>) -> Result<()> {

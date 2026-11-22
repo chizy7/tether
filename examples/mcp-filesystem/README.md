@@ -27,12 +27,12 @@ tether diff    .tether-mcp/<run>.jsonl .tether-mcp/<run>.replay.jsonl
 ```
 
 Needs `node` and `npx` on `PATH` for the server itself; Tether passes the
-child only the variables the policy's `env` list names.
+child `PATH` and the variables the policy's `env` list names, nothing else.
 
 Two things worth knowing when you write your own policy:
 
 - Rules see every tool as `<server>.<tool>`, whatever name the agent used. The
   server's `read_text_file` is `fs.read_text_file` to a rule.
 - Where a server's tool name collides with a sandbox tool (`read_file`,
-  `write_file`), the agent sees the external one as `fs.read_file`; the
+  `write_file`), the agent sees the external one as `fs__read_file`; the
   sandbox keeps the bare name.

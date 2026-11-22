@@ -40,10 +40,36 @@ pub const DEFAULT_IDLE: Duration = Duration::from_secs(10);
 /// readable and writable by its owner only: whoever can reach it can run
 /// tools as this user.
 pub async fn serve(socket: &Path, idle: Duration) -> anyhow::Result<()> {
+    /// `sun_path` holds 104 bytes on macOS and 108 on Linux, with a NUL.
+    const MAX_SOCKET_PATH: usize = if cfg!(target_os = "linux") { 107 } else { 103 };
+
     if let Some(dir) = socket.parent().filter(|dir| !dir.as_os_str().is_empty()) {
         std::fs::create_dir_all(dir).with_context(|| format!("creating {}", dir.display()))?;
     }
-    if socket.exists() {
+    // The system's limit on a socket path is short, and its own error for
+    // going over it says nothing a person can act on.
+    let length = socket.as_os_str().len();
+    if length > MAX_SOCKET_PATH {
+        anyhow::bail!(
+            "the socket path is {length} bytes and the system allows {MAX_SOCKET_PATH}: {}\n\
+             Set TETHER_SOCKET (or the SDK's `socket` argument) to a shorter path, such as one under /tmp",
+            socket.display()
+        );
+    }
+    if let Ok(meta) = std::fs::symlink_metadata(socket) {
+        // Only ever remove a socket. Anything else at this path is somebody's
+        // file, there by mistake or by malice, and stays.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::FileTypeExt;
+            if !meta.file_type().is_socket() {
+                anyhow::bail!(
+                    "{} exists and is not a socket; not replacing it",
+                    socket.display()
+                );
+            }
+        }
+        let _ = meta;
         if UnixStream::connect(socket).await.is_ok() {
             tracing::info!("a daemon is already serving {}", socket.display());
             return Ok(());
@@ -51,8 +77,8 @@ pub async fn serve(socket: &Path, idle: Duration) -> anyhow::Result<()> {
         std::fs::remove_file(socket)
             .with_context(|| format!("removing the stale socket {}", socket.display()))?;
     }
-    let listener =
-        UnixListener::bind(socket).with_context(|| format!("binding {}", socket.display()))?;
+    let bound = UnixListener::bind(socket);
+    let listener = bound.with_context(|| format!("binding {}", socket.display()))?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

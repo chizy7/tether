@@ -333,3 +333,61 @@ fn a_follower_reads_a_trace_as_it_is_written_and_waits_out_a_half_line() {
         Err(TraceError::SeqGap { found: 0, .. })
     ));
 }
+
+#[test]
+fn a_trace_has_one_writer_at_a_time() {
+    let path = dir("one_writer").join("run.jsonl");
+    let mut first = TraceWriter::create(&path, RunId("run_x".into())).expect("create");
+    first
+        .append(new(0, None, state(RunState::Running, "start")))
+        .expect("append");
+
+    // Another writer, as `tether resume` on a run that is still alive.
+    match TraceWriter::open_append(&path) {
+        Err(TraceError::InUse(held)) => assert_eq!(held, path),
+        Err(other) => panic!("expected InUse, got {other}"),
+        Ok(_) => panic!("a second writer opened a trace that was being written"),
+    }
+    // The first carries on untouched.
+    first
+        .append(new(0, None, state(RunState::Halted, "stop")))
+        .expect("append");
+    drop(first);
+
+    // Once the first is gone the trace can be taken up again.
+    let second = TraceWriter::open_append(&path).expect("reopen");
+    assert_eq!(second.next_seq(), 2);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_blob_is_a_plain_file_whose_content_matches_its_name() {
+    use tether_trace::blob::BlobStore;
+
+    let root = dir("blob_kinds");
+    let store = BlobStore::for_trace(&root.join("run.jsonl"));
+    let hash = store.put(b"real content").expect("put");
+    assert_eq!(store.get(&hash).expect("get"), b"real content");
+
+    // A blob that is a link to some other file on this machine: reading the
+    // trace must not read that file.
+    let secret = root.join("secret.txt");
+    std::fs::write(&secret, "do not copy me").expect("secret");
+    let name = format!("blake3:{}", "ab".repeat(32));
+    let fake = store.put(b"placeholder").expect("put");
+    let fake_path = root
+        .join("run.blobs/blake3")
+        .join(&fake[7..9])
+        .join(&fake[7..]);
+    let target = root.join("run.blobs/blake3/ab").join("ab".repeat(32));
+    std::fs::create_dir_all(target.parent().expect("parent")).expect("mkdir");
+    std::os::unix::fs::symlink(&secret, &target).expect("symlink");
+    assert!(matches!(store.get(&name), Err(TraceError::BlobNotAFile(_))));
+
+    // Content that does not hash to its name is refused as well.
+    std::fs::write(&fake_path, "something else").expect("tamper");
+    assert!(matches!(
+        store.get(&fake),
+        Err(TraceError::BlobCorrupt { .. })
+    ));
+}

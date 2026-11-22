@@ -71,14 +71,38 @@ impl BlobStore {
         Ok(hash)
     }
 
+    /// The content stored under `hash`, checked against it.
+    ///
+    /// A blob store can come from anyone, alongside a trace. A blob is only
+    /// ever a plain file whose content hashes to its name: a link to some
+    /// other file on this machine, or content that does not match, is
+    /// refused, so reading a trace can never pull in a file it does not
+    /// contain.
     pub fn get(&self, hash: &str) -> Result<Vec<u8>> {
-        match fs::read(self.path_for(hash)?) {
-            Ok(data) => Ok(data),
+        let path = self.path_for(hash)?;
+        match fs::symlink_metadata(&path) {
+            Ok(meta) if meta.file_type().is_file() => {}
+            Ok(_) => return Err(TraceError::BlobNotAFile(hash.to_owned())),
             Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                Err(TraceError::MissingBlob(hash.to_owned()))
+                return Err(TraceError::MissingBlob(hash.to_owned()))
             }
-            Err(e) => Err(e.into()),
+            Err(e) => return Err(e.into()),
         }
+        let data = match fs::read(&path) {
+            Ok(data) => data,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                return Err(TraceError::MissingBlob(hash.to_owned()))
+            }
+            Err(e) => return Err(e.into()),
+        };
+        let found = hash_bytes(&data);
+        if found != hash {
+            return Err(TraceError::BlobCorrupt {
+                expected: hash.to_owned(),
+                found,
+            });
+        }
+        Ok(data)
     }
 
     pub fn contains(&self, hash: &str) -> bool {
@@ -88,15 +112,7 @@ impl BlobStore {
     /// Check a blob is present and its content still matches its hash.
     /// Returns its size in bytes.
     pub fn check(&self, hash: &str) -> Result<u64> {
-        let data = self.get(hash)?;
-        let found = hash_bytes(&data);
-        if found != hash {
-            return Err(TraceError::BlobCorrupt {
-                expected: hash.to_owned(),
-                found,
-            });
-        }
-        Ok(data.len() as u64)
+        Ok(self.get(hash)?.len() as u64)
     }
 
     /// Move an inline payload into the store if it is over [`INLINE_LIMIT`],

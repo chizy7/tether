@@ -150,7 +150,6 @@ nothing speaks the MCP wire protocol, and no external server can be connected.
 - [x] `ARCHITECTURE.md`: tool layer marked as built-in only, external servers marked planned
 - [x] `CLAUDE.md`: design rule 3 restated as the invariant that is true (one trait, one policy path) with the MCP part marked as v0.5
 - [x] Package keywords: `mcp` dropped from `pyproject.toml` and `package.json` until the client ships
-- [ ] Repo topics: `mcp` removed. Needs the maintainer: the GitHub API path for topics is not writable from this session
 - [x] Roadmap: "MCP client: connect to external servers" filed as #56, Horizon v0.5
 - [x] This section, and the launch line above
 
@@ -174,6 +173,8 @@ is the phase that makes "MCP-native" true.
 - [x] Python and TypeScript SDKs: no change needed; `run.tools()` already carried `server`
 - [x] Demo: `examples/mcp-filesystem` against the reference filesystem server: sandbox write, external read allowed by rule, external write denied by a server-level rule, replay with no divergence and no server started
 - [x] Docs: `ARCHITECTURE.md` tool layer rewritten as built; README tools bullet and "cannot do yet" updated; `mcp` back in PyPI and npm keywords; `TRACE_FORMAT.md` notes `mcp_servers` inside `run.created.data` (no envelope change, compat test passes)
+- [x] Review before the release, run end to end against a stdio and an HTTP server. Fixed: a colliding tool name was prefixed with a dot, which model APIs reject, and is now `<server>__<tool>`; `resume` and a replay or eval that goes live had only the sandbox tools; a header token written in the policy went into every trace, so header values take `${NAME}`; a server that never answered `initialize` hung the run; `PATH` now always reaches a stdio server; a replay of a pre-0.5 trace grew an `mcp_servers` field. The live paths start a server a trace names only with `--trust-recorded-servers` or from a `--policy` file. `SECURITY.md` covers external servers
+- [x] Security and reliability review of the whole codebase before the release; what it found and fixed is under 0.5.0 in `CHANGELOG.md`. Left open, on the roadmap: a daemon run whose client disappears, orphaned commands when `tether` is killed, memory use of `replay` on traces that reuse one large blob, seccomp and `clone` flags
 - [ ] Repo topic `mcp` back on GitHub, and the MCP community post. Maintainer
 
 v0.5 shipped 2026-11-22 as release v0.5.0.

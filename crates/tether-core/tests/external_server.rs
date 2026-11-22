@@ -1,3 +1,4 @@
+#![cfg(feature = "rmcp")]
 //! A run against an external MCP server (the fake stdio server from
 //! `tether-mcp`'s fixtures), then replay with nothing live: the recorded
 //! results come back and no server is started.

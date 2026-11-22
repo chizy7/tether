@@ -1,3 +1,4 @@
+#![cfg(feature = "rmcp")]
 #![allow(clippy::unwrap_used)]
 
 //! The rmcp-backed client against a real stdio MCP server
@@ -176,9 +177,9 @@ async fn registry_merges_prefixes_and_routes() {
     let names: Vec<_> = tools.iter().map(|t| t.name.as_str()).collect();
     // Sandbox keeps the bare name; the external duplicate is prefixed.
     assert!(names.contains(&"read_file"), "{names:?}");
-    assert!(names.contains(&"fake.read_file"), "{names:?}");
+    assert!(names.contains(&"fake__read_file"), "{names:?}");
     assert!(names.contains(&"echo"), "{names:?}");
-    let ext = tools.iter().find(|t| t.name == "fake.read_file").unwrap();
+    let ext = tools.iter().find(|t| t.name == "fake__read_file").unwrap();
     assert_eq!(ext.server, "fake");
     assert!(ext.external);
     let builtin_read = tools.iter().find(|t| t.name == "read_file").unwrap();
@@ -187,7 +188,7 @@ async fn registry_merges_prefixes_and_routes() {
 
     // Routing: the prefixed name reaches the external server under its own name.
     let r = registry
-        .call(&call("fake.read_file", json!({})))
+        .call(&call("fake__read_file", json!({})))
         .await
         .unwrap();
     assert_eq!(text(&r), "external read_file");
@@ -235,4 +236,188 @@ fn tempdir() -> std::path::PathBuf {
     ));
     std::fs::create_dir_all(&dir).unwrap();
     dir
+}
+
+#[tokio::test]
+async fn path_reaches_the_child_whatever_env_names() {
+    // `env` names one variable and not PATH. The server still needs PATH to
+    // find its interpreter, so it is passed regardless.
+    std::env::set_var("TETHER_TEST_ONLY_THIS", "yes");
+    let mut config = fake("pathy");
+    config.transport = Transport::Stdio {
+        command: "python3".into(),
+        args: vec![concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/fake_server.py").into()],
+        env: vec!["TETHER_TEST_ONLY_THIS".into()],
+    };
+    let server = ExternalServer::connect(config).await.expect("connect");
+    let path = server
+        .call(&call("env", json!({"name": "PATH"})))
+        .await
+        .unwrap();
+    assert_ne!(text(&path), "null");
+    let home = server
+        .call(&call("env", json!({"name": "HOME"})))
+        .await
+        .unwrap();
+    assert_eq!(
+        text(&home),
+        "null",
+        "HOME was not named, so it is not passed"
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_server_that_never_answers_initialize_is_a_connect_error() {
+    // `sleep` reads nothing and says nothing: the handshake never completes.
+    let mut config = ServerConfig::stdio("mute", "sleep", vec!["30".into()]);
+    config.timeout_secs = 1;
+    let started = std::time::Instant::now();
+    match ExternalServer::connect(config).await {
+        Err(McpError::Connect { server, reason }) => {
+            assert_eq!(server, "mute");
+            assert!(reason.contains("initialize"), "{reason}");
+        }
+        Ok(_) => panic!("connected to a server that never answered"),
+        Err(other) => panic!("expected Connect error, got {other:?}"),
+    }
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(10),
+        "gave up after {:?}",
+        started.elapsed()
+    );
+}
+
+/// A streamable HTTP MCP server small enough to read: every POST gets one
+/// JSON answer. Its one tool, `whoami`, returns the Authorization header the
+/// request came with.
+async fn http_server() -> String {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        loop {
+            let Ok((mut socket, _)) = listener.accept().await else {
+                return;
+            };
+            tokio::spawn(async move {
+                let mut buffer = Vec::new();
+                loop {
+                    // One request: headers, then `content-length` bytes.
+                    let head_end = loop {
+                        if let Some(at) = buffer.windows(4).position(|w| w == b"\r\n\r\n") {
+                            break at + 4;
+                        }
+                        let mut chunk = [0u8; 4096];
+                        match socket.read(&mut chunk).await {
+                            Ok(0) | Err(_) => return,
+                            Ok(n) => buffer.extend_from_slice(&chunk[..n]),
+                        }
+                    };
+                    let head = String::from_utf8_lossy(&buffer[..head_end]).to_string();
+                    let header = |name: &str| {
+                        head.lines().find_map(|line| {
+                            let (key, value) = line.split_once(':')?;
+                            key.eq_ignore_ascii_case(name)
+                                .then(|| value.trim().to_owned())
+                        })
+                    };
+                    let length: usize = header("content-length")
+                        .and_then(|v| v.parse().ok())
+                        .unwrap_or(0);
+                    while buffer.len() < head_end + length {
+                        let mut chunk = [0u8; 4096];
+                        match socket.read(&mut chunk).await {
+                            Ok(0) | Err(_) => return,
+                            Ok(n) => buffer.extend_from_slice(&chunk[..n]),
+                        }
+                    }
+                    let body: serde_json::Value =
+                        serde_json::from_slice(&buffer[head_end..head_end + length])
+                            .unwrap_or(serde_json::Value::Null);
+                    buffer.drain(..head_end + length);
+
+                    let method = head.split(' ').next().unwrap_or("");
+                    let answer = if method != "POST" {
+                        "HTTP/1.1 405 Method Not Allowed\r\ncontent-length: 0\r\n\r\n".to_owned()
+                    } else if body.get("id").is_none() {
+                        "HTTP/1.1 202 Accepted\r\ncontent-length: 0\r\n\r\n".to_owned()
+                    } else {
+                        let result = match body["method"].as_str() {
+                            Some("initialize") => json!({
+                                "protocolVersion": body["params"]["protocolVersion"],
+                                "capabilities": {"tools": {}},
+                                "serverInfo": {"name": "http-fake", "version": "1"},
+                            }),
+                            Some("tools/list") => json!({"tools": [{
+                                "name": "whoami",
+                                "description": "The Authorization header of the request",
+                                "inputSchema": {"type": "object", "properties": {}},
+                            }]}),
+                            Some("tools/call") => json!({
+                                "content": [{
+                                    "type": "text",
+                                    "text": header("authorization").unwrap_or_default(),
+                                }],
+                                "isError": false,
+                            }),
+                            _ => json!({}),
+                        };
+                        let out = json!({"jsonrpc": "2.0", "id": body["id"], "result": result})
+                            .to_string();
+                        format!(
+                            "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n{out}",
+                            out.len()
+                        )
+                    };
+                    if socket.write_all(answer.as_bytes()).await.is_err() {
+                        return;
+                    }
+                }
+            });
+        }
+    });
+    format!("http://{address}/mcp")
+}
+
+#[tokio::test]
+async fn http_server_is_called_with_headers_filled_in_from_the_environment() {
+    std::env::set_var("TETHER_TEST_HTTP_TOKEN", "from-the-environment");
+    let mut config = ServerConfig::http("web", http_server().await);
+    config.timeout_secs = 10;
+    if let Transport::Http { headers, .. } = &mut config.transport {
+        headers.insert(
+            "Authorization".into(),
+            "Bearer ${TETHER_TEST_HTTP_TOKEN}".into(),
+        );
+    }
+    let server = ExternalServer::connect(config).await.expect("connect");
+    assert_eq!(server.info().transport, "http");
+    assert_eq!(server.info().server_name.as_deref(), Some("http-fake"));
+    let tools = server.list_tools().await.expect("list");
+    assert_eq!(tools.len(), 1);
+    assert_eq!(tools[0].name, "whoami");
+    let seen = server.call(&call("whoami", json!({}))).await.unwrap();
+    assert!(!seen.is_error);
+    assert_eq!(text(&seen), "Bearer from-the-environment");
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_header_naming_an_unset_variable_fails_the_connect() {
+    let mut config = ServerConfig::http("web", "http://127.0.0.1:9/mcp");
+    if let Transport::Http { headers, .. } = &mut config.transport {
+        headers.insert(
+            "Authorization".into(),
+            "Bearer ${TETHER_TEST_NOT_SET_ANYWHERE}".into(),
+        );
+    }
+    match ExternalServer::connect(config).await {
+        Err(McpError::Connect { reason, .. }) => {
+            assert!(reason.contains("TETHER_TEST_NOT_SET_ANYWHERE"), "{reason}");
+        }
+        Ok(_) => panic!("connected with a header that could not be filled in"),
+        Err(other) => panic!("expected Connect error, got {other:?}"),
+    }
 }

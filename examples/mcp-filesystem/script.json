@@ -10,7 +10,7 @@
        "arguments": {"path": "hello.txt"}}
     ],
     [
-      {"type": "tool_use", "id": "call_3", "name": "fs.write_file",
+      {"type": "tool_use", "id": "call_3", "name": "fs__write_file",
        "arguments": {"path": "hello.txt", "content": "overwritten\n"}}
     ],
     [

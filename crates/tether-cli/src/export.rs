@@ -7,8 +7,11 @@
 //! grows, so the run loop knows nothing about it.
 //!
 //! Spans are sent as OTLP over HTTP in the JSON encoding, which collectors
-//! and most backends accept on port 4318. No message or tool content is
-//! exported, only what happened and how long it took.
+//! and most backends accept on port 4318. Messages, tool arguments and tool
+//! results are not exported: what happened and how long it took are. The
+//! few pieces of text that are sent are the names of models, tools and
+//! rules, the reason for a refusal or a halt, and the first words of the
+//! run's outcome.
 
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -496,7 +499,10 @@ impl Sink {
             };
             headers.push((key.trim().to_owned(), value.trim().to_owned()));
         }
+        // No redirects: the headers may hold a collector's key, and it goes
+        // to the endpoint that was named and nowhere else.
         let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
             .user_agent(concat!("tether/", env!("CARGO_PKG_VERSION")))
             .timeout(Duration::from_secs(30))
             .build()

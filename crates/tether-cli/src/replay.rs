@@ -11,8 +11,9 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context};
 use serde_json::{json, Value};
+use tether_core::tools;
 use tether_core::{Live, Recording, Run, RunConfig, RunDeps, RunError, SandboxRef, SystemClock};
-use tether_mcp::sandbox_server::SandboxServer;
+use tether_mcp::sandbox_server::{SandboxServer, SERVER};
 use tether_mcp::McpClient;
 use tether_models::anthropic::AnthropicAdapter;
 use tether_models::fake::FakeAdapter;
@@ -38,7 +39,57 @@ pub struct Options {
     /// Whether an ask made live goes to the terminal. If not, it goes
     /// unanswered and halts the run.
     pub attended: bool,
+    /// Start the MCP servers named by the policy recorded in the trace. Off,
+    /// only servers from a `--policy` file are started: a trace can come
+    /// from anyone, and a stdio server is a command to run.
+    pub trust_recorded_servers: bool,
 }
+
+/// What starting a server means, for the line printed before it happens:
+/// the command or the address, and everything of this machine's that would
+/// be handed to it. The environment variables it is given, and the ones its
+/// headers are filled in from, are how a trace would ask for a secret.
+pub fn describe_server(server: &tether_policy::config::McpServerConfig) -> String {
+    let line = match &server.command {
+        Some(command) => {
+            let mut line = command.clone();
+            for arg in &server.args {
+                line.push(' ');
+                line.push_str(arg);
+            }
+            let mut line = format!("`{}` runs: {line}", server.id);
+            if !server.env.is_empty() {
+                line.push_str(&format!(
+                    " (with these environment variables: {})",
+                    server.env.join(", ")
+                ));
+            }
+            line
+        }
+        None => {
+            let mut line = format!(
+                "`{}` connects to: {}",
+                server.id,
+                server.url.as_deref().unwrap_or("")
+            );
+            if !server.headers.is_empty() {
+                let headers: Vec<String> = server
+                    .headers
+                    .iter()
+                    .map(|(name, value)| format!("{name}: {value}"))
+                    .collect();
+                line.push_str(&format!(" (sending headers {})", headers.join("; ")));
+            }
+            line
+        }
+    };
+    crate::printable(&line)
+}
+
+/// How to get the servers a trace's own policy names, for a message.
+pub const TRUST_HINT: &str = "it is named by the policy recorded in the trace, and a trace is \
+not trusted to start programs. Pass --trust-recorded-servers if the trace is yours, or \
+--policy with a file of your own";
 
 /// What a replay did.
 pub struct Replayed {
@@ -187,6 +238,16 @@ pub async fn run(options: &Options) -> anyhow::Result<Replayed> {
         .first()
         .map_or("run", |event| event.run.0.as_str());
 
+    // Policy is evaluated again: the given file, else the recorded one. A
+    // trace with no policy file plays back the decisions it recorded.
+    let rules: Option<RulePolicy> = match (&options.policy, recording.policy_toml()) {
+        (Some(path), _) => Some(read_policy(path)?),
+        (None, Some(recorded)) => {
+            Some(RulePolicy::from_toml(recorded).context("the policy recorded in the trace")?)
+        }
+        (None, None) => None,
+    };
+
     // Live tools work in a fresh directory beside the new trace, never the
     // recorded run's workspace.
     let mut live = Live::default();
@@ -199,9 +260,38 @@ pub async fn run(options: &Options) -> anyhow::Result<Replayed> {
             ..SandboxSpec::new(out.with_extension("workspace"))
         };
         let handle = sandbox.start(&spec).await?;
-        let tools: Arc<dyn McpClient> =
+        let builtin: Arc<dyn McpClient> =
             Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
-        live.tools = Some(tools);
+        // The servers the policy names are part of the tool list too, and
+        // are connected if the replay leaves the recording. But only from a
+        // policy file the user gave, or with their say-so: the policy in a
+        // trace is whatever the trace's author wrote, and starting a stdio
+        // server is running a command.
+        let named: &[tether_policy::config::McpServerConfig] = rules
+            .as_ref()
+            .map(|rules| rules.config().mcp_servers.as_slice())
+            .unwrap_or_default();
+        let trusted = options.policy.is_some() || options.trust_recorded_servers;
+        let mut tools = tools::Lazy::new(
+            Some((SERVER.to_owned(), builtin)),
+            if trusted {
+                tools::server_configs(named)
+            } else {
+                Vec::new()
+            },
+        );
+        if !trusted && !named.is_empty() {
+            for server in named {
+                eprintln!("not starting MCP server {}", describe_server(server));
+            }
+            eprintln!("(--trust-recorded-servers starts the servers a trace names)");
+            tools = tools.withhold(named.iter().map(|s| s.id.clone()).collect(), TRUST_HINT);
+        } else if options.policy.is_none() {
+            for server in named {
+                eprintln!("the trace's MCP server {}", describe_server(server));
+            }
+        }
+        live.tools = Some(Arc::new(tools));
         live.answerer = Some(if options.attended {
             Arc::new(TerminalAnswerer::default())
         } else {
@@ -211,14 +301,9 @@ pub async fn run(options: &Options) -> anyhow::Result<Replayed> {
     }
     let parts = recording.parts(live)?;
 
-    // Policy is evaluated again: the given file, else the recorded one. A
-    // trace with no policy file plays back the decisions it recorded.
-    let policy: Arc<dyn Policy> = match (&options.policy, recording.policy_toml()) {
-        (Some(path), _) => Arc::new(read_policy(path)?),
-        (None, Some(recorded)) => {
-            Arc::new(RulePolicy::from_toml(recorded).context("the policy recorded in the trace")?)
-        }
-        (None, None) => parts.recorded_policy.clone(),
+    let policy: Arc<dyn Policy> = match rules {
+        Some(rules) => Arc::new(rules),
+        None => parts.recorded_policy.clone(),
     };
 
     // An unattended replay is one of many in `tether eval`, which handles

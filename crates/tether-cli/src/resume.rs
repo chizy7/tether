@@ -11,10 +11,11 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context};
 use serde_json::json;
+use tether_core::tools;
 use tether_core::{
     Recording, ResumeFrom, ResumeNext, Run, RunConfig, RunDeps, SandboxRef, SystemClock,
 };
-use tether_mcp::sandbox_server::SandboxServer;
+use tether_mcp::sandbox_server::{SandboxServer, SERVER};
 use tether_mcp::McpClient;
 use tether_policy::{KillSwitch, RulePolicy};
 use tether_sandbox::process::ProcessSandbox;
@@ -25,7 +26,11 @@ use tether_types::RunId;
 use crate::replay::{carry_on, live_model, Turn};
 use crate::run::{trip_on_sigint, TerminalAnswerer};
 
-pub async fn resume(run: &Path, script: Option<&Path>) -> anyhow::Result<()> {
+pub async fn resume(
+    run: &Path,
+    script: Option<&Path>,
+    trust_recorded_servers: bool,
+) -> anyhow::Result<()> {
     // A crash can leave half an event at the end. It was never written.
     if drop_partial_line(run).with_context(|| format!("opening {}", run.display()))? {
         eprintln!("dropped an unfinished last line from {}", run.display());
@@ -56,8 +61,37 @@ pub async fn resume(run: &Path, script: Option<&Path>) -> anyhow::Result<()> {
         ..SandboxSpec::new(&workspace)
     };
     let handle = sandbox.start(&spec).await?;
-    let tools: Arc<dyn McpClient> = Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
-    for call in &plan.earlier_calls {
+    // The run carries on with the servers it had: the ones its policy names.
+    // That policy comes out of the trace, and starting a stdio server is
+    // running a command, so it takes the user's say-so.
+    let named = &policy.config().mcp_servers;
+    if !named.is_empty() {
+        if !trust_recorded_servers {
+            let list: Vec<String> = named.iter().map(crate::replay::describe_server).collect();
+            bail!(
+                "this run used MCP servers, and resuming it would start them again:\n  {}\n\
+                 A trace is not trusted to start programs. If this trace is yours, resume it \
+                 with --trust-recorded-servers",
+                list.join("\n  ")
+            );
+        }
+        for server in named {
+            eprintln!(
+                "the trace's MCP server {}",
+                crate::replay::describe_server(server)
+            );
+        }
+    }
+    let builtin: Arc<dyn McpClient> = Arc::new(SandboxServer::new(sandbox.clone(), handle.clone()));
+    let servers = tools::server_configs(&policy.config().mcp_servers);
+    let tools: Arc<dyn McpClient> = Arc::new(
+        tools::connect(Some((SERVER.to_owned(), builtin)), &servers)
+            .await
+            .context("connecting MCP servers")?,
+    );
+    // Calls to an external server acted outside the sandbox and are never
+    // made a second time.
+    for call in plan.earlier_calls.iter().filter(|call| !call.external) {
         // Its result is already in the trace; only its effect is wanted.
         let _ = tools.call(call).await;
     }

@@ -445,8 +445,25 @@ async fn bad_requests_are_refused_with_a_status_that_says_why() {
 async fn the_binary_starts_on_a_socket_exits_when_idle_and_yields_to_one_already_there() {
     let dir = tempfile::tempdir().expect("tempdir");
     let socket = dir.path().join("d.sock");
-    // A leftover socket file from a daemon that died is replaced.
-    std::fs::write(&socket, "").expect("stale file");
+    // A file that is not a socket is somebody's file: the daemon leaves it
+    // where it is and does not start.
+    let not_a_socket = dir.path().join("notes.txt");
+    std::fs::write(&not_a_socket, "keep me").expect("a file");
+    let refused = std::process::Command::new(env!("CARGO_BIN_EXE_tetherd"))
+        .arg("--socket")
+        .arg(&not_a_socket)
+        .args(["--idle-secs", "1"])
+        .output()
+        .expect("run tetherd");
+    assert!(!refused.status.success());
+    assert_eq!(
+        std::fs::read_to_string(&not_a_socket).expect("still there"),
+        "keep me"
+    );
+
+    // A leftover socket from a daemon that died is replaced.
+    drop(std::os::unix::net::UnixListener::bind(&socket).expect("a stale socket"));
+    assert!(socket.exists());
 
     let start = |idle: &str| {
         std::process::Command::new(env!("CARGO_BIN_EXE_tetherd"))

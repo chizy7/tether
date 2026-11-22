@@ -50,7 +50,27 @@ struct ListArgs {
 }
 
 fn args<T: serde::de::DeserializeOwned>(call: &ToolCall) -> Result<T, String> {
+    // Arguments are named, never positional. serde would take a JSON array
+    // for these structs field by field, and a rule that looks for `argv` or
+    // `path` by name would see nothing to match on: a way past every rule.
+    if !call.arguments.is_object() {
+        return Err("bad arguments: expected a JSON object".into());
+    }
     serde_json::from_value(call.arguments.clone()).map_err(|e| format!("bad arguments: {e}"))
+}
+
+/// The same check the sandbox makes on a file path, for the directory
+/// `list_dir` is given: relative, and never climbing.
+fn in_workspace(path: &str) -> Result<(), String> {
+    use std::path::{Component, Path};
+    let stays = Path::new(path)
+        .components()
+        .all(|c| matches!(c, Component::Normal(_) | Component::CurDir));
+    if stays {
+        Ok(())
+    } else {
+        Err(format!("path leaves the workspace: {path}"))
+    }
 }
 
 fn text(bytes: &[u8]) -> String {
@@ -111,6 +131,7 @@ impl SandboxServer {
             "list_dir" => {
                 let a: ListArgs = args(call)?;
                 let dir = a.path.unwrap_or_else(|| ".".into());
+                in_workspace(&dir)?;
                 let (out, failed) = self
                     .exec(Exec {
                         argv: vec!["ls".into(), "-1A".into(), "--".into(), dir],
