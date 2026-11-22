@@ -7,7 +7,11 @@
 # write through it, and let the sandbox do the writing.
 
 [budget]
+max_usd = 0.50
 max_tool_calls = 20
+max_wall_secs = 300
+# Nobody is there to answer an ask: do not wait ten minutes for one.
+ask_timeout_secs = 5
 
 [[rule]]
 name = "fs-read"
@@ -21,9 +25,11 @@ match = { server = "fs" }
 action = "deny"
 reason = "writes go through the sandbox, where they are jailed"
 
+# The sandbox's file tools. `exec` matches no rule, so it asks, and with
+# nobody answering the run halts: a real model does not get to run commands.
 [[rule]]
-name = "sandbox-ok"
-match = { server = "sandbox" }
+name = "sandbox-files"
+match = { tool = ["sandbox.write_file", "sandbox.read_file", "sandbox.list_dir"] }
 action = "allow"
 
 [[mcp_server]]

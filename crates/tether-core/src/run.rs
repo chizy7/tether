@@ -317,8 +317,12 @@ impl Run {
         let price = self.deps.model.price(answered_by, &usage);
         if let Some(price) = &price {
             self.budget.usd_used += price.usd;
-        } else if !self.warned_unpriced && self.deps.policy.limits().max_usd.is_some() {
-            // A dollar limit on calls with no price never trips. Say so once.
+        } else if !self.warned_unpriced
+            && self.deps.replay.is_none()
+            && self.deps.policy.limits().max_usd.is_some()
+        {
+            // A dollar limit on calls with no price never trips. Say so once,
+            // for a live run: a replay has the recorded prices or none.
             self.warned_unpriced = true;
             tracing::warn!(
                 model = answered_by,

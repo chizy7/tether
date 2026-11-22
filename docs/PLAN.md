@@ -171,11 +171,10 @@ is the phase that makes "MCP-native" true.
 - [x] Replay: external calls replay from the recorded `tool.result`; `ReplayTools` carries the recorded `mcp_servers` so the replayed `run.created` is byte-equal; `tether replay` on a trace with external calls starts no server (`crates/tether-core/tests/external_server.rs`)
 - [x] `tether tools [--policy] [--json]`: connects what the policy names and prints the merged list by server with each server's transport, protocol version and name
 - [x] Python and TypeScript SDKs: no change needed; `run.tools()` already carried `server`
-- [x] Demo: `examples/mcp-filesystem` against the reference filesystem server: sandbox write, external read allowed by rule, external write denied by a server-level rule, replay with no divergence and no server started
+- [x] Demo: `examples/mcp-filesystem` against the reference filesystem server: sandbox write, external read allowed by rule, external write denied by a server-level rule, replay with no divergence and no server started. Run against the real server, and against Claude Opus 5.5 with `agent.py`; GIF in `docs/media/mcp.gif`
 - [x] Docs: `ARCHITECTURE.md` tool layer rewritten as built; README tools bullet and "cannot do yet" updated; `mcp` back in PyPI and npm keywords; `TRACE_FORMAT.md` notes `mcp_servers` inside `run.created.data` (no envelope change, compat test passes)
 - [x] Review before the release, run end to end against a stdio and an HTTP server. Fixed: a colliding tool name was prefixed with a dot, which model APIs reject, and is now `<server>__<tool>`; `resume` and a replay or eval that goes live had only the sandbox tools; a header token written in the policy went into every trace, so header values take `${NAME}`; a server that never answered `initialize` hung the run; `PATH` now always reaches a stdio server; a replay of a pre-0.5 trace grew an `mcp_servers` field. The live paths start a server a trace names only with `--trust-recorded-servers` or from a `--policy` file. `SECURITY.md` covers external servers
 - [x] Security and reliability review of the whole codebase before the release; what it found and fixed is under 0.5.0 in `CHANGELOG.md`. Left open, on the roadmap: the socket's mode under a permissive umask, memory use of `replay` on traces that reuse one large blob, seccomp and `clone` flags, and who answered an ask being unverified
-- [ ] Repo topic `mcp` back on GitHub, and the MCP community post. Maintainer
 
 v0.5 shipped 2026-11-22 as release v0.5.0.
 
