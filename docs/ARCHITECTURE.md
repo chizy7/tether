@@ -807,10 +807,10 @@ One thing every client over a Unix socket must do: name an HTTP/2 authority.
 gRPC clients default to sending the socket's path, which the daemon's HTTP
 stack rejects. The SDK sets `localhost`.
 
-Limits today: the daemon has only the `process` sandbox and the `anthropic`
-and `fake` providers; a run whose client disappears without `Finish` or
-`Halt` stays in progress and keeps the daemon up; and an ask from a run with
-no rules waits its full timeout unless something calls `Answer`.
+Limits today: the daemon has only the `process` sandbox; a run whose client
+disappears without `Finish` or `Halt` stays in progress and keeps the daemon
+up; and an ask from a run with no rules waits its full timeout unless
+something calls `Answer`.
 
 ## Crate graph
 

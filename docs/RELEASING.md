@@ -21,7 +21,9 @@ the daemon as `tether daemon`, and the SDKs start it that way when no
    `sdks/python/pyproject.toml`, and `version` in
    `sdks/typescript/package.json` (then `npm install` there, so
    `package-lock.json` follows). Run `cargo check` so `Cargo.lock` follows.
-   Each workflow refuses a tag that does not match its version.
+   Each workflow refuses a tag that does not match its version. In
+   `CHANGELOG.md`, rename "Unreleased" to the version and today's date, and
+   start a new empty "Unreleased" above it.
 2. Merge that to `master`.
 3. Tag the merge commit and push the tag:
 

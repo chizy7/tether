@@ -149,6 +149,14 @@ the `docker` backend for filesystem and network namespaces (it mounts only
 the workspace, and is behind the `docker` cargo feature) and `firecracker`
 (v1.0) for a separate kernel.
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) says what belongs in Tether and how to get
+a change merged. Report a vulnerability privately, as
+[SECURITY.md](SECURITY.md) describes; it also has the full account of what
+each sandbox backend isolates. [CHANGELOG.md](CHANGELOG.md) lists what
+changed in each release.
+
 ## License
 
 Apache-2.0.
