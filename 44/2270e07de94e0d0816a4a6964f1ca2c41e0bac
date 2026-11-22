@@ -1,0 +1,59 @@
+README.md
+  s_830eda70c48de9::t_b8a695501a6a07 5-9,13-16,18,20-22,24-25,27-37,39,41-44,46-64,76-131,136-153,155-157,159-161,165-166,171,173-176,178-181,183,185-208,214,216-223,229
+  s_830eda70c48de9::t_c878c389c27569 154,158
+docs/PLAN.md
+  s_830eda70c48de9::t_c878c389c27569 133,137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "442270e07de94e0d0816a4a6964f1ca2c41e0bac",
+  "branch": "readme-rewrite",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:2ae570525c6baf53d63cdf17223c7ed618bddb89580ba8a9fbca7c591732196a",
+      "total_additions": 182,
+      "total_deletions": 111,
+      "accepted_lines": 180,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:2ae570525c6baf53d63cdf17223c7ed618bddb89580ba8a9fbca7c591732196a",
+      "stats": {
+        "total_additions": 182,
+        "total_deletions": 111,
+        "accepted_lines": 180,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 180,
+            "total_deletions": 109,
+            "accepted_lines": 178,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"442270e07de94e0d0816a4a6964f1ca2c41e0bac","tree":"a2880bf1f8faf70f689b0574307df84474a45c4e","files":{"README.md":"dc9b405f6a38af239792047a4905e812881d07d8","docs/PLAN.md":"46e36ab2565d6b67ad0d9cbafdaf4a6f94b9f81b"},"digest":"1823fbe48a1909f5bf151f6746e22894acccfb7c3e203bb5542f782b3900073f"}
+}
