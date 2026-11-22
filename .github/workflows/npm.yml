@@ -5,12 +5,23 @@
 # Publishing uses npm trusted publishing, so there is no token to store. The
 # npm package must name this repository, this workflow file (npm.yml) and
 # the `npm` environment as its trusted publisher. See docs/RELEASING.md.
+#
+# It can also be started by hand for a tag that already exists, to publish a
+# version whose first attempt failed: Actions, npm, Run workflow, and give
+# the tag. The workflow is then this file as it is on the default branch, and
+# the package is built from the tag.
 name: npm
 
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "An existing version tag to publish, such as v0.4.0"
+        required: true
+        type: string
   pull_request:
     paths:
       - 'sdks/typescript/**'
@@ -20,20 +31,27 @@ on:
 permissions:
   contents: read
 
+env:
+  # The tag being published: the one pushed, or the one given by hand.
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Empty on a pull request, which checks out the pull request.
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || '' }}
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
       - name: The tag must be the SDK's version
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         run: |
           version=$(node -p "require('./sdks/typescript/package.json').version")
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "tag $GITHUB_REF_NAME does not match sdks/typescript version $version" >&2
+          if [ "v$version" != "$TAG" ]; then
+            echo "tag $TAG does not match sdks/typescript version $version" >&2
             exit 1
           fi
       - run: npm ci
@@ -48,7 +66,7 @@ jobs:
           path: dist/
 
   publish:
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment: npm
@@ -64,5 +82,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
-      # Publishes the tarball the build job made, and nothing else.
-      - run: npm publish dist/*.tgz --access public
+      # Publishes the tarball the build job made, and nothing else. The `./`
+      # matters: npm reads a bare `dist/name.tgz` as the GitHub repository
+      # `dist/name.tgz` and tries to clone it.
+      - run: npm publish ./dist/*.tgz --access public

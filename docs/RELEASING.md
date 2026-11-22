@@ -33,8 +33,11 @@ the daemon as `tether daemon`, and the SDKs start it that way when no
    ```
 
 4. Watch the three workflows. A version on PyPI or npm cannot be published
-   twice: if a package was published and another workflow failed, fix it and
-   re-run that workflow instead of moving the tag.
+   twice: if a package was published and another workflow failed, do not
+   move the tag. Re-running the failed run uses the workflow as it was at
+   the tag, which helps only if the failure was not in the workflow. If it
+   was, merge the fix, then start `npm` by hand (Actions, npm, Run workflow)
+   and give it the tag. `pypi.yml` has no such switch yet.
 
 ## One-time setup
 
