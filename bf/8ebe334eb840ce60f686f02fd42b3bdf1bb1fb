@@ -1,0 +1,75 @@
+CLAUDE.md
+  s_830eda70c48de9::t_d9a02c9a79bf83 63
+README.md
+  s_830eda70c48de9::t_d9a02c9a79bf83 10,223
+docs/PLAN.md
+  s_830eda70c48de9::t_3e6906e7ee4d7b 134
+docs/REPLAY.md
+  s_830eda70c48de9::t_0ecf2e190ad6cc 1-63,66-78,80-138,140-155,158-167,169-212,214-292
+  s_830eda70c48de9::t_3e6906e7ee4d7b 64-65,79,139,156-157,168,213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "bf8ebe334eb840ce60f686f02fd42b3bdf1bb1fb",
+  "branch": "replay-essay",
+  "prompts": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:633567068af3f60ea10eacf5fc7c9aa19584feeae8088253575900b6fa36b66c",
+      "total_additions": 304,
+      "total_deletions": 11,
+      "accepted_lines": 296,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:633567068af3f60ea10eacf5fc7c9aa19584feeae8088253575900b6fa36b66c",
+      "stats": {
+        "total_additions": 304,
+        "total_deletions": 11,
+        "accepted_lines": 296,
+        "overriden_lines": 0,
+        "files": {
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 1,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "docs/REPLAY.md": {
+            "total_additions": 300,
+            "total_deletions": 8,
+            "accepted_lines": 292,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"bf8ebe334eb840ce60f686f02fd42b3bdf1bb1fb","tree":"1082c9b1cb3270188a77e1d4c8c3eacfd855acd7","files":{"CLAUDE.md":"32add8fe569e3485e0158d503e4b91527863617d","README.md":"a6302a89423b22ed8b9a40d1fb60b935bbfc5ffe","docs/PLAN.md":"40b6b6c987be93056ed942151c56841d9404b9a4","docs/REPLAY.md":"d30ab1cf2c86cd8ef50287c30b9992bbe17fd3e9"},"digest":"c115a0c63663b7df498ea6b1287c45e7cca60534fa1e33cd8c10cece9680ffc0"}
+}
