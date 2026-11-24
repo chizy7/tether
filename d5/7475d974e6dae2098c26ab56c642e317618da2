@@ -1,0 +1,117 @@
+CHANGELOG.md
+  s_643bfacbd7a768::t_57c15c4f497aca 3,15,21-22,26,29-30,32,39-40,42-46,51-58,64-65,68,74,76,82,84-89,94-95,99,101,107-108,110-117,123,129-133,137,143,145-146
+  s_643bfacbd7a768::t_da115bcf370a71 7-13
+  s_830eda70c48de9::t_3b912d0127a9ec 23
+  s_830eda70c48de9::t_0504566d2bd6f3 24-25,28,31,34-38,41,47-50,59-60
+  s_643bfacbd7a768::t_59bcf18bd8bc38 121
+CODE_OF_CONDUCT.md
+  s_643bfacbd7a768::t_08f47112c71377 1-83
+CONTRIBUTING.md
+  s_830eda70c48de9::t_93d63783e80859 47
+  s_643bfacbd7a768::t_08f47112c71377 117-121
+docs/RELEASING.md
+  s_643bfacbd7a768::t_40d3300fdddfce 27-38
+  s_643bfacbd7a768::t_03565a07ae8b9b 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "d57475d974e6dae2098c26ab56c642e317618da2",
+  "prompts": {},
+  "sessions": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "stats": {
+        "total_additions": 0,
+        "total_deletions": 0,
+        "accepted_lines": 420,
+        "overriden_lines": 0,
+        "files": {
+          ".github/dependabot.yml": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 40,
+            "overriden_lines": 0
+          },
+          ".github/workflows/audit.yml": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 27,
+            "overriden_lines": 0
+          },
+          "sdks/python/LICENSE": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 176,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/LICENSE": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 176,
+            "overriden_lines": 0
+          }
+        }
+      }
+    },
+    "s_830eda70c48de9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05812b56-e62e-422a-9c2b-3a89de92faae",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:5e65778e1a1a9b256285ecefc289ea02bcf36e64afd03594709df5a658fd2fca",
+      "stats": {
+        "total_additions": 46,
+        "total_deletions": 164,
+        "accepted_lines": 45,
+        "overriden_lines": 1,
+        "files": {
+          "CLAUDE.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          "CONTRIBUTING.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 3,
+            "total_deletions": 3,
+            "accepted_lines": 2,
+            "overriden_lines": 1
+          },
+          "docs/ARCHITECTURE.md": {
+            "total_additions": 6,
+            "total_deletions": 9,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "docs/PLAN.md": {
+            "total_additions": 34,
+            "total_deletions": 149,
+            "accepted_lines": 34,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"d57475d974e6dae2098c26ab56c642e317618da2","tree":"62aba96f3dd9c6011bad2952df5636f550d87ccd","files":{"CHANGELOG.md":"9ba3eb220ba4540a416b8ffb2ad1965b22d71750","CODE_OF_CONDUCT.md":"df19ddac9708b78117f888840d3a6b47677298c8","CONTRIBUTING.md":"fa6891fd215840178d25ebdddabc2d97d230370b","docs/RELEASING.md":"107958bad26c86754e4632035400da62643fd7b5"},"digest":"6f0d58f398146074ce10e47e314c939fd4ad80d496094be44cc13207a0f067e6"}
+}
