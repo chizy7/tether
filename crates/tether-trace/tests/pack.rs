@@ -161,11 +161,57 @@ fn tar_of(path: &Path, entries: &[(&str, &[u8])]) {
         header.set_mode(0o644);
         // Set the name on the header directly: the builder would refuse `..`.
         let bytes = name.as_bytes();
-        header.as_old_mut().name[..bytes.len()].copy_from_slice(bytes);
+        let len = bytes.len().min(header.as_old().name.len());
+        if bytes.len() > len {
+            // Preserve long names, including absolute and parent paths, in a
+            // GNU long-name entry rather than overflowing the fixed header.
+            let mut long_name = bytes.to_vec();
+            long_name.push(0);
+            let mut long_header = tar::Header::new_gnu();
+            long_header
+                .set_path("././@LongLink")
+                .expect("long-name path");
+            long_header.set_entry_type(tar::EntryType::GNULongName);
+            long_header.set_mode(0o644);
+            long_header.set_size(long_name.len() as u64);
+            long_header.set_cksum();
+            tar.append(&long_header, long_name.as_slice())
+                .expect("append long name");
+        }
+        header.as_old_mut().name[..len].copy_from_slice(&bytes[..len]);
         header.set_cksum();
         tar.append(&header, *data).expect("append");
     }
     tar.into_inner().expect("finish");
+}
+
+#[test]
+fn tar_fixture_preserves_short_and_long_names() {
+    let source = dir("pack_fixture_names");
+    let path = source.join("names.tar");
+    let names = [
+        "a".repeat(100),
+        "b".repeat(101),
+        format!("/{}", "c".repeat(256)),
+        format!("../{}", "é".repeat(64)),
+        "short.txt".into(),
+    ];
+    let entries: Vec<(&str, &[u8])> = names
+        .iter()
+        .map(|name| (name.as_str(), b"payload".as_slice()))
+        .collect();
+    tar_of(&path, &entries);
+
+    let mut archive = tar::Archive::new(fs::File::open(&path).expect("open"));
+    let mut entries = archive.entries().expect("entries");
+    for name in names {
+        let mut entry = entries.next().expect("entry exists").expect("entry");
+        assert_eq!(entry.path_bytes().as_ref(), name.as_bytes());
+        let mut data = Vec::new();
+        std::io::Read::read_to_end(&mut entry, &mut data).expect("read");
+        assert_eq!(data, b"payload");
+    }
+    assert!(entries.next().is_none());
 }
 
 #[test]
