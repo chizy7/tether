@@ -1,0 +1,86 @@
+.github/PULL_REQUEST_TEMPLATE.md
+  s_643bfacbd7a768::t_6e38ae8fffbea2 17-21
+.github/workflows/changelog.yml
+  s_643bfacbd7a768::t_6e38ae8fffbea2 5-7,10,19,25-26,31-35
+CLAUDE.md
+  s_643bfacbd7a768::t_f425981c5f6c9f 79
+CONTRIBUTING.md
+  s_643bfacbd7a768::t_f425981c5f6c9f 152-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "f1a59e18793c5c0eedb94d1d845baa24f64359d0",
+  "branch": "chore/changelog-checkbox",
+  "prompts": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:fb5f58c9dd7c7f2f1ea4a8306f9aa123d1c57f2b1e58e172f821546fc1ebc8b6",
+      "total_additions": 34,
+      "total_deletions": 11,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:fb5f58c9dd7c7f2f1ea4a8306f9aa123d1c57f2b1e58e172f821546fc1ebc8b6",
+      "stats": {
+        "total_additions": 34,
+        "total_deletions": 11,
+        "accepted_lines": 22,
+        "overriden_lines": 0,
+        "files": {
+          ".github/PULL_REQUEST_TEMPLATE.md": {
+            "total_additions": 6,
+            "total_deletions": 1,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          ".github/workflows/changelog.yml": {
+            "total_additions": 12,
+            "total_deletions": 4,
+            "accepted_lines": 12,
+            "overriden_lines": 0
+          },
+          "CLAUDE.md": {
+            "total_additions": 1,
+            "total_deletions": 1,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "CONTRIBUTING.md": {
+            "total_additions": 5,
+            "total_deletions": 3,
+            "accepted_lines": 4,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 10,
+            "total_deletions": 2,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/README.md": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"f1a59e18793c5c0eedb94d1d845baa24f64359d0","tree":"93d73650abb73b2c6f2b2fe4af56b2409051a3b8","files":{".github/PULL_REQUEST_TEMPLATE.md":"dac2b119f97f0b9c2c18a4170f387faba59cfff2",".github/workflows/changelog.yml":"e042cbdb60be17fa2303e41b3430af0391a077a1","CLAUDE.md":"7f5813d885c90d3584f6d149042c196d98d812a0","CONTRIBUTING.md":"dbe95801bb6d406a4b4b2a7bff9b07850c58410b"},"digest":"a7613eab5f11e165c745ee624dd47efcb74734cf820ce004cd30576daca87601"}
+}
