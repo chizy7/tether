@@ -1,0 +1,54 @@
+README.md
+  s_643bfacbd7a768::t_0d75ece634b1a5 1,3-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "607b8df339023af1caa59f94c64dd40bef54717f",
+  "branch": "docs/readme-badges",
+  "prompts": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "stats": {
+        "total_additions": 0,
+        "total_deletions": 0,
+        "accepted_lines": 10,
+        "overriden_lines": 0,
+        "files": {
+          "README.md": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 10,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/README.md": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"607b8df339023af1caa59f94c64dd40bef54717f","tree":"095d93607c6c4d7d04837be4393d7960d8fb591f","files":{"README.md":"9d7850b7ce645970cb24ad3c082cd519b25e2d94"},"digest":"da30b889d390f5a22cad7d8241f5f240d65adc90261b8bdc33d71ba20331386b"}
+}
