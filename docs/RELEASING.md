@@ -24,6 +24,19 @@ the daemon as `tether daemon`, and the SDKs start it that way when no
    Each workflow refuses a tag that does not match its version. In
    `CHANGELOG.md`, rename "Unreleased" to the version and today's date, and
    start a new empty "Unreleased" above it.
+
+   dist copies that section into the GitHub release as its notes and uses
+   the heading as the release title, so two things about its shape matter:
+
+   - Write the heading as `## v0.5.0 - 2026-11-22`: the version, a space, a
+     hyphen, a space, the date. A comma after the version makes dist skip
+     the notes without an error.
+   - Do not wrap lines in `CHANGELOG.md`. Each paragraph and each list item
+     is one line, because a GitHub release shows every newline as a line
+     break.
+
+   `dist plan --tag vX.Y.Z` prints the title and body before you tag.
+
 2. Merge that to `master`.
 3. Tag the merge commit and push the tag:
 

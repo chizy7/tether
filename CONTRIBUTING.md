@@ -114,6 +114,11 @@ Issues labelled
 are real work that is small and well specified. Comment on one before
 starting so two people do not do it twice.
 
+## Code of conduct
+
+Everyone taking part in the project is expected to follow the
+[code of conduct](CODE_OF_CONDUCT.md). It says how to report a problem.
+
 ## Security
 
 Do not open a public issue for a vulnerability. See `SECURITY.md`.
