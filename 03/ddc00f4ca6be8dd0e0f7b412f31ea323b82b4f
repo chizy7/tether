@@ -1,0 +1,9 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "73096eed4d3ec16bcaee2c41145d3ee18e081725",
+  "branch": "pr-71",
+  "prompts": {},
+  "integrity": {"v":1,"commit":"73096eed4d3ec16bcaee2c41145d3ee18e081725","tree":"2bf1c5218c26fba138301cfea30e98438d002e4d","files":{},"digest":"76f422badc7a82a6b49dc45eaa7d665d9d1c497b485ca80dddc3687bf0c65f68"}
+}
