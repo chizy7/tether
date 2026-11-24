@@ -77,9 +77,7 @@ def main() -> int:
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True)
 
-    with tether.Run(
-        policy=HERE / "tether.toml", dir=RUNS, workspace=workspace, **settings
-    ) as run:
+    with tether.Run(policy=HERE / "tether.toml", dir=RUNS, workspace=workspace, **settings) as run:
         print(f"trace: {os.path.relpath(run.trace_path)}")
         try:
             answer = agent(run, model, params)

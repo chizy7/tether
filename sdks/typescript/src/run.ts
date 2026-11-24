@@ -481,10 +481,7 @@ function unary<T>(stub: Stub, method: string, request: object): Promise<T> {
  * without having finished or halted it, halted if `body` throws. The
  * connection is closed either way.
  */
-export async function withRun<T>(
-  options: RunOptions,
-  body: (run: Run) => Promise<T>,
-): Promise<T> {
+export async function withRun<T>(options: RunOptions, body: (run: Run) => Promise<T>): Promise<T> {
   const run = await Run.start(options);
   try {
     const result = await body(run);

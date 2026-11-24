@@ -16,7 +16,9 @@ dependencies = [
 
 [project.optional-dependencies]
 # grpcio-tools is pinned so regenerating the stubs gives the committed bytes.
-dev = ["pytest>=8", "grpcio-tools==1.85.3"]
+# ruff is pinned so a new release cannot reformat code under an open PR; its
+# settings are in ruff.toml at the repository root.
+dev = ["pytest>=8", "grpcio-tools==1.85.3", "ruff==0.17.6"]
 
 [project.urls]
 Repository = "https://github.com/chizy7/tether"

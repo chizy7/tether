@@ -17,10 +17,13 @@ import json
 import sys
 from pathlib import Path
 
-from agents import Agent, FunctionTool, Model, ModelResponse, Runner, Usage, set_tracing_disabled
-from openai.types.responses import ResponseFunctionToolCall, ResponseOutputMessage, ResponseOutputText
-
 import tether
+from agents import Agent, FunctionTool, Model, ModelResponse, Runner, Usage, set_tracing_disabled
+from openai.types.responses import (
+    ResponseFunctionToolCall,
+    ResponseOutputMessage,
+    ResponseOutputText,
+)
 
 HERE = Path(__file__).resolve().parent
 SYSTEM = (
@@ -42,23 +45,42 @@ class TetherModel(Model):
             self.messages.append(tether.system(system_instructions))
         items = [{"role": "user", "content": input}] if isinstance(input, str) else input
         # Only what is new: replies are already here, exactly as they came.
-        new, self.seen = items[self.seen:], len(items)
+        new, self.seen = items[self.seen :], len(items)
         done = [self.results[i["call_id"]] for i in new if i.get("type") == "function_call_output"]
         if done:
             self.messages.append(tether.tool_results(done))
         self.messages += [tether.user(i["content"]) for i in new if i.get("role") == "user"]
         reply = await asyncio.to_thread(
-            self.run.complete, model=self.model, messages=self.messages,
-            tools=[tool.name for tool in tools], params=self.params)
+            self.run.complete,
+            model=self.model,
+            messages=self.messages,
+            tools=[tool.name for tool in tools],
+            params=self.params,
+        )
         self.messages.append(reply.message)
-        output = [ResponseFunctionToolCall(call_id=call.id, name=call.name, type="function_call",
-                                           arguments=json.dumps(call.arguments)) for call in reply.tool_calls]
+        output = [
+            ResponseFunctionToolCall(
+                call_id=call.id,
+                name=call.name,
+                type="function_call",
+                arguments=json.dumps(call.arguments),
+            )
+            for call in reply.tool_calls
+        ]
         if reply.text:
             text = ResponseOutputText(text=reply.text, type="output_text", annotations=[])
-            output.insert(0, ResponseOutputMessage(id="msg", content=[text], role="assistant",
-                                                   status="completed", type="message"))
-        usage = Usage(requests=1, input_tokens=reply.input_tokens, output_tokens=reply.output_tokens,
-                      total_tokens=reply.input_tokens + reply.output_tokens)
+            output.insert(
+                0,
+                ResponseOutputMessage(
+                    id="msg", content=[text], role="assistant", status="completed", type="message"
+                ),
+            )
+        usage = Usage(
+            requests=1,
+            input_tokens=reply.input_tokens,
+            output_tokens=reply.output_tokens,
+            total_tokens=reply.input_tokens + reply.output_tokens,
+        )
         return ModelResponse(output=output, usage=usage, response_id=None)
 
     def stream_response(self, *_, **__):
@@ -67,13 +89,21 @@ class TetherModel(Model):
 
 def tether_tools(run: tether.Run, results: dict) -> list:
     """The run's tools as the framework's: each call is one `run.call_tool`."""
+
     def wrap(spec: tether.Tool) -> FunctionTool:
         async def invoke(context, arguments: str) -> str:
             call = tether.ToolCall(context.tool_call_id, spec.name, json.loads(arguments or "{}"))
             result = results[call.id] = await asyncio.to_thread(run.call_tool, call)
             return result.content if isinstance(result.content, str) else json.dumps(result.content)
-        return FunctionTool(name=spec.name, description=spec.description, on_invoke_tool=invoke,
-                            params_json_schema=spec.input_schema, strict_json_schema=False)
+
+        return FunctionTool(
+            name=spec.name,
+            description=spec.description,
+            on_invoke_tool=invoke,
+            params_json_schema=spec.input_schema,
+            strict_json_schema=False,
+        )
+
     return [wrap(spec) for spec in run.tools]
 
 
@@ -94,13 +124,19 @@ def main() -> int:
     with tether.Run(policy=HERE / "tether.toml", dir=HERE / ".tether", **settings) as run:
         print(f"trace: {run.trace_path}")
         results: dict = {}
-        agent = Agent(name="raw-loop", instructions=SYSTEM, tools=tether_tools(run, results),
-                      model=TetherModel(run, model, params, results))
+        agent = Agent(
+            name="raw-loop",
+            instructions=SYSTEM,
+            tools=tether_tools(run, results),
+            model=TetherModel(run, model, params, results),
+        )
         try:
             answer = Runner.run_sync(agent, TASK).final_output
         except Exception as error:
             # A halt inside a tool reaches here wrapped in the framework's own error.
-            halted = error if isinstance(error, tether.Halted) else error.__cause__ or error.__context__
+            halted = (
+                error if isinstance(error, tether.Halted) else error.__cause__ or error.__context__
+            )
             if not isinstance(halted, tether.Halted):
                 raise
             print(f"halted: {halted}", file=sys.stderr)

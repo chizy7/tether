@@ -1,0 +1,23 @@
+name: pr-title
+
+# The pull request title becomes the squash commit on master, so it follows
+# the convention in CONTRIBUTING.md: a type, a colon, then what changed.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "The title starts with feat:, fix:, docs: or chore:"
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s\n' "$TITLE" | grep -Eq '^(feat|fix|docs|chore)(\([a-z0-9-]+\))?: [^ ]'; then
+            exit 0
+          fi
+          echo "::error::The title must start with feat:, fix:, docs: or chore: and then say what changed, for example \"fix: resume after a halted ask\". It becomes the commit on master. Edit the title and this check runs again."
+          exit 1

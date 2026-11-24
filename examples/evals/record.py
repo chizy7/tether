@@ -58,7 +58,10 @@ def scripted(task: dict, tidy: bool) -> dict:
     """What the scripted model does for a task: write its files, one call a
     turn, then say so. The tidy version stands in for the model under
     regressed.txt: where it made a scratch file, it tries to delete it."""
-    calls = [["write_file", {"path": path, "content": content}] for path, content in task["writes"].items()]
+    calls = [
+        ["write_file", {"path": path, "content": content}]
+        for path, content in task["writes"].items()
+    ]
     calls += task.get("also", [])
     if tidy and "scratch" in task:
         calls.append(["exec", {"argv": ["rm", task["scratch"]]}])
@@ -111,7 +114,8 @@ def main() -> int:
         trace = record(task, out, real)
         packed = subprocess.run(
             ["tether", "pack", str(trace), "--out", str(suite / f"{task['id']}.tar")],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if packed.returncode != 0:
             sys.exit(f"\ntether pack {trace.name} failed:\n{packed.stderr}")

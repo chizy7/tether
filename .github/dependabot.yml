@@ -17,6 +17,13 @@ updates:
       cargo:
         patterns: ["*"]
 
+  # The Rust version pinned in rust-toolchain.toml.
+  - package-ecosystem: rust-toolchain
+    labels: [dependencies, rust, skip-changelog]
+    directory: /
+    schedule:
+      interval: weekly
+
   - package-ecosystem: npm
     # skip-changelog: a dependency bump is not something a user notices.
     labels: [dependencies, javascript, skip-changelog]
