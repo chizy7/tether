@@ -1,0 +1,217 @@
+.github/PULL_REQUEST_TEMPLATE.md
+  s_643bfacbd7a768::t_d8e06f2d6a71b0 11-12
+.github/dependabot.yml
+  s_643bfacbd7a768::t_7004665aa8edb3 20-26
+.github/workflows/ci.yml
+  s_643bfacbd7a768::t_7004665aa8edb3 17-20,22-33,35-38,44-45,54-55,63-65,92-93,102-103,114-116
+.github/workflows/pr-title.yml
+  s_643bfacbd7a768::t_7004665aa8edb3 1-14,16-23
+  s_643bfacbd7a768::t_463d12d64e71a6 15
+CONTRIBUTING.md
+  s_643bfacbd7a768::t_d8e06f2d6a71b0 68,77-84,90-95,105-106,110-113,116-119,126-127,129-130
+  s_643bfacbd7a768::t_281f9868e752b6 102-103
+crates/tether-mcp/tests/fixtures/fake_server.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 8,10,14-41,43-47,66-76,87-96,99-105,108-117,119-128,130-139,141-147,149-155
+examples/evals/record.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 61-64,117-118
+examples/mcp-filesystem/agent.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 80
+examples/openai-agents-sdk/agent.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 21-26,48,54-59,61-69,72-83,92,98-106,127-132,137-139
+examples/replays/demo.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 68-73,103-105,178-186,195-197,200-202,218-220
+justfile
+  s_643bfacbd7a768::t_7004665aa8edb3 1-85
+ruff.toml
+  s_643bfacbd7a768::t_5416e815554d86 1-4,7-8,11-12
+  s_643bfacbd7a768::t_2c32249b1f6e20 5-6
+  s_643bfacbd7a768::t_fe54aa3dd62f64 9-10
+  s_643bfacbd7a768::t_edae49cf351ce3 13-14
+rust-toolchain.toml
+  s_643bfacbd7a768::t_f0922bad5541c8 1-9
+sdks/python/pyproject.toml
+  s_643bfacbd7a768::t_7004665aa8edb3 19-21
+sdks/python/src/tether/_run.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 207-209,291,326
+sdks/python/tests/test_run.py
+  s_643bfacbd7a768::t_2c32249b1f6e20 19-34,140-143,178-180,207-212
+sdks/typescript/biome.json
+  s_643bfacbd7a768::t_e995fec975f0fd 1,42
+  s_643bfacbd7a768::t_36bc068b282c90 2-8,10-19,27-41
+  s_643bfacbd7a768::t_cf5a0466a77115 9
+  s_643bfacbd7a768::t_183f0de3b9ed56 20-26
+sdks/typescript/package.json
+  s_643bfacbd7a768::t_183f0de3b9ed56 35-36
+  s_643bfacbd7a768::t_e995fec975f0fd 44
+sdks/typescript/src/index.ts
+  s_643bfacbd7a768::t_cf5a0466a77115 11,23-30
+sdks/typescript/src/run.ts
+  s_643bfacbd7a768::t_36bc068b282c90 484
+sdks/typescript/test/run.test.ts
+  s_643bfacbd7a768::t_bc1f619122c5c2 107-108
+  s_643bfacbd7a768::t_36bc068b282c90 200,212-216
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "ebd45efec2c508ef69b236df09aed9d7bca485e4",
+  "prompts": {},
+  "sessions": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:e2b6b336fb362bfa5f2affd5b72a7afb460d6472d6bb335c03e2b027a0e08447",
+      "stats": {
+        "total_additions": 1118,
+        "total_deletions": 351,
+        "accepted_lines": 499,
+        "overriden_lines": 0,
+        "files": {
+          ".github/PULL_REQUEST_TEMPLATE.md": {
+            "total_additions": 2,
+            "total_deletions": 3,
+            "accepted_lines": 2,
+            "overriden_lines": 0
+          },
+          ".github/dependabot.yml": {
+            "total_additions": 7,
+            "total_deletions": 0,
+            "accepted_lines": 7,
+            "overriden_lines": 0
+          },
+          ".github/workflows/ci.yml": {
+            "total_additions": 34,
+            "total_deletions": 10,
+            "accepted_lines": 34,
+            "overriden_lines": 0
+          },
+          ".github/workflows/pr-title.yml": {
+            "total_additions": 24,
+            "total_deletions": 1,
+            "accepted_lines": 23,
+            "overriden_lines": 0
+          },
+          "CONTRIBUTING.md": {
+            "total_additions": 33,
+            "total_deletions": 9,
+            "accepted_lines": 31,
+            "overriden_lines": 0
+          },
+          "README.md": {
+            "total_additions": 2,
+            "total_deletions": 2,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          },
+          "crates/tether-mcp/tests/fixtures/fake_server.py": {
+            "total_additions": 107,
+            "total_deletions": 28,
+            "accepted_lines": 107,
+            "overriden_lines": 0
+          },
+          "examples/evals/record.py": {
+            "total_additions": 6,
+            "total_deletions": 2,
+            "accepted_lines": 6,
+            "overriden_lines": 0
+          },
+          "examples/mcp-filesystem/agent.py": {
+            "total_additions": 1,
+            "total_deletions": 3,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "examples/openai-agents-sdk/agent.py": {
+            "total_additions": 53,
+            "total_deletions": 17,
+            "accepted_lines": 53,
+            "overriden_lines": 0
+          },
+          "examples/replays/demo.py": {
+            "total_additions": 27,
+            "total_deletions": 13,
+            "accepted_lines": 27,
+            "overriden_lines": 0
+          },
+          "justfile": {
+            "total_additions": 85,
+            "total_deletions": 0,
+            "accepted_lines": 85,
+            "overriden_lines": 0
+          },
+          "ruff.toml": {
+            "total_additions": 17,
+            "total_deletions": 3,
+            "accepted_lines": 14,
+            "overriden_lines": 0
+          },
+          "rust-toolchain.toml": {
+            "total_additions": 9,
+            "total_deletions": 0,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 3,
+            "total_deletions": 1,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "sdks/python/src/tether/_run.py": {
+            "total_additions": 5,
+            "total_deletions": 7,
+            "accepted_lines": 5,
+            "overriden_lines": 0
+          },
+          "sdks/python/tests/test_run.py": {
+            "total_additions": 29,
+            "total_deletions": 8,
+            "accepted_lines": 29,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/README.md": {
+            "total_additions": 24,
+            "total_deletions": 24,
+            "accepted_lines": 0,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/biome.json": {
+            "total_additions": 76,
+            "total_deletions": 34,
+            "accepted_lines": 42,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/package.json": {
+            "total_additions": 3,
+            "total_deletions": 0,
+            "accepted_lines": 3,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/src/index.ts": {
+            "total_additions": 10,
+            "total_deletions": 9,
+            "accepted_lines": 9,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/src/run.ts": {
+            "total_additions": 1,
+            "total_deletions": 4,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/test/run.test.ts": {
+            "total_additions": 8,
+            "total_deletions": 5,
+            "accepted_lines": 8,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"ebd45efec2c508ef69b236df09aed9d7bca485e4","tree":"0aa15b050b3e4467bd3706038cf6e0fab6053e39","files":{".github/PULL_REQUEST_TEMPLATE.md":"589d703a2cbe8bd8bbecb1b925302ddd8147a225",".github/dependabot.yml":"ac8c0915dbbadf91079a48e4429d6d3f5499fe7f",".github/workflows/ci.yml":"1254f977aee09eff589e454e29719ac03c186147",".github/workflows/pr-title.yml":"093ec9543200744eb381c551e2fcad9083ee20b3","CONTRIBUTING.md":"ea7a899f6c86455e40ab961ff2330983f6367bba","crates/tether-mcp/tests/fixtures/fake_server.py":"8dc324717ad16669badf112e3af029ee2577f0c4","examples/evals/record.py":"2efbde6d2e3197ae489182ff6477a92f80fa2e10","examples/mcp-filesystem/agent.py":"8d1749680fcff6ba7d7d32f9193589c71c5aac23","examples/openai-agents-sdk/agent.py":"27c538ce27bd0f84480088371a48da66fa600f18","examples/replays/demo.py":"4e5a382ba3b516090551321642d57c52b2c44421","justfile":"efdc22865783f9e065c833b5e77624a0b44447bb","ruff.toml":"25d58a2d5686b9c8f63bc38438f6e38b55f2629e","rust-toolchain.toml":"adee4b785537e30607f5b81a7b59a5f155eee947","sdks/python/pyproject.toml":"eae845c0017f7dcfcb0d885cf93cb83af580c625","sdks/python/src/tether/_run.py":"bcea84b6aa4eb788288b18082e9679b1d4ecc154","sdks/python/tests/test_run.py":"6cbfb65207519e63984e6d32f17e1c45eb22b50f","sdks/typescript/biome.json":"c09ad12e1cf6b6bd44dfee951ed743ae677caa47","sdks/typescript/package.json":"bdf2264a08bebca8382f2012869423ddbfd4c3e6","sdks/typescript/src/index.ts":"52d9e3cd05d5372f534fbe231995b9610e1db5c4","sdks/typescript/src/run.ts":"f6e85940a436b006b2275b540220d2bd7acb406f","sdks/typescript/test/run.test.ts":"29d31824cff694a096ca8bf4a17befe709043b6a"},"digest":"5937af347859692c9d240f6c98d4246673d82cd8b6c1b78a9eaa8399c60a8c69"}
+}
