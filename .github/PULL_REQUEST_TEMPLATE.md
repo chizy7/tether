@@ -12,8 +12,13 @@
 - [ ] If an SDK or a Python example changed: `just python` or `just typescript`
 - [ ] Tests need no API key (they use the `fake` adapter)
 - [ ] Docs that describe the changed behaviour are updated
-- [ ] `CHANGELOG.md` has a line for this under "Unreleased" (or nobody using Tether would notice the change, and it needs the `skip-changelog` label)
 - [ ] If `tether-types` changed: `docs/TRACE_FORMAT.md` and a test in `crates/tether-types/tests/` are updated, and `crates/tether-trace/tests/compat.rs` still passes without touching its fixtures
+
+**Changelog**
+
+Add a line for this under "Unreleased" in `CHANGELOG.md`. If nobody using Tether would notice the change (a dependency bump, CI, a refactor, a typo), tick this instead:
+
+- [ ] No changelog entry needed
 
 **Design rules**
 

@@ -76,7 +76,7 @@ Dependencies point down only. Leaf crates never import each other or
 - Trace schema v0 is frozen. `crates/tether-trace/tests/compat.rs` reads traces written by v0.3.0; if it fails, the change is breaking. Never regenerate the fixtures to make it pass.
 - `tether-types` changes are schema changes: update `docs/TRACE_FORMAT.md` in the same PR, and add or update a test in `crates/tether-types/tests/`.
 - Tests never need an API key. Use the `fake` model adapter.
-- Every PR a user would notice adds one unwrapped line under "Unreleased" in `CHANGELOG.md`, ending with the PR number (and `thanks @name` for a contributor). The `changelog` check fails without it; the `skip-changelog` label is for dependency bumps, CI and the like.
+- Every PR a user would notice adds one unwrapped line under "Unreleased" in `CHANGELOG.md`, ending with the PR number (and `thanks @name` for a contributor). The `changelog` check fails without it. Dependency bumps, CI and the like need no entry: tick "No changelog entry needed" in the PR description, or add the `skip-changelog` label.
 - Stop and ask before: changing the event envelope, adding a new event type, adding a dependency to `tether-types`, or adding a crate.
 - No em dashes in prose or docs.
 - Phases ship on a 4-week cadence and each is defined by its demo (see PLAN). Cut features before cutting the demo.

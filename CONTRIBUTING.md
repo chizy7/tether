@@ -149,8 +149,10 @@ is what appears in the release notes, with your name on it.
   every newline as a line break.
 
 A change nobody using Tether would notice needs no entry: a dependency bump,
-CI, a refactor with no change in behaviour, a typo. Say so in the PR and the
-maintainer adds the `skip-changelog` label, which passes the check.
+CI, a refactor with no change in behaviour, a typo. Tick "No changelog entry
+needed" in the PR description and the check passes. A maintainer can do the
+same with the `skip-changelog` label, and will ask for an entry if the change
+turns out to need one.
 
 ## Where to start
 
