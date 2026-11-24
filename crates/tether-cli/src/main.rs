@@ -131,6 +131,9 @@ enum Cmd {
         /// A directory of recorded traces (`.jsonl` or packed `.tar`) and
         /// an `eval.toml`.
         suite: PathBuf,
+        /// Print one JSON report when the suite finishes.
+        #[arg(long)]
+        json: bool,
         /// Replace the system prompt of every request.
         #[arg(long)]
         system: Option<String>,
@@ -336,6 +339,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Unpack { tar, dir } => pack::unpack(&tar, dir.as_deref()),
         Cmd::Eval {
             suite,
+            json,
             system,
             model,
             policy,
@@ -345,6 +349,7 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let options = eval::Options {
                 suite,
+                json,
                 system,
                 model,
                 policy,

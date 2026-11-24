@@ -8,11 +8,12 @@
 //! whether the answer is good.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tether_trace::{diff, effective, TraceReader};
 use tether_types::{Decision, Event, EventType, RunState};
 
@@ -20,6 +21,7 @@ use crate::{clip, pack, replay};
 
 pub struct Options {
     pub suite: PathBuf,
+    pub json: bool,
     pub system: Option<String>,
     pub model: Option<String>,
     pub policy: Option<PathBuf>,
@@ -94,8 +96,31 @@ struct Config {
 struct Summary {
     steps: u64,
     usd: f64,
-    /// Each assertion the trace fails, in words.
-    failures: Vec<String>,
+    failures: Vec<Failure>,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+struct Failure {
+    check: &'static str,
+    reason: String,
+}
+
+impl Failure {
+    fn new(check: &'static str, reason: impl Into<String>) -> Self {
+        Self {
+            check,
+            reason: reason.into(),
+        }
+    }
+}
+
+impl fmt::Display for Failure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.check {
+            "run_incomplete" | "replay_stopped" | "replay_error" => f.write_str(&self.reason),
+            check => write!(f, "{check}: {}", self.reason),
+        }
+    }
 }
 
 /// A path as the sandbox tools would see it, for comparing two spellings.
@@ -166,11 +191,17 @@ fn check(events: &[&Event], asserted: &Assertions) -> Summary {
     // A run that did not finish fails whatever else is asserted.
     match state {
         Some((RunState::Finished, _)) => {}
-        Some((state, reason)) => failures.push(format!(
-            "the run did not finish: {}: {reason}",
-            format!("{state:?}").to_lowercase()
+        Some((state, reason)) => failures.push(Failure::new(
+            "run_incomplete",
+            format!(
+                "the run did not finish: {}: {reason}",
+                format!("{state:?}").to_lowercase()
+            ),
         )),
-        None => failures.push("the run did not finish: the trace has no run state".into()),
+        None => failures.push(Failure::new(
+            "run_incomplete",
+            "the run did not finish: the trace has no run state",
+        )),
     }
     if let Some(wanted) = &asserted.outcome {
         let got = match outcome {
@@ -180,56 +211,61 @@ fn check(events: &[&Event], asserted: &Assertions) -> Summary {
         };
         match got {
             Some(got) if got.contains(wanted.as_str()) => {}
-            Some(got) => failures.push(format!(
-                "outcome: wanted it to contain {wanted:?}, got {:?}",
-                clip(&got)
+            Some(got) => failures.push(Failure::new(
+                "outcome",
+                format!("wanted it to contain {wanted:?}, got {:?}", clip(&got)),
             )),
-            None => failures.push(format!(
-                "outcome: wanted it to contain {wanted:?}, and the run has none"
+            None => failures.push(Failure::new(
+                "outcome",
+                format!("wanted it to contain {wanted:?}, and the run has none"),
             )),
         }
     }
     if let Some(most) = asserted.max_steps {
         if summary.steps > most {
-            failures.push(format!(
-                "max_steps: took {} steps, the limit is {most}",
-                summary.steps
+            failures.push(Failure::new(
+                "max_steps",
+                format!("took {} steps, the limit is {most}", summary.steps),
             ));
         }
     }
     if let Some(most) = asserted.max_usd {
         if summary.usd > most {
-            failures.push(format!(
-                "max_usd: cost ${:.4}, the limit is ${most:.4}",
-                summary.usd
+            failures.push(Failure::new(
+                "max_usd",
+                format!("cost ${:.4}, the limit is ${most:.4}", summary.usd),
             ));
         }
     }
     if asserted.no_deny == Some(true) {
-        failures.extend(denials.into_iter().map(|what| format!("no_deny: {what}")));
+        failures.extend(denials.into_iter().map(|why| Failure::new("no_deny", why)));
     }
     for wanted in asserted.tool_called.iter().flatten() {
         if !calls.iter().any(|(_, call)| names(wanted, call)) {
-            failures.push(format!("tool_called: {wanted} was never called"));
+            failures.push(Failure::new(
+                "tool_called",
+                format!("{wanted} was never called"),
+            ));
         }
     }
     for unwanted in asserted.tool_not_called.iter().flatten() {
         if let Some((seq, _)) = calls.iter().find(|(_, call)| names(unwanted, call)) {
-            failures.push(format!(
-                "tool_not_called: {unwanted} was called (seq {seq})"
+            failures.push(Failure::new(
+                "tool_not_called",
+                format!("{unwanted} was called (seq {seq})"),
             ));
         }
     }
     for file in asserted.file_contains.iter().flatten() {
         match written.get(tidy(&file.path)) {
             Some(content) if content.contains(&file.text) => {}
-            Some(_) => failures.push(format!(
-                "file_contains: {} does not contain {:?}",
-                file.path, file.text
+            Some(_) => failures.push(Failure::new(
+                "file_contains",
+                format!("{} does not contain {:?}", file.path, file.text),
             )),
-            None => failures.push(format!(
-                "file_contains: {} was never written with write_file",
-                file.path
+            None => failures.push(Failure::new(
+                "file_contains",
+                format!("{} was never written with write_file", file.path),
             )),
         }
     }
@@ -271,12 +307,23 @@ fn read(path: &str) -> anyhow::Result<Vec<Event>> {
         .with_context(|| format!("reading {path}"))
 }
 
-/// One row of the table.
+/// One task result, used by the table and JSON report.
 struct Row {
     task: String,
     summary: Summary,
-    /// Where the new trace first differs from the recording.
-    diverged: String,
+    first_divergence: Option<FirstDivergence>,
+}
+
+impl Row {
+    fn passed(&self) -> bool {
+        self.summary.failures.is_empty()
+    }
+}
+
+#[derive(Serialize)]
+struct FirstDivergence {
+    step: u64,
+    event: &'static str,
 }
 
 /// Replay one task and judge its new trace.
@@ -321,21 +368,22 @@ async fn run_task(
     if let Some(error) = replayed.stopped {
         // A halt is already in the trace as the run's last state. Anything
         // else that stopped the run is said here, in its own words.
-        let unfinished = |failure: &String| failure.starts_with("the run did not finish");
+        let unfinished = |failure: &Failure| failure.check == "run_incomplete";
         if !summary.failures.iter().any(unfinished) {
-            summary
-                .failures
-                .insert(0, format!("the run stopped: {error}"));
+            summary.failures.insert(
+                0,
+                Failure::new("replay_stopped", format!("the run stopped: {error}")),
+            );
         }
     }
-    let diverged = match diff(&old, &new).first() {
-        Some(first) => format!("step {}, {}", first.step, first.what.name()),
-        None => "none".to_owned(),
-    };
+    let first_divergence = diff(&old, &new).first().map(|first| FirstDivergence {
+        step: first.step,
+        event: first.what.name(),
+    });
     Ok(Row {
         task: name.to_owned(),
         summary,
-        diverged,
+        first_divergence,
     })
 }
 
@@ -365,7 +413,7 @@ fn out_dir(options: &Options) -> anyhow::Result<PathBuf> {
     }
 }
 
-/// Run the suite and print the table. `Ok(true)` when every task passed.
+/// Run the suite and report its results. `Ok(true)` when every task passed.
 pub async fn eval(options: Options) -> anyhow::Result<bool> {
     let config_path = options.suite.join("eval.toml");
     let text = std::fs::read_to_string(&config_path)
@@ -392,23 +440,25 @@ pub async fn eval(options: Options) -> anyhow::Result<bool> {
     let width = tasks.keys().map(String::len).max().unwrap_or(4).max(4);
     // Not locked: tasks run between the rows.
     let mut stdout = io::stdout();
-    let changed = match (&options.system, &options.model) {
-        (Some(_), Some(model)) => format!("a new system prompt and model {model}"),
-        (Some(_), None) => "a new system prompt".to_owned(),
-        (None, Some(model)) => format!("model {model}"),
-        (None, None) => "nothing changed".to_owned(),
-    };
-    writeln!(
-        stdout,
-        "{}: {} tasks, {changed}\n",
-        options.suite.display(),
-        tasks.len()
-    )?;
-    writeln!(
-        stdout,
-        "{:<width$}  result  steps       usd  first divergence",
-        "task"
-    )?;
+    if !options.json {
+        let changed = match (&options.system, &options.model) {
+            (Some(_), Some(model)) => format!("a new system prompt and model {model}"),
+            (Some(_), None) => "a new system prompt".to_owned(),
+            (None, Some(model)) => format!("model {model}"),
+            (None, None) => "nothing changed".to_owned(),
+        };
+        writeln!(
+            stdout,
+            "{}: {} tasks, {changed}\n",
+            options.suite.display(),
+            tasks.len()
+        )?;
+        writeln!(
+            stdout,
+            "{:<width$}  result  steps       usd  first divergence",
+            "task"
+        )?;
+    }
 
     let mut rows = Vec::new();
     for (name, trace) in &tasks {
@@ -423,47 +473,80 @@ pub async fn eval(options: Options) -> anyhow::Result<bool> {
             Err(e) => Row {
                 task: name.clone(),
                 summary: Summary {
-                    failures: vec![format!("could not be replayed: {e:#}")],
+                    failures: vec![Failure::new(
+                        "replay_error",
+                        format!("could not be replayed: {e:#}"),
+                    )],
                     ..Summary::default()
                 },
-                diverged: "-".to_owned(),
+                first_divergence: None,
             },
         };
-        writeln!(
-            stdout,
-            "{:<width$}  {:<6}  {:>5}  {:>8.4}  {}",
-            row.task,
-            if row.summary.failures.is_empty() {
-                "pass"
-            } else {
-                "FAIL"
-            },
-            row.summary.steps,
-            row.summary.usd,
-            row.diverged
-        )?;
-        // Rows appear as tasks finish; a live suite takes minutes.
-        stdout.flush()?;
+        if !options.json {
+            let divergence = match &row.first_divergence {
+                Some(first) => format!("step {}, {}", first.step, first.event),
+                None if row
+                    .summary
+                    .failures
+                    .iter()
+                    .any(|f| f.check == "replay_error") =>
+                {
+                    "-".to_owned()
+                }
+                None => "none".to_owned(),
+            };
+            writeln!(
+                stdout,
+                "{:<width$}  {:<6}  {:>5}  {:>8.4}  {divergence}",
+                row.task,
+                if row.passed() { "pass" } else { "FAIL" },
+                row.summary.steps,
+                row.summary.usd,
+            )?;
+            // Rows appear as tasks finish; a live suite takes minutes.
+            stdout.flush()?;
+        }
         rows.push(row);
     }
 
-    let failed: Vec<&Row> = rows
-        .iter()
-        .filter(|row| !row.summary.failures.is_empty())
-        .collect();
-    for row in &failed {
-        writeln!(stdout, "\n{}:", row.task)?;
-        for failure in &row.summary.failures {
-            writeln!(stdout, "  {failure}")?;
+    let failed: Vec<_> = rows.iter().filter(|row| !row.passed()).collect();
+    let passed = rows.len() - failed.len();
+    let cost_usd = rows.iter().map(|row| row.summary.usd).sum::<f64>();
+    if options.json {
+        let tasks: Vec<_> = rows
+            .iter()
+            .map(|row| {
+                serde_json::json!({
+                    "name": row.task,
+                    "status": if row.passed() { "pass" } else { "fail" },
+                    "steps": row.summary.steps,
+                    "cost_usd": row.summary.usd,
+                    "failures": row.summary.failures,
+                    "first_divergence": row.first_divergence,
+                })
+            })
+            .collect();
+        let report = serde_json::json!({
+            "report_version": 1,
+            "tasks": tasks,
+            "totals": { "passed": passed, "failed": failed.len(), "cost_usd": cost_usd },
+            "traces_dir": out.to_string_lossy(),
+        });
+        writeln!(stdout, "{report}")?;
+        stdout.flush()?;
+    } else {
+        for row in &failed {
+            writeln!(stdout, "\n{}:", row.task)?;
+            for failure in &row.summary.failures {
+                writeln!(stdout, "  {failure}")?;
+            }
         }
+        writeln!(
+            stdout,
+            "\n{passed} passed, {} failed, ${cost_usd:.4} in all",
+            failed.len()
+        )?;
+        writeln!(stdout, "new traces: {}", out.display())?;
     }
-    writeln!(
-        stdout,
-        "\n{} passed, {} failed, ${:.4} in all",
-        rows.len() - failed.len(),
-        failed.len(),
-        rows.iter().map(|row| row.summary.usd).sum::<f64>()
-    )?;
-    writeln!(stdout, "new traces: {}", out.display())?;
     Ok(failed.is_empty())
 }

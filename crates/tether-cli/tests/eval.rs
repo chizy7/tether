@@ -7,6 +7,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 
+use serde_json::{json, Value};
+
 fn tether(args: &[&str], stdin: &str) -> Output {
     let mut child = Command::new(env!("CARGO_BIN_EXE_tether"))
         .args(args)
@@ -178,7 +180,40 @@ fn a_suite_replayed_unchanged_passes_and_needs_no_model() {
         assert!(verified.status.success(), "{verified:?}");
     }
     // That directory is replaced on the next run, not refused.
-    assert_eq!(eval(&suite, &[]).0, Some(0));
+    let (code, out, err) = eval(&suite, &["--json"]);
+    assert_eq!(code, Some(0), "{out}{err}");
+    let report: Value = serde_json::from_str(&out).expect("one JSON report");
+    assert_eq!(
+        report["totals"],
+        json!({"passed": 2, "failed": 0, "cost_usd": 0.0}),
+    );
+}
+
+#[test]
+fn json_reports_a_completed_suite_with_a_failed_assertion() {
+    let suite = suite("eval_json_mixed", "[defaults]\nmax_steps = 2\n");
+    let (code, out, err) = eval(&suite, &["--json"]);
+    assert_eq!(code, Some(1), "{out}{err}");
+    let report: Value = serde_json::from_str(&out).expect("one JSON report");
+    assert_eq!(
+        report,
+        json!({
+            "report_version": 1,
+            "tasks": [
+                {
+                    "name": "hello", "status": "pass", "steps": 2, "cost_usd": 0.0,
+                    "failures": [], "first_divergence": null
+                },
+                {
+                    "name": "tidy", "status": "fail", "steps": 3, "cost_usd": 0.0,
+                    "failures": [{"check": "max_steps", "reason": "took 3 steps, the limit is 2"}],
+                    "first_divergence": null
+                }
+            ],
+            "totals": {"passed": 1, "failed": 1, "cost_usd": 0.0},
+            "traces_dir": path(&suite.join(".eval")),
+        }),
+    );
 }
 
 #[test]
@@ -356,6 +391,11 @@ fn a_suite_that_cannot_be_run_exits_2() {
     assert_eq!(code, Some(2), "{err}");
     assert!(err.contains("max_stepz"), "{err}");
 
+    let (code, out, err) = eval(&suite, &["--json"]);
+    assert_eq!(code, Some(2), "{out}{err}");
+    assert!(out.is_empty(), "{out}");
+    assert!(err.contains("max_stepz"), "{err}");
+
     fs::write(suite.join("eval.toml"), "[task.missing]\nmax_steps = 3\n").expect("write");
     let (code, _, err) = eval(&suite, &[]);
     assert_eq!(code, Some(2), "{err}");
@@ -384,6 +424,42 @@ fn a_suite_that_cannot_be_run_exits_2() {
         "{out}"
     );
     assert!(out.contains("1 passed, 1 failed"), "{out}");
+
+    let traces_dir = suite.join("new traces");
+    let (code, out, err) = eval(
+        &suite,
+        &[
+            "--json",
+            "--system",
+            "x",
+            "--scripts",
+            path(&suite.join("scripts")),
+            "--out",
+            path(&traces_dir),
+        ],
+    );
+    assert_eq!(code, Some(1), "{out}{err}");
+    let report: Value = serde_json::from_str(&out).expect("one JSON report");
+    assert_eq!(report["traces_dir"], path(&traces_dir));
+    assert!(traces_dir.join("hello.jsonl").is_file());
+    assert_eq!(
+        report["tasks"][0]["first_divergence"],
+        json!({"step": 1, "event": "model.request"}),
+    );
+    assert_eq!(
+        report["tasks"][1],
+        json!({
+            "name": "tidy", "status": "fail", "steps": 0, "cost_usd": 0.0,
+            "failures": [{
+                "check": "replay_error",
+                "reason": format!(
+                    "could not be replayed: no script for this task at {}",
+                    suite.join("scripts/tidy.json").display(),
+                ),
+            }],
+            "first_divergence": null,
+        }),
+    );
 }
 
 fn suite_with_one_script() -> PathBuf {

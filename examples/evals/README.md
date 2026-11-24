@@ -65,6 +65,32 @@ difference from the recording, give it both:
 tether ui examples/evals/suite/product.tar examples/evals/suite/.eval/product.jsonl
 ```
 
+## JSON reports in CI
+
+```sh
+tether eval examples/evals/suite --json | jq .
+```
+
+With `--json`, stdout contains one report after the suite finishes. The report
+has `report_version: 1`, a `tasks` array sorted by task name, `totals` with
+`passed`, `failed`, and `cost_usd`, and `traces_dir` for uploading the new
+traces. The directory is `<suite>/.eval` by default or the path given to `--out`.
+
+Each task has `name`, `status` (`pass` or `fail`), `steps`, `cost_usd`,
+`failures`, and `first_divergence`. Divergence is an object such as
+`{"step": 1, "event": "model.request"}`, or `null` when there is no divergence
+to report. A failure has a stable `check` (an `eval.toml` key or one of
+`run_incomplete`, `replay_stopped`, and `replay_error`) and a human-readable
+`reason`. Passing tasks have an empty `failures` array. A task with
+`replay_error` has zero steps and cost because no summary was available.
+Costs use the unrounded trace values and can include recorded charges on
+replayed model calls.
+
+Tether exits 0 when all tasks pass, 1 when any task fails, or 2 when the suite
+cannot run. Exit 2 leaves stdout empty and prints the error on stderr. Enable
+your shell's `pipefail` option when piping to `jq` in a CI step that gates on
+the eval result.
+
 ## With a real model
 
 By default the model is scripted, so no API key is needed: `record.py` writes
