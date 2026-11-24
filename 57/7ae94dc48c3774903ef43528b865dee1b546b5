@@ -1,0 +1,66 @@
+.github/dependabot.yml
+  s_643bfacbd7a768::t_8bfa3ffdbf8ef7 1-40
+.github/workflows/audit.yml
+  s_643bfacbd7a768::t_8bfa3ffdbf8ef7 1-27
+sdks/python/LICENSE
+  s_643bfacbd7a768::t_8bfa3ffdbf8ef7 1-176
+sdks/python/pyproject.toml
+  s_643bfacbd7a768::t_8bfa3ffdbf8ef7 7
+sdks/typescript/LICENSE
+  s_643bfacbd7a768::t_8bfa3ffdbf8ef7 1-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "577ae94dc48c3774903ef43528b865dee1b546b5",
+  "prompts": {},
+  "sessions": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "stats": {
+        "total_additions": 0,
+        "total_deletions": 0,
+        "accepted_lines": 420,
+        "overriden_lines": 0,
+        "files": {
+          ".github/dependabot.yml": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 40,
+            "overriden_lines": 0
+          },
+          ".github/workflows/audit.yml": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 27,
+            "overriden_lines": 0
+          },
+          "sdks/python/LICENSE": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 176,
+            "overriden_lines": 0
+          },
+          "sdks/python/pyproject.toml": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          },
+          "sdks/typescript/LICENSE": {
+            "total_additions": 0,
+            "total_deletions": 0,
+            "accepted_lines": 176,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"577ae94dc48c3774903ef43528b865dee1b546b5","tree":"121d1ade4421e2260e3d5529fa48d0b0a2b61efe","files":{".github/dependabot.yml":"cfc5b56ca6854aaf34f2fe1f070f7dc3d93771e5",".github/workflows/audit.yml":"c039a6af058fa78013e8cf94e56202990ded3dba","sdks/python/LICENSE":"1b5ec8b78e237b5c3b3d812a7c0a6589d0f7161d","sdks/python/pyproject.toml":"bc48d0af7d06e9b2f48d579b8c7cf25117690e2a","sdks/typescript/LICENSE":"1b5ec8b78e237b5c3b3d812a7c0a6589d0f7161d"},"digest":"f6b198bbeb9861f82d9997565e35dec38e95889632183fca4494d54b72ff9c58"}
+}
