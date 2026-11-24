@@ -11,7 +11,6 @@ What changed in each release of Tether, newest first. The format follows [Keep a
 
 ### Fixed
 
-- The pack test fixture now supports long tar entry names, so absolute-path rejection tests pass even when Cargo's target directory has a long path. (#69)
 - GitHub releases had no release notes. The version headings in this file were written in a form the release tool could not read, so it published the install table alone. The 0.3.0, 0.4.0 and 0.5.0 releases now carry their notes.
 
 ## v0.5.0 - 2026-11-22
