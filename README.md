@@ -1,6 +1,14 @@
-# tether
+<h1 align="center">tether</h1>
 
-**Run agents you don't trust on infrastructure you do.**
+<p align="center">
+  <strong>Run agents you don't trust on infrastructure you do.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/chizy7/tether/actions/workflows/ci.yml"><img src="https://github.com/chizy7/tether/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI status"></a>
+  <a href="https://github.com/chizy7/tether/releases/latest"><img src="https://img.shields.io/github/v/release/chizy7/tether" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/chizy7/tether" alt="License: Apache-2.0"></a>
+</p>
 
 Tether wraps an agent you already have. Every model call and tool call the
 agent makes goes through it, so each one is checked against your rules,
