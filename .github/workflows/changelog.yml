@@ -2,10 +2,12 @@ name: changelog
 
 # Every pull request adds its own line to CHANGELOG.md, so the file is never
 # written up after the fact. A change nobody using Tether would notice (a
-# dependency bump, CI, a typo) takes the `skip-changelog` label instead.
+# dependency bump, CI, a typo) says so instead: the author ticks "No
+# changelog entry needed" in the description, or a maintainer adds the
+# `skip-changelog` label.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   pull-requests: read
@@ -14,15 +16,21 @@ jobs:
   changelog:
     runs-on: ubuntu-latest
     steps:
-      - name: CHANGELOG.md is updated, or the pull request is labelled skip-changelog
+      - name: CHANGELOG.md is updated, or the pull request says no entry is needed
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          # Read as data from the environment, never pasted into the script.
+          BODY: ${{ github.event.pull_request.body }}
         run: |
           if gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename' | grep -qx 'CHANGELOG.md'; then
             exit 0
           fi
-          echo "::error::This pull request does not change CHANGELOG.md. Add a line under \"Unreleased\" (see CONTRIBUTING.md), or ask for the skip-changelog label if nobody using Tether would notice the change."
+          if printf '%s\n' "$BODY" | grep -Eiq '^[[:space:]]*[-*] \[x\] No changelog entry needed'; then
+            echo "The description says no changelog entry is needed."
+            exit 0
+          fi
+          echo "::error::This pull request does not change CHANGELOG.md. Add a line under \"Unreleased\" (see CONTRIBUTING.md). If nobody using Tether would notice the change, tick \"No changelog entry needed\" in the description and this check runs again."
           exit 1
