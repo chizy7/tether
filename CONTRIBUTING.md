@@ -65,7 +65,7 @@ fails, the change is breaking. Do not regenerate its fixtures to make it pass.
 
 ## Setting up
 
-You need Rust stable (1.89 or newer). Nothing else is required for the Rust
+You need [rustup](https://rustup.rs). Nothing else is required for the Rust
 workspace.
 
 ```sh
@@ -74,10 +74,24 @@ cd tether
 cargo test --workspace
 ```
 
+`rust-toolchain.toml` names the Rust version that CI builds and lints with,
+and rustup installs it the first time you run cargo here, so your clippy and
+CI's agree. The oldest Rust that must still build Tether is 1.89.
+
+The checks are also recipes in the `justfile`. [just](https://just.systems)
+is optional: every recipe is a plain command, shown below. `just` on its own
+lists them.
+
 Tests never need an API key or a network connection. They use the `fake`
 model adapter, which answers from a script. A new test should do the same.
 
 ## Before you open a PR
+
+```sh
+just check
+```
+
+which is:
 
 ```sh
 cargo fmt --all -- --check
@@ -85,15 +99,23 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-CI runs these, and a few more depending on what you touched:
+and a search of the repository for em dashes (see Conventions), which is
+`just prose`.
+
+CI runs these on Linux and macOS, and a few more depending on what you
+touched:
 
 | You changed | Also run |
 | --- | --- |
-| The Docker sandbox | `cargo test -p tether-sandbox --features docker` (needs Docker running) |
-| `proto/tether.proto` | `sh sdks/python/scripts/gen_proto.sh` and commit the result |
-| The Python SDK | `cargo build -p tetherd`, `pip install -e "sdks/python[dev]"`, `python -m pytest sdks/python` |
-| The TypeScript SDK | `cargo build -p tetherd`, then `npm ci` and `npm test` in `sdks/typescript` |
+| The Docker sandbox | `just docker` (needs Docker running) |
+| `proto/tether.proto` | `just proto` and commit the result |
+| The Python SDK, or any Python example | `pip install -e "sdks/python[dev]"` once, then `just python`: `ruff check .`, `ruff format --check .` and `python -m pytest sdks/python` |
+| The TypeScript SDK | `npm ci` in `sdks/typescript` once, then `just typescript`: `npm run lint` and `npm test` there |
 | `tether-types` | Update `docs/TRACE_FORMAT.md` and a test in `crates/tether-types/tests/` in the same PR |
+
+`just python-fmt` and `just typescript-fmt` format the code and apply the
+safe fixes. The Python settings are in `ruff.toml` and the TypeScript ones
+in `sdks/typescript/biome.json`.
 
 ## Conventions
 
@@ -101,9 +123,11 @@ CI runs these, and a few more depending on what you touched:
   `tether-core`; they share types through `tether-types`. The crate graph is
   in `docs/ARCHITECTURE.md`.
 - **PR titles** follow `feat:`, `fix:`, `docs:` or `chore:` and become the
-  squash commit.
+  squash commit. A check on the PR holds the title to that; edit the title
+  and it runs again.
 - **One change per PR.** A fix and an unrelated cleanup are two PRs.
-- **No em dashes** in prose, docs or comments.
+- **No em dashes** in prose, docs or comments. `just check` and CI fail on
+  one anywhere in the repository.
 - **Docs change with the code.** If behaviour a document describes changes,
   the document changes in the same PR.
 - **The changelog changes with the code.** See below.

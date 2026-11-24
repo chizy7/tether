@@ -104,7 +104,8 @@ test("an agent loop runs to the end", async () => {
       run.tools.map((tool) => tool.name),
       ["exec", "read_file", "write_file", "list_dir"],
     );
-    assert.deepEqual((run.tools[0]?.inputSchema as { required: string[] }).required, ["argv"]);
+    const schema = run.tools[0]?.inputSchema as { required: string[] } | undefined;
+    assert.deepEqual(schema?.required, ["argv"]);
 
     const messages = [tether.system("Be brief."), tether.user("Tidy up.")];
     for (;;) {
@@ -196,9 +197,7 @@ test("withRun finishes the run when the body returns and halts it when the body 
 test("a halted run throws Halted", async () => {
   const run = await tether.Run.start(options());
   await run.halt();
-  const error = await refused(
-    run.complete({ model: "fake-1", messages: [tether.user("More.")] }),
-  );
+  const error = await refused(run.complete({ model: "fake-1", messages: [tether.user("More.")] }));
   assert.ok(error instanceof tether.Halted);
   assert.equal(error.code, status.FAILED_PRECONDITION);
   const again = await refused(run.callTool({ id: "x", name: "exec", arguments: { argv: ["ls"] } }));
@@ -210,7 +209,11 @@ test("an ask is answered while the call that asked is waiting", async () => {
   await tether.withRun(options({ policy: path.join(where, "ask.toml") }), async (run) => {
     await run.complete({ model: "fake-1", messages: [tether.user("Tidy up.")] });
     // Not awaited yet: it waits for the answer.
-    const waiting = run.callTool({ id: "c", name: "exec", arguments: { argv: ["rm", "-rf", "."] } });
+    const waiting = run.callTool({
+      id: "c",
+      name: "exec",
+      arguments: { argv: ["rm", "-rf", "."] },
+    });
     // The events stream shows the ask; answer it.
     for await (const event of run.events()) {
       if (event.type === "policy.ask") {

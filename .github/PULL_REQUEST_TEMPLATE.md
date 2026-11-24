@@ -8,9 +8,8 @@
 
 **Checks**
 
-- [ ] `cargo fmt --all -- --check`
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings`
-- [ ] `cargo test --workspace`
+- [ ] `just check` (format, clippy, tests; the commands are in CONTRIBUTING.md)
+- [ ] If an SDK or a Python example changed: `just python` or `just typescript`
 - [ ] Tests need no API key (they use the `fake` adapter)
 - [ ] Docs that describe the changed behaviour are updated
 - [ ] `CHANGELOG.md` has a line for this under "Unreleased" (or nobody using Tether would notice the change, and it needs the `skip-changelog` label)

@@ -1,0 +1,14 @@
+# Lint and format settings for every Python file in the repository: the SDK
+# in sdks/python and the examples. Run `just python-lint`, or
+# `ruff check . && ruff format --check .` from the repository root.
+target-version = "py39"
+# The existing code fits 100 with the fewest changes.
+line-length = 100
+# Generated from proto/tether.proto by sdks/python/scripts/gen_proto.sh.
+extend-exclude = ["sdks/python/src/tether/_proto"]
+# Python only. Code blocks in the Markdown docs are laid out by hand.
+include = ["*.py"]
+
+[lint]
+# pycodestyle and pyflakes, import order, and likely bugs.
+select = ["E", "F", "I", "B"]

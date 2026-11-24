@@ -14,21 +14,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      # The toolchain rust-toolchain.toml names, with clippy and rustfmt.
+      - run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      # Format, clippy, the prose rule and the tests: the same recipe a
+      # contributor runs before opening a pull request.
+      - run: just check
+
+  # The sandbox, the daemon's socket and the process limits differ on macOS,
+  # so the workspace is linted and tested there too.
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - run: just lint test
 
   docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
+      # The toolchain rust-toolchain.toml names, with clippy and rustfmt.
+      - run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -p tether-sandbox --all-targets --features docker -- -D warnings
       - run: cargo test -p tether-sandbox --features docker
@@ -37,7 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      # The toolchain rust-toolchain.toml names, with clippy and rustfmt.
+      - run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-python@v7
         with:
@@ -45,6 +60,9 @@ jobs:
       # The SDK's tests drive a real daemon.
       - run: cargo build -p tetherd
       - run: pip install -e "sdks/python[dev]"
+      # Every Python file in the repository, the examples included.
+      - run: ruff check .
+      - run: ruff format --check .
       - run: python -m pytest sdks/python
       # The v0.3 demo with the scripted model: record, replay, re-prompt, diff.
       - run: cargo build -p tether-cli
@@ -71,7 +89,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      # The toolchain rust-toolchain.toml names, with clippy and rustfmt.
+      - run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v7
         with:
@@ -79,6 +98,8 @@ jobs:
       # The SDK's tests drive a real daemon.
       - run: cargo build -p tetherd
       - run: npm ci
+        working-directory: sdks/typescript
+      - run: npm run lint
         working-directory: sdks/typescript
       - run: npm test
         working-directory: sdks/typescript
@@ -90,6 +111,9 @@ jobs:
 
   msrv:
     runs-on: ubuntu-latest
+    env:
+      # rust-toolchain.toml pins a newer Rust; this job is the one that must not use it.
+      RUSTUP_TOOLCHAIN: "1.89"
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.89

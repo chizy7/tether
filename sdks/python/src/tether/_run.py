@@ -204,8 +204,9 @@ class Run:
     ``policy`` is the path of a ``tether.toml``; without one there are no
     rules and every tool call asks. ``provider`` is ``"anthropic"``,
     ``"openai_compat"`` for a server with an OpenAI-style chat completions
-    endpoint (``OPENAI_BASE_URL``, ``OPENAI_API_KEY``) or, for tests and demos, ``"fake"`` with ``script`` naming a file of scripted
-    replies. ``dir`` is where the trace goes. Unset arguments fall back to
+    endpoint (``OPENAI_BASE_URL``, ``OPENAI_API_KEY``) or, for tests and
+    demos, ``"fake"`` with ``script`` naming a file of scripted replies.
+    ``dir`` is where the trace goes. Unset arguments fall back to
     ``TETHER_POLICY``, ``TETHER_DIR`` and ``TETHER_SOCKET``, which
     ``tether run -- <command>`` sets.
     """
@@ -287,8 +288,7 @@ class Run:
         return Reply(
             message=json.loads(response.message_json),
             tool_calls=[
-                ToolCall(c.id, c.name, json.loads(c.arguments_json))
-                for c in response.tool_calls
+                ToolCall(c.id, c.name, json.loads(c.arguments_json)) for c in response.tool_calls
             ],
             stop_reason=response.stop_reason or None,
             input_tokens=response.input_tokens,
@@ -323,9 +323,7 @@ class Run:
     def finish(self, outcome: Any = None) -> None:
         """Say the agent is done. ``outcome`` is recorded in the trace."""
         try:
-            self._stub.Finish(
-                pb.FinishRequest(run_id=self.id, outcome_json=json.dumps(outcome))
-            )
+            self._stub.Finish(pb.FinishRequest(run_id=self.id, outcome_json=json.dumps(outcome)))
         except grpc.RpcError as error:
             _raise(error)
         finally:

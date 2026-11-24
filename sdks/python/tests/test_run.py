@@ -10,17 +10,28 @@ from pathlib import Path
 
 import grpc
 import pytest
-
 import tether
 
 REPO = Path(__file__).resolve().parents[3]
 
 SCRIPT = {
     "replies": [
-        [{"type": "tool_use", "id": "call_1", "name": "write_file",
-          "arguments": {"path": "notes.txt", "content": "from python\n"}}],
-        [{"type": "tool_use", "id": "call_2", "name": "exec",
-          "arguments": {"argv": ["rm", "notes.txt"]}}],
+        [
+            {
+                "type": "tool_use",
+                "id": "call_1",
+                "name": "write_file",
+                "arguments": {"path": "notes.txt", "content": "from python\n"},
+            }
+        ],
+        [
+            {
+                "type": "tool_use",
+                "id": "call_2",
+                "name": "exec",
+                "arguments": {"argv": ["rm", "notes.txt"]},
+            }
+        ],
         [{"type": "text", "text": "Done."}],
     ]
 }
@@ -126,7 +137,10 @@ def test_reply_and_tool_result_carry_what_the_daemon_sent(where):
         result = run.call_tool(call)
         assert (result.id, result.is_error, result.content) == ("call_1", False, {"bytes": 12})
         assert result.block() == {
-            "type": "tool_result", "id": "call_1", "content": {"bytes": 12}, "is_error": False,
+            "type": "tool_result",
+            "id": "call_1",
+            "content": {"bytes": 12},
+            "is_error": False,
         }
 
 
@@ -161,7 +175,9 @@ def test_an_ask_is_answered_from_another_thread(where):
         outcome = {}
 
         def call():
-            outcome["result"] = run.call_tool(tether.ToolCall("c", "exec", {"argv": ["rm", "-rf", "."]}))
+            outcome["result"] = run.call_tool(
+                tether.ToolCall("c", "exec", {"argv": ["rm", "-rf", "."]})
+            )
 
         waiting = threading.Thread(target=call)
         waiting.start()
@@ -188,7 +204,12 @@ def test_events_streams_the_whole_trace_of_a_finished_run(where):
 
 def test_refused_requests_raise_with_the_status(where):
     with pytest.raises(tether.TetherError) as error:
-        tether.Run(policy=where / "missing.toml", provider="fake", script=where / "script.json", dir=where / "runs")
+        tether.Run(
+            policy=where / "missing.toml",
+            provider="fake",
+            script=where / "script.json",
+            dir=where / "runs",
+        )
     assert error.value.code == grpc.StatusCode.INVALID_ARGUMENT
     assert not isinstance(error.value, tether.Halted)
 

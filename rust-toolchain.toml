@@ -1,0 +1,9 @@
+# The toolchain everyone builds and lints with, in CI and locally, so a new
+# Rust release cannot fail a pull request that did not change. rustup reads
+# this file and installs the toolchain the first time cargo runs here.
+# Dependabot proposes the bump when a new stable is out. The oldest Rust
+# that must still build Tether is `rust-version` in Cargo.toml, checked by
+# the `msrv` job.
+[toolchain]
+channel = "1.100.0"
+components = ["clippy", "rustfmt"]

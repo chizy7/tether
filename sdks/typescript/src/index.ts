@@ -8,15 +8,7 @@
  * This module is a thin client for the daemon. Nothing here decides
  * anything: every call is one gRPC request.
  */
-export {
-  Halted,
-  Run,
-  TetherError,
-  system,
-  toolResults,
-  user,
-  withRun,
-} from "./run";
+
 export type {
   Block,
   CompleteOptions,
@@ -27,4 +19,13 @@ export type {
   ToolCall,
   ToolResult,
   TraceEvent,
+} from "./run";
+export {
+  Halted,
+  Run,
+  system,
+  TetherError,
+  toolResults,
+  user,
+  withRun,
 } from "./run";

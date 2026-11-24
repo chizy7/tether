@@ -65,8 +65,12 @@ def scripted(task: dict, careful: bool) -> dict:
     """What the scripted model does for a task: write one file and say so.
     The careful version, standing in for the new prompt, reads it back first."""
     name = f"{task['id']}.txt"
-    write = {"type": "tool_use", "id": "call_1", "name": "write_file",
-             "arguments": {"path": name, "content": f"{task['task']}\n"}}
+    write = {
+        "type": "tool_use",
+        "id": "call_1",
+        "name": "write_file",
+        "arguments": {"path": name, "content": f"{task['task']}\n"},
+    }
     read = {"type": "tool_use", "id": "call_2", "name": "read_file", "arguments": {"path": name}}
     replies = [[write]]
     if careful:
@@ -96,7 +100,9 @@ def record(task: dict, out: Path, real: bool) -> Path:
 
 
 def tether_cli(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["tether", *args], capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    return subprocess.run(
+        ["tether", *args], capture_output=True, text=True, stdin=subprocess.DEVNULL
+    )
 
 
 def replay(trace: Path, out: Path, *extra: str) -> None:
@@ -169,13 +175,15 @@ def main() -> int:
             live += ["--script", str(script)]
         replay(recorded, changed, *live)
 
-        rows.append({
-            "task": task["id"],
-            "recorded": summary(recorded),
-            "replay_same": same(recorded, unchanged),
-            "new": summary(changed),
-            "new_same": same(recorded, changed),
-        })
+        rows.append(
+            {
+                "task": task["id"],
+                "recorded": summary(recorded),
+                "replay_same": same(recorded, unchanged),
+                "new": summary(changed),
+                "new_same": same(recorded, changed),
+            }
+        )
     if sys.stdout.isatty():
         print("\r" + " " * 40 + "\r", end="")
 
@@ -184,10 +192,14 @@ def main() -> int:
             return "nothing"
         extra = row["new"]["tool_calls"] - row["recorded"]["tool_calls"]
         tools = f"{extra:+d} tool calls" if extra else "same tool calls"
-        answer = "same answer" if row["new"]["outcome"] == row["recorded"]["outcome"] else "new answer"
+        answer = (
+            "same answer" if row["new"]["outcome"] == row["recorded"]["outcome"] else "new answer"
+        )
         return f"{tools}, {answer}"
 
-    header = f"{'task':<10} {'recorded':<28} {'replayed':<9} {'with the new prompt':<28} what changed"
+    header = (
+        f"{'task':<10} {'recorded':<28} {'replayed':<9} {'with the new prompt':<28} what changed"
+    )
     print(header)
     print("-" * (len(header) + 14))
     for row in rows:
@@ -203,7 +215,9 @@ def main() -> int:
     diverged = sum(not row["new_same"] for row in rows)
     recorded_usd = sum(row["recorded"]["usd"] for row in rows)
     new_usd = sum(row["new"]["usd"] for row in rows)
-    print(f"replayed unchanged: {identical} of {len(rows)} identical to their recording, at no cost")
+    print(
+        f"replayed unchanged: {identical} of {len(rows)} identical to their recording, at no cost"
+    )
     print(f"with the new prompt: {diverged} of {len(rows)} diverged, {more} made more tool calls")
     print(f"spent: ${recorded_usd:.4f} recording, ${new_usd:.4f} on the new prompt")
 
