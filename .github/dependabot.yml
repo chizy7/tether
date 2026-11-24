@@ -8,6 +8,8 @@
 version: 2
 updates:
   - package-ecosystem: cargo
+    # skip-changelog: a dependency bump is not something a user notices.
+    labels: [dependencies, rust, skip-changelog]
     directory: /
     schedule:
       interval: weekly
@@ -16,6 +18,8 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: npm
+    # skip-changelog: a dependency bump is not something a user notices.
+    labels: [dependencies, javascript, skip-changelog]
     directories:
       - /sdks/typescript
       - /examples/raw-loop-ts
@@ -26,6 +30,8 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: pip
+    # skip-changelog: a dependency bump is not something a user notices.
+    labels: [dependencies, python, skip-changelog]
     directories:
       - /sdks/python
       - /examples/openai-agents-sdk
