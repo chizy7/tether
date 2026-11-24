@@ -106,6 +106,27 @@ CI runs these, and a few more depending on what you touched:
 - **No em dashes** in prose, docs or comments.
 - **Docs change with the code.** If behaviour a document describes changes,
   the document changes in the same PR.
+- **The changelog changes with the code.** See below.
+
+## The changelog
+
+Every PR that someone using Tether would notice adds its own line to
+`CHANGELOG.md`, and a check on the PR fails without one. The line you write
+is what appears in the release notes, with your name on it.
+
+- Put it under "Unreleased", in the section that fits: Added, Changed,
+  Fixed, Removed or Security. Add the section heading if it is not there yet.
+- Say what changed for the person using Tether, not how the code changed.
+  Name the command, flag or file. Read a few existing entries for the tone.
+- End with the PR number and, if you are not the maintainer, your GitHub
+  name: `(#64, thanks @you)`. You know the number once the PR is open; push
+  the line then.
+- One line per entry, however long. Do not wrap it: a GitHub release shows
+  every newline as a line break.
+
+A change nobody using Tether would notice needs no entry: a dependency bump,
+CI, a refactor with no change in behaviour, a typo. Say so in the PR and the
+maintainer adds the `skip-changelog` label, which passes the check.
 
 ## Where to start
 

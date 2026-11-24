@@ -37,6 +37,12 @@ the daemon as `tether daemon`, and the SDKs start it that way when no
 
    `dist plan --tag vX.Y.Z` prints the title and body before you tag.
 
+   The entries are already there: each PR adds its own line under
+   "Unreleased" and the `changelog` check holds it to that (see
+   CONTRIBUTING.md). Read the section through once before renaming it. A
+   contributor's entry ends with `thanks @name`, and GitHub lists everyone
+   mentioned that way as a contributor on the release page.
+
 2. Merge that to `master`.
 3. Tag the merge commit and push the tag:
 

@@ -6,7 +6,7 @@ What changed in each release of Tether, newest first. The format follows [Keep a
 
 ### Added
 
-- `tether eval --json`: the suite's results as one JSON report on standard output, for CI. Each task has its status, steps, cost, failed checks with their reasons, and where it first diverged from the recording; the report also has totals and the directory the new traces were written to. Exit codes are unchanged. (#64)
+- `tether eval --json`: the suite's results as one JSON report on standard output, for CI. Each task has its status, steps, cost, failed checks with their reasons, and where it first diverged from the recording; the report also has totals and the directory the new traces were written to. Exit codes are unchanged. (#64, thanks @brendanboyle87)
 - `CODE_OF_CONDUCT.md`: the Contributor Covenant 3.0, with where to report a problem.
 
 ### Fixed
