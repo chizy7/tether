@@ -1,0 +1,50 @@
+CHANGELOG.md
+  s_643bfacbd7a768::t_1cff671b57a237 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "autter_version": "3.16.0",
+  "base_commit_sha": "0a572caa255447ffa2db4b785a866eac05802477",
+  "branch": "docs/changelog-eval-json",
+  "prompts": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:dd73bb78a2ff0c179ddd82400ebb427a1303f4fede84987b72849602dcc5429f",
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_643bfacbd7a768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e359b1f1-a107-4727-bb28-22d8b6eaad99",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Chizy <chizy7@gmail.com>",
+      "messages_url": "cas:dd73bb78a2ff0c179ddd82400ebb427a1303f4fede84987b72849602dcc5429f",
+      "stats": {
+        "total_additions": 1,
+        "total_deletions": 0,
+        "accepted_lines": 1,
+        "overriden_lines": 0,
+        "files": {
+          "CHANGELOG.md": {
+            "total_additions": 1,
+            "total_deletions": 0,
+            "accepted_lines": 1,
+            "overriden_lines": 0
+          }
+        }
+      }
+    }
+  },
+  "integrity": {"v":1,"commit":"0a572caa255447ffa2db4b785a866eac05802477","tree":"fb01ac056a651532bc23e1b031f4988e6739e598","files":{"CHANGELOG.md":"9519c428e695456493dc6777d347cb2085a8af46"},"digest":"f1c69cebf840105138f078d671cb3391d5426b315f4e0b27ec50a7fdae016713"}
+}
